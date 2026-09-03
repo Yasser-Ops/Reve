@@ -94,6 +94,44 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/*
+ * In-page navigation glides rather than jumps. `scroll-padding-top` keeps a
+ * target heading clear of the floating nav that would otherwise cover it.
+ */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 6rem;
+}
+
+/*
+ * Scroll reveal. The element is visible by default and hidden only once the
+ * observer in components/store/Reveal.tsx is confirmed running, so no content
+ * can be stranded invisible if JavaScript never arrives.
+ */
+.reve-reveal {
+  transition:
+    opacity 620ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 620ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.reve-reveal-hidden {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .reve-reveal,
+  .reve-reveal-hidden {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
