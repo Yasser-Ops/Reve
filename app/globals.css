@@ -1,26 +1,105 @@
 @import "tailwindcss";
 
+/*
+ * Rêve design tokens.
+ *
+ * Two token sets live in this project and must not bleed into each other:
+ * these are the STOREFRONT tokens (chrome, admin, portal). Invitation
+ * templates carry their own art direction and deliberately do not inherit
+ * them, so a template's palette can be anything its design calls for.
+ *
+ * There is no dark mode. An invitation is a fixed artifact, like printed
+ * stationery; inverting it to grey on a guest's phone would be wrong.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Warm neutral ground carries roughly ninety percent of every surface. */
+  --reve-bone: #f6f1ea;
+  --reve-sand: #e4dace;
+  --reve-taupe: #b7a691;
+  --reve-cocoa: #6b5844;
+  --reve-ink: #2b2118;
+
+  /* The single saturated accent: primary actions and selected states only. */
+  --reve-wine: #6f2233;
+  --reve-wine-deep: #571a28;
+
+  --background: var(--reve-bone);
+  --foreground: var(--reve-ink);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-bone: var(--reve-bone);
+  --color-sand: var(--reve-sand);
+  --color-taupe: var(--reve-taupe);
+  --color-cocoa: var(--reve-cocoa);
+  --color-ink: var(--reve-ink);
+  --color-wine: var(--reve-wine);
+  --color-wine-deep: var(--reve-wine-deep);
+
+  /* Display: Roman inscriptional capitals. Names, headlines, template titles. */
+  --font-display: var(--font-marcellus), Georgia, "Times New Roman", serif;
+
+  /* UI and body. Also every numeral: Marcellus figures are old-style and
+     would jitter in a ticking countdown. */
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+
+  /* Complementary italic. Marcellus has no true italic, so the ampersand and
+     other italic accents use a real cut rather than a synthesised slant. */
+  --font-accent: var(--font-cormorant), Georgia, serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+/*
+ * Small and monospaced type renders jagged on Windows without this.
+ * Applied to the utility classes that set it, not globally, so body copy
+ * keeps its normal weight.
+ */
+.reve-crisp {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Eyebrow labels: wide-tracked small caps, never below 11px. */
+.reve-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Display setting. Marcellus is all-caps-derived and wants a little air. */
+.reve-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.08;
+}
+
+/* Numerals that change in place: tabular so digits never shift the layout. */
+.reve-numeral {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

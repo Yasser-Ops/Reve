@@ -1,30 +1,23 @@
-import type { Metadata } from "next";
-import type { ReactNode } from "react";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+import { cormorant, geist, marcellus } from './fonts';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "Rêve",
-  description: "Digital wedding invitations.",
+  title: {
+    default: 'Rêve',
+    template: '%s · Rêve',
+  },
+  description: 'Digital wedding invitations, designed by hand.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${marcellus.variable} ${geist.variable} ${cormorant.variable} h-full`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }
