@@ -42,3 +42,7 @@ next-env.d.ts
 
 # The example file documents required variables and is safe to commit.
 !.env.example
+
+# Playwright
+test-results/
+playwright-report/
