@@ -213,7 +213,7 @@ export default function HomePage() {
             <div className="mt-10 flex flex-wrap items-center justify-center gap-3 md:justify-start">
               <Link
                 className="reve-crisp rounded-full bg-wine px-8 py-3.5 text-[13px] uppercase tracking-[0.16em] text-bone transition-colors hover:bg-wine-deep focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
-                href="/templates"
+                href="/collection"
               >
                 See the collection
               </Link>
@@ -302,6 +302,13 @@ export default function HomePage() {
                 it never changes the price. Every design is available on every
                 tier.
               </p>
+
+              <Link
+                className="reve-crisp mt-9 inline-block rounded-full border border-taupe px-8 py-3.5 text-[13px] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-sand focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
+                href="/collection"
+              >
+                See all designs
+              </Link>
             </div>
           </Reveal>
 

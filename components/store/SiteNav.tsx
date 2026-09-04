@@ -9,7 +9,7 @@ import { LEAD_EVENTS } from '@/lib/events';
    pages, but the nav is the main pitch and they would dilute it; the footer
    and the questions section carry them instead. */
 const LINKS = [
-  { label: 'Collection', href: '/templates' },
+  { label: 'Collection', href: '/collection' },
   ...LEAD_EVENTS.map((event) => ({
     label: event.label,
     href: `/${event.slug}`,

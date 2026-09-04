@@ -15,8 +15,9 @@ import './invitation-demo.css';
 
 /* One shared cycle length. Every layer's keyframes are expressed as
    percentages of this, so changing the tempo here re-times the whole sequence
-   without touching a single keyframe. */
-const CYCLE_MS = 11000;
+   without touching a single keyframe. The beats it divides into are documented
+   at the top of invitation-demo.css. */
+const CYCLE_MS = 13000;
 
 /* How far the invitation travels upward through the screen. Must exceed the
    card's overflow beyond the viewport or the scroll stops short of the end. */

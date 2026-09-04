@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   title: 'The collection',
   description:
     'Every Rêve invitation design, shown with the same wedding so you are comparing art direction and nothing else. Each is available on every tier, at the same price.',
-  alternates: { canonical: '/templates' },
+  alternates: { canonical: '/collection' },
   openGraph: {
     title: 'The collection · Rêve',
     description:

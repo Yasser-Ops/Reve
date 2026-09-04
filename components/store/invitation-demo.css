@@ -1,17 +1,32 @@
 /*
- * A looping miniature of the guest's first thirty seconds, played inside the
- * phone on the marketing page: sealed envelope, tap, flap falls, card rises,
- * then the invitation itself scrolls past under a thumb.
+ * A looping miniature of the guest's first moments, played inside the phone on
+ * the marketing page: sealed envelope, tap, flap falls, card rises, then the
+ * invitation itself scrolls past under a thumb.
  *
- * The envelope beats reuse the durations and easing curves from
+ * The envelope beats reuse the easing curves from
  * components/invitation/envelope.css deliberately. This is an advertisement
- * for that animation, so a different tempo here would be a small lie about
- * how the product feels.
+ * for that animation, so a different feel here would be a small lie about how
+ * the product behaves.
  *
- * One shared timeline drives every layer. Each element animates the same
- * DEMO_CYCLE_MS loop and stages itself with percentage keyframes rather than
- * separate delays, so the parts cannot drift out of sync over long runs the
- * way independently-delayed animations do.
+ * One shared timeline drives every layer: each animates the same cycle and
+ * stages itself with percentage keyframes rather than its own delay, so the
+ * parts cannot drift apart over long runs the way delayed animations do.
+ *
+ * THE TIMELINE (percentages of --demo-cycle, currently 13s)
+ *
+ *   0 – 22%   Sealed. The envelope simply sits there, which is the most
+ *             attractive frame in the loop and so gets real time rather than
+ *             being rushed past.
+ *  22 – 34%   The tap. Seal presses in, springs back, fades.
+ *  30 – 50%   Opening. Flap falls away, lining darkens, card rises.
+ *  50 – 56%   Handover. Envelope fades out as the invitation fades in.
+ *  56 – 90%   Reading. The invitation travels up through the screen, held at
+ *             each end so the eye can land on the names and on the closing
+ *             detail rather than being panned continuously.
+ *  90 – 100%  Reset, invisible, back to sealed.
+ *
+ * Changing the tempo means changing CYCLE_MS in InvitationDemo.tsx. Changing
+ * the SHAPE means editing the percentages here, in the order above.
  */
 
 .demo {
@@ -40,14 +55,13 @@
   animation: demo-stage var(--demo-cycle) linear infinite;
 }
 
-/* Fades the whole envelope stage out once the card has risen, mirroring the
-   gate's own exit, then brings it back for the next pass. */
+/* Handover: holds through the opening, then clears for the invitation. */
 @keyframes demo-stage {
   0%,
-  30% {
+  50% {
     opacity: 1;
   }
-  38%,
+  56%,
   92% {
     opacity: 0;
   }
@@ -65,16 +79,16 @@
 }
 
 /* A full-bleed envelope cannot lift far without showing its own edges, so the
-   travel is smaller than the inset version's and leans on scale instead. */
+   travel is a slow scale rather than a translation. */
 @keyframes demo-lift {
   0%,
-  16% {
+  30% {
     transform: scale(1);
   }
-  27% {
+  42% {
     transform: scale(1.015);
   }
-  38%,
+  56%,
   100% {
     transform: scale(1.04);
   }
@@ -121,12 +135,13 @@
   animation: demo-flap var(--demo-cycle) cubic-bezier(0.45, 0, 0.15, 1) infinite;
 }
 
+/* Opens once the tap has landed. */
 @keyframes demo-flap {
   0%,
-  16% {
+  30% {
     transform: rotateX(0deg);
   }
-  32%,
+  46%,
   96% {
     transform: rotateX(-168deg);
   }
@@ -154,10 +169,10 @@
 
 @keyframes demo-lining {
   0%,
-  17% {
+  31% {
     opacity: 0;
   }
-  24%,
+  38%,
   94% {
     opacity: 1;
   }
@@ -170,8 +185,7 @@
  * The card, tucked inside the envelope.
  *
  * Sits BELOW the envelope body so it is genuinely enclosed while sealed, then
- * rises far enough to clear the paper once the flap is out of the way. Its
- * inset bottom starts it low in the pocket.
+ * rises far enough to clear the paper once the flap is out of the way.
  */
 .demo-card {
   position: absolute;
@@ -185,12 +199,13 @@
   animation: demo-card var(--demo-cycle) cubic-bezier(0.33, 0, 0.2, 1) infinite;
 }
 
+/* Rises behind the falling flap, so the two read as one motion. */
 @keyframes demo-card {
   0%,
-  22% {
+  36% {
     transform: translateY(0);
   }
-  36%,
+  52%,
   96% {
     transform: translateY(-16%);
   }
@@ -199,8 +214,6 @@
   }
 }
 
-/* The wax seal. Pulses once before the flap opens, standing in for the tap
-   that a guest performs at this exact moment. */
 /*
  * The seal.
  *
@@ -222,21 +235,23 @@
 }
 
 @keyframes demo-seal {
+  /* Held sealed. The long beat of the loop. */
   0%,
-  8% {
+  22% {
     transform: translate(-50%, -50%) scale(1);
     opacity: 1;
   }
   /* The press: the guest's thumb goes down here. */
-  13% {
+  26% {
     transform: translate(-50%, -50%) scale(0.9);
     opacity: 1;
   }
-  20% {
+  /* And springs back. */
+  30% {
     transform: translate(-50%, -50%) scale(1.04);
     opacity: 1;
   }
-  26%,
+  34%,
   96% {
     transform: translate(-50%, -50%) scale(1.1);
     opacity: 0;
@@ -265,24 +280,25 @@
 
 @keyframes demo-scroll {
   0%,
-  32% {
+  50% {
     opacity: 0;
     transform: translateY(0);
   }
-  40% {
+  /* Fades in as the envelope clears. */
+  56% {
     opacity: 1;
     transform: translateY(0);
   }
-  /* The travel itself, held at each end so the reader can land on the names
-     and again on the closing detail. */
-  52% {
+  /* Held on the names before the travel begins. */
+  64% {
     transform: translateY(0);
   }
+  /* And held again at the end, on the closing detail. */
   86% {
     opacity: 1;
     transform: translateY(calc(-1 * var(--demo-travel)));
   }
-  94% {
+  92% {
     opacity: 0;
     transform: translateY(calc(-1 * var(--demo-travel)));
   }
