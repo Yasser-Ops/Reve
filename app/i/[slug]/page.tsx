@@ -39,7 +39,7 @@ export default async function InvitationPage({ params }: PageProps) {
   if (!getTemplate(invitation.templateSlug)) notFound();
 
   return (
-    <EnvelopeGate initials={invitation.content.initials} slug={invitation.slug}>
+    <EnvelopeGate initials={invitation.content.initials}>
       <TemplateRenderer
         content={invitation.content}
         entitlements={invitation.entitlements}

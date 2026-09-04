@@ -6,8 +6,8 @@ import {
   TEMPLATES,
   TEMPLATE_SLUGS,
 } from '@/components/invitation/registry';
+import { LiveInvitationDemo } from '@/components/store/LiveInvitationDemo';
 import { OfferTabs } from '@/components/store/OfferTabs';
-import { PhoneFrame } from '@/components/store/PhoneFrame';
 import { Reveal } from '@/components/store/Reveal';
 import { TemplateFrame } from '@/components/store/TemplateFrame';
 import { whatsappLink } from '@/lib/contact';
@@ -107,28 +107,26 @@ export default async function DesignPage({
       <section className="px-6 pb-6">
         <Reveal>
           <div className="mx-auto max-w-3xl">
-            <PhoneFrame>
-              <TemplateFrame>
-                <Template
-                  content={SAMPLE_CONTENT}
-                  entitlements={SAMPLE_ENTITLEMENTS}
-                  theme={SAMPLE_THEME}
-                />
-              </TemplateFrame>
-            </PhoneFrame>
+            <LiveInvitationDemo initials={SAMPLE_CONTENT.initials}>
+              <Template
+                content={SAMPLE_CONTENT}
+                entitlements={SAMPLE_ENTITLEMENTS}
+                theme={SAMPLE_THEME}
+              />
+            </LiveInvitationDemo>
 
-            <p className="mt-8 text-center">
+            <p className="reve-crisp mt-8 text-center text-[12px] text-taupe">
+              Tap the seal, then scroll. This is the real invitation with a
+              sample wedding in it, not a picture of one.
+            </p>
+
+            <p className="mt-6 text-center">
               <Link
                 className="reve-crisp rounded-full border border-ink/25 px-7 py-3 text-[11px] uppercase tracking-[0.16em] text-ink transition-colors hover:border-ink/50"
                 href={`/preview/${slug}`}
               >
-                Open the full invitation
+                Open it full screen
               </Link>
-            </p>
-
-            <p className="reve-crisp mt-4 text-center text-[12px] text-taupe">
-              The real thing, with a sample wedding in it. Read all of it before
-              you decide.
             </p>
           </div>
         </Reveal>
