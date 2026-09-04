@@ -22,6 +22,18 @@ const CYCLE_MS = 11000;
    card's overflow beyond the viewport or the scroll stops short of the end. */
 const TRAVEL = '52%';
 
+/* The photographed envelope, full-bleed behind the animated layers. */
+const PAPER = '/envelope/bone-sealed.webp';
+
+/*
+ * Where the wax seal sits in that photograph, measured from the top edge, and
+ * how wide it is. Both are read off the image itself: the flap's clip path and
+ * the initials overlay are positioned from these, so re-shooting the envelope
+ * means re-measuring here rather than hunting through the stylesheet.
+ */
+const SEAL_Y = '46%';
+const SEAL_SIZE = '19%';
+
 const SCHEDULE = [
   { time: '4:30', event: 'Ceremony' },
   { time: '6:00', event: 'Cocktails' },
@@ -37,30 +49,24 @@ export function InvitationDemo() {
         {
           '--demo-cycle': `${CYCLE_MS}ms`,
           '--demo-travel': TRAVEL,
+          '--demo-paper': `url(${PAPER})`,
+          '--demo-seal-y': SEAL_Y,
+          '--demo-seal-size': SEAL_SIZE,
         } as React.CSSProperties
       }
     >
-      {/* Stage one: the sealed envelope, opened by the seal. */}
+      {/* Stage one: the sealed envelope, filling the screen edge to edge. */}
       <div className="demo-stage">
         <div className="demo-envelope">
           <div className="demo-body" />
+          <div className="demo-lining" />
           <div className="demo-card" />
+          <div className="demo-flap" />
 
-          <div className="demo-flap">
-            <svg preserveAspectRatio="none" viewBox="0 0 300 124">
-              <path d="M0 0 H300 L150 124 Z" fill="#ded2c2" />
-              <path
-                d="M0 0 H300 L150 124 Z"
-                fill="none"
-                stroke="rgb(28 28 30 / 0.08)"
-              />
-            </svg>
-          </div>
-
-          <div className="demo-front" />
-
+          {/* The wax is photographed; this carries only the initials, pressed
+              into the blank centre of the seal in the image. */}
           <div className="demo-seal">
-            <span className="reve-display ps-[0.14em] text-[11px] tracking-[0.14em]">
+            <span className="reve-display text-[11px] tracking-[0.16em] text-cocoa/70">
               SA
             </span>
           </div>
