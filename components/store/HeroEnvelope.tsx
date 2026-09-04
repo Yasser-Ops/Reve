@@ -12,7 +12,7 @@ export function HeroEnvelope({ initials = 'R' }: { initials?: string }) {
       aria-hidden="true"
       className="relative mx-auto aspect-3/2 w-full max-w-sm select-none"
     >
-      <div className="absolute inset-0 rounded-md bg-sand shadow-[0_24px_50px_-24px_rgba(43,33,24,0.45)]" />
+      <div className="absolute inset-0 rounded-md bg-sand shadow-[0_24px_50px_-24px_rgb(var(--reve-shadow-rgb)/0.45)]" />
 
       <div className="absolute inset-x-[8%] bottom-[6%] h-[78%] rounded-sm bg-[#faf7f2]" />
 
@@ -30,7 +30,7 @@ export function HeroEnvelope({ initials = 'R' }: { initials?: string }) {
         <path d="M0 0 H300 L150 124 Z" fill="none" stroke="rgb(43 33 24 / 0.08)" />
       </svg>
 
-      <div className="absolute left-1/2 top-1/2 grid h-20 w-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-wine text-bone shadow-[0_8px_20px_-8px_rgba(43,33,24,0.6)]">
+      <div className="absolute left-1/2 top-1/2 grid h-20 w-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-wine text-bone shadow-[0_8px_20px_-8px_rgb(var(--reve-shadow-rgb)/0.6)]">
         <span className="reve-display ps-[0.14em] text-lg tracking-[0.14em]">
           {initials}
         </span>

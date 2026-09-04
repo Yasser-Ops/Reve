@@ -18,7 +18,16 @@
   --reve-sand: #e4dace;
   --reve-taupe: #b7a691;
   --reve-cocoa: #6b5844;
-  --reve-ink: #2b2118;
+
+  /* Neutral near-black, not a brown. The warm neutrals above carry the page's
+     temperature; the dark is deliberately hueless so it reads as a change of
+     ground rather than as the cream gone dirty, and so it sits under any
+     occasion rather than only a wedding. */
+  --reve-ink: #1c1c1e;
+
+  /* Shadows are cast by the ink, so they must be neutral too. Kept as raw
+     channels for use inside rgb(… / <alpha>) at varying opacities. */
+  --reve-shadow-rgb: 28 28 30;
 
   /* The single saturated accent: primary actions and selected states only. */
   --reve-wine: #6f2233;
@@ -39,6 +48,10 @@
   --color-ink: var(--reve-ink);
   --color-wine: var(--reve-wine);
   --color-wine-deep: var(--reve-wine-deep);
+
+  /* The phone's screen: a shade off the bone ground so the device reads as a
+     separate surface sitting on the page rather than a hole cut through it. */
+  --color-screen: #f0ece5;
 
   /* Display: Roman inscriptional capitals. Names, headlines, template titles. */
   --font-display: var(--font-marcellus), Georgia, "Times New Roman", serif;

@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 export function PhoneFrame({ children }: { children: ReactNode }) {
   return (
     <div className="relative mx-auto w-full max-w-[280px]">
-      <div className="rounded-[2.5rem] border border-taupe/60 bg-ink p-2.5 shadow-[0_30px_60px_-30px_rgba(43,33,24,0.6)]">
+      <div className="rounded-[2.5rem] border border-taupe/60 bg-ink p-2.5 shadow-[0_30px_60px_-30px_rgb(var(--reve-shadow-rgb)/0.6)]">
         <div className="relative overflow-hidden rounded-[2rem] bg-bone">
           <div
             aria-hidden="true"

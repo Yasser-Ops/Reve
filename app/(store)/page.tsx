@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FaqList, type FaqItem } from '@/components/store/FaqList';
 import { HeroEnvelope } from '@/components/store/HeroEnvelope';
+import { InvitationDemo } from '@/components/store/InvitationDemo';
 import { PhoneFrame } from '@/components/store/PhoneFrame';
 import { Reveal } from '@/components/store/Reveal';
 import { CONTACT, whatsappLink } from '@/lib/contact';
@@ -234,9 +235,10 @@ export default function HomePage() {
                 Do not take our word for it
               </h2>
               <p className="mt-6 max-w-md text-[15px] leading-relaxed text-sand">
-                This is a real invitation, not a picture of one. Open it on your
-                phone, tap the seal, watch the envelope open. That is exactly what
-                lands in your guests&apos; hands.
+                What you are watching is the whole thing: the seal tapped, the
+                envelope opening, the invitation scrolled through. That is
+                exactly what lands in your guests&apos; hands, and you can open
+                the real one on your own phone right now.
               </p>
 
               <Link
@@ -249,18 +251,7 @@ export default function HomePage() {
 
           </Reveal>
           <PhoneFrame>
-            <div className="grid aspect-9/16 place-items-center bg-[#efe9e1] px-6 text-center">
-              <div>
-                <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-wine text-bone">
-                  <span className="reve-display ps-[0.14em] text-[15px] tracking-[0.14em]">
-                    SA
-                  </span>
-                </div>
-                <p className="reve-eyebrow mt-6 text-[10px] text-cocoa">
-                  Tap the seal
-                </p>
-              </div>
-            </div>
+            <InvitationDemo />
           </PhoneFrame>
         </div>
       </section>
