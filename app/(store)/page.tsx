@@ -7,6 +7,7 @@ import { HeroEnvelope } from '@/components/store/HeroEnvelope';
 import { InvitationDemo } from '@/components/store/InvitationDemo';
 import { PhoneFrame } from '@/components/store/PhoneFrame';
 import { Reveal } from '@/components/store/Reveal';
+import { RsvpPanel } from '@/components/store/RsvpPanel';
 import { TemplateCompare } from '@/components/store/TemplateCompare';
 import { TemplateThumbnail } from '@/components/store/TemplateThumbnail';
 import { WhatsappThread } from '@/components/store/WhatsappThread';
@@ -411,10 +412,58 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* And what comes back. Pairs with the block above: that one sends the
+          invitation out, this one is the replies arriving. Reversed on desktop
+          so the two sections do not read as one column of identical layouts. */}
+      <section className="border-t border-taupe/40 bg-sand px-6 py-24">
+        <div className="mx-auto grid max-w-5xl items-center gap-14 md:grid-cols-2 md:gap-20">
+          <Reveal>
+            <div className="md:order-2">
+              <p className="reve-eyebrow text-cocoa">And what comes back</p>
+
+              <h2 className="reve-display mt-6 text-balance text-4xl md:text-5xl">
+                You stop counting on
+                <span
+                  className="ms-3 text-wine"
+                  style={{
+                    fontFamily: 'var(--font-accent)',
+                    fontStyle: 'italic',
+                  }}
+                >
+                  paper
+                </span>
+              </h2>
+
+              <p className="mt-7 max-w-md text-[15px] leading-relaxed text-cocoa">
+                Guests reply inside the invitation itself. You get a private
+                link showing every answer as it lands, who is bringing whom, and
+                a headcount that adds itself up.
+              </p>
+
+              <p className="mt-5 max-w-md text-[15px] leading-relaxed text-cocoa">
+                Dietary notes and messages arrive with the reply, so the number
+                you give the venue is one you can trust. Export the list to
+                Excel whenever you need it.
+              </p>
+
+              <p className="reve-crisp mt-7 text-[12.5px] text-taupe">
+                Included on Managed and Custom.
+              </p>
+            </div>
+          </Reveal>
+
+          <Reveal delay={120}>
+            <div className="md:order-1">
+              <RsvpPanel />
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
       {/* How it works. Numbered because the order genuinely matters: each step
           waits on the one before it. */}
       <section
-        className="border-t border-taupe/40 bg-sand px-6 py-20"
+        className="border-t border-taupe/40 px-6 py-20"
         id="how-it-works"
       >
         <div className="mx-auto max-w-5xl">
