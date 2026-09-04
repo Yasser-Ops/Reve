@@ -20,7 +20,10 @@ export const SAMPLE_CONTENT = invitationContentSchema.parse({
   coupleFirstName: 'Sarah',
   couplePartnerName: 'Amine',
   initials: 'SA',
-  eventDate: '2026-07-12T16:30:00.000Z',
+  /* Must stay in the future: the Countdown primitive correctly renders
+     nothing once a date has passed, so a stale sample would quietly leave a
+     gap in every preview on the storefront. */
+  eventDate: '2027-07-12T16:30:00.000Z',
   headline: 'Together with their families',
   message:
     'We would be honoured to have you with us as we marry, and for the evening that follows.',

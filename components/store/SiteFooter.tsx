@@ -7,8 +7,9 @@ const COLUMNS = [
     heading: 'Invitations',
     links: [
       { label: 'The collection', href: '/templates' },
+      /* Custom is a tier on the pricing table, not a page of its own, so it
+         is reached through pricing rather than listed separately. */
       { label: 'Pricing', href: '/#pricing' },
-      { label: 'Custom design', href: '/custom' },
       { label: 'See a live example', href: '/i/sarah-and-amine' },
     ],
   },
