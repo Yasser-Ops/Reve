@@ -23,6 +23,14 @@ export type TemplateEntry = {
   name: string;
   /** One line on what the design is for. */
   summary: string;
+  /**
+   * What the artwork actually depicts, in the designer's voice.
+   *
+   * A design is bought on how it looks, so it is worth describing rather than
+   * categorising. This is the product page's standfirst; `summary` is the
+   * shorter line the collection grid uses.
+   */
+  story: string;
   /** The art direction in a few words, for the collection's card. */
   character: readonly string[];
   component: TemplateComponent;
@@ -41,6 +49,8 @@ const REGISTRY = {
     slug: 'cap-blanc',
     name: 'Cap Blanc',
     summary: 'Pale, centred, and quiet. Everything sits on the page as it would on card.',
+    story:
+      'Ivory paper, a centred column, and nothing else. The restraint is the design: your names are the only thing on the page with any weight.',
     character: ['Ivory ground', 'Centred', 'Understated'],
     component: CapBlanc,
   },
@@ -49,6 +59,8 @@ const REGISTRY = {
     name: 'Verdure',
     summary:
       'A drawn sheet. Greenery banks the page and the details are set into the spaces the artwork leaves.',
+    story:
+      'Greenery banks the page and falls away between each section, so the invitation reads as one long decorated sheet. Your details are set into the spaces the artwork leaves for them.',
     character: ['Drawn artwork', 'Garden green', 'Full bleed'],
     component: Verdure,
   },
@@ -56,6 +68,8 @@ const REGISTRY = {
     slug: 'nuit',
     name: 'Nuit',
     summary: 'An evening invitation. Dark ground, gold rule, details set in a column.',
+    story:
+      'An invitation for an evening wedding. The page goes dark, a gold rule divides it, and the details are set in a single quiet column beneath.',
     character: ['Dark ground', 'Gold accent', 'Ruled column'],
     component: Nuit,
   },

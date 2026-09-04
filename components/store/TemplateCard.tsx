@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useCallback, useState, type ReactNode } from 'react';
 import { RENDER_WIDTH } from '@/components/store/TemplateThumbnail';
-import { whatsappLink } from '@/lib/contact';
 
 type TemplateCardProps = {
   slug: string;
@@ -26,7 +25,7 @@ type TemplateCardProps = {
  * The card is a product surface, not a picture: the crop is a preview that
  * hands off to the full sheet rather than trying to be it. A drawn sheet runs
  * far longer than any card, so the frame deliberately shows the opening and
- * fades out, and "View demo" is the real view.
+ * fades out, and the design's own page is where it is actually sold.
  *
  * Client-side only because the preview's scale comes from the card's measured
  * width. The template inside is ordinary server-rendered markup.
@@ -55,9 +54,9 @@ export function TemplateCard({
   return (
     <article className="group flex flex-col">
       <Link
-        aria-label={`View the ${name} demo`}
+        aria-label={`See the ${name} design`}
         className="relative block aspect-9/16 overflow-hidden rounded-[1.5rem] border border-taupe/50 shadow-[0_20px_44px_-24px_rgb(var(--reve-shadow-rgb)/0.45)] transition-transform duration-300 group-hover:-translate-y-1.5"
-        href={`/preview/${slug}`}
+        href={`/collection/${slug}`}
         ref={measure}
         style={{ '--thumb-scale': scale } as React.CSSProperties}
       >
@@ -100,13 +99,9 @@ export function TemplateCard({
       <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-3 pt-6">
         <Link
           className="reve-crisp rounded-full bg-wine px-5 py-2.5 text-[11px] uppercase tracking-[0.16em] text-bone transition-opacity hover:opacity-90"
-          href={whatsappLink(
-            `Hello Rêve, I would like to order the ${name} invitation.`,
-          )}
-          rel="noreferrer noopener"
-          target="_blank"
+          href={`/collection/${slug}`}
         >
-          Order this design
+          See this design
         </Link>
 
         <Link
@@ -114,13 +109,6 @@ export function TemplateCard({
           href={`/preview/${slug}`}
         >
           View demo
-        </Link>
-
-        <Link
-          className="reve-crisp text-[11px] uppercase tracking-[0.14em] text-cocoa underline-offset-4 hover:underline"
-          href="/#pricing"
-        >
-          Pricing
         </Link>
       </div>
     </article>

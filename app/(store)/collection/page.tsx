@@ -4,8 +4,8 @@ import { TEMPLATES } from '@/components/invitation/registry';
 import { Reveal } from '@/components/store/Reveal';
 import { TemplateCard } from '@/components/store/TemplateCard';
 import { TemplateThumbnail } from '@/components/store/TemplateThumbnail';
-import { ENTRY_PRICE } from '@/lib/constants';
 import { whatsappLink } from '@/lib/contact';
+import { ENTRY_TIER } from '@/lib/offer';
 import {
   SAMPLE_CONTENT,
   SAMPLE_ENTITLEMENTS,
@@ -72,7 +72,7 @@ export default function TemplatesPage() {
               <Reveal delay={index * 110} key={template.slug}>
                 <TemplateCard
                   character={template.character}
-                  fromPrice={ENTRY_PRICE}
+                  fromPrice={ENTRY_TIER.price}
                   name={template.name}
                   slug={template.slug}
                   summary={template.summary}

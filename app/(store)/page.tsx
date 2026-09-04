@@ -13,6 +13,7 @@ import { TemplateThumbnail } from '@/components/store/TemplateThumbnail';
 import { WhatsappThread } from '@/components/store/WhatsappThread';
 import { CONTACT, whatsappLink } from '@/lib/contact';
 import { EVENTS } from '@/lib/events';
+import { OFFER_TIERS } from '@/lib/offer';
 import {
   SAMPLE_CONTENT,
   SAMPLE_ENTITLEMENTS,
@@ -81,56 +82,11 @@ const STEPS = [
   },
 ];
 
-const TIERS = [
-  {
-    name: 'Basic',
-    price: '$50',
-    summary: 'A live invitation page at your own link.',
-    includes: [
-      'Your own web address',
-      'Animated envelope and wax seal',
-      'Countdown to the day',
-      'Photo gallery',
-      'Share on WhatsApp',
-    ],
-    cta: 'Start with Basic',
-    featured: false,
-  },
-  {
-    name: 'Managed',
-    price: '$100',
-    summary: 'Everything in Basic, plus replies you can actually track.',
-    includes: [
-      'Everything in Basic',
-      'RSVP collection',
-      'Guest list with headcount',
-      'Private dashboard link',
-      'Export your list',
-    ],
-    cta: 'Start with Managed',
-    featured: true,
-  },
-  {
-    name: 'Custom',
-    price: '$200',
-    summary: 'A design made for you, from scratch.',
-    includes: [
-      'Everything in Managed',
-      'Original art direction',
-      'Your colours and typography',
-      'Arabic calligraphy on request',
-      'Direct line to the designer',
-    ],
-    cta: 'Talk to us',
-    featured: false,
-  },
-];
-
 const QUESTIONS: FaqItem[] = [
   {
     question: 'How long does it take?',
     answer:
-      'Three to five days from the moment we have your details and photos. If your date is close, tell us on WhatsApp and we will say honestly whether we can meet it.',
+      'Two days for a design from the collection. The artwork is already drawn, so there is no design phase to wait through — we set your details into it and send you the link. A Custom design is drawn from scratch and takes longer; we agree the timing with you before you pay. If your date is close, tell us on WhatsApp and we will say honestly whether we can meet it.',
   },
   {
     question: 'How do I pay?',
@@ -609,7 +565,7 @@ export default function HomePage() {
           </div>
 
           <div className="mt-14 grid gap-6 md:grid-cols-3">
-            {TIERS.map((tier, index) => (
+            {OFFER_TIERS.map((tier, index) => (
               <Reveal delay={index * 110} key={tier.name}>
               <div
                 className={`relative rounded-2xl border p-8 transition-all duration-300 hover:-translate-y-1.5 ${
