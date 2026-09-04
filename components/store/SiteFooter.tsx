@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { CONTACT, whatsappLink } from '@/lib/contact';
+import { EVENTS } from '@/lib/events';
 
 const COLUMNS = [
   {
@@ -9,6 +10,18 @@ const COLUMNS = [
       { label: 'Pricing', href: '/#pricing' },
       { label: 'Custom design', href: '/custom' },
       { label: 'See a live example', href: '/i/sarah-and-amine' },
+    ],
+  },
+  {
+    /* Weddings lead and live on the home page; the rest come from the
+       registry, so a new occasion appears here without an edit. */
+    heading: 'Occasions',
+    links: [
+      { label: 'Weddings', href: '/' },
+      ...EVENTS.map((event) => ({
+        label: event.label,
+        href: `/${event.slug}`,
+      })),
     ],
   },
   {
@@ -25,12 +38,12 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-taupe/40 bg-sand px-6 py-16">
       <div className="mx-auto max-w-5xl">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
+        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
             <p className="reve-display text-2xl">Rêve</p>
             <p className="mt-3 max-w-xs text-[13.5px] leading-relaxed text-cocoa">
-              Digital wedding invitations, designed by hand in Lebanon. English
-              and Arabic.
+              Digital invitations for weddings and engagements, designed by
+              hand in Lebanon. English and Arabic.
             </p>
 
             <a

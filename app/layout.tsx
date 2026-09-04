@@ -8,7 +8,8 @@ export const metadata: Metadata = {
     default: 'Rêve',
     template: '%s · Rêve',
   },
-  description: 'Digital wedding invitations, designed by hand.',
+  description:
+    'Digital invitations for weddings, engagements, and the evenings in between. Designed by hand in Lebanon.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

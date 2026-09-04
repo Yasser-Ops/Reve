@@ -6,13 +6,15 @@ import { InvitationDemo } from '@/components/store/InvitationDemo';
 import { PhoneFrame } from '@/components/store/PhoneFrame';
 import { Reveal } from '@/components/store/Reveal';
 import { CONTACT, whatsappLink } from '@/lib/contact';
+import { EVENTS } from '@/lib/events';
 
 export const metadata: Metadata = {
   // Absolute, so the root layout's "%s · Rêve" template does not append the
   // brand name to a title that already carries it.
-  title: { absolute: 'Rêve — Digital wedding invitations' },
+  title: { absolute: 'Rêve — Digital wedding invitations in Lebanon' },
   description:
-    'A live invitation page with your own link, RSVP collection, and a guest list. Designed by hand in English and Arabic, delivered on WhatsApp.',
+    'A live invitation page with your own link, RSVP collection, and a guest list. Designed by hand in English and Arabic for weddings and engagements, delivered on WhatsApp.',
+  alternates: { canonical: '/' },
 };
 
 const START_MESSAGE = "Hello Rêve, I'd like to create a wedding invitation.";
@@ -123,6 +125,11 @@ const QUESTIONS: FaqItem[] = [
     question: 'Can I change something after it is live?',
     answer:
       'Yes. Send us the change on WhatsApp and we will update the page. The link stays the same, so anything you have already shared keeps working.',
+  },
+  {
+    question: 'Do you only do weddings?',
+    answer:
+      'Weddings and engagements are most of what we do, and what the collection is designed around. We also take birthdays and anniversaries, in a lighter register that suits the evening. If you are planning something else, ask, and we will tell you honestly whether we are the right studio for it.',
   },
   {
     question: 'Do you design in Arabic?',
@@ -353,6 +360,34 @@ export default function HomePage() {
               See our work on Instagram
             </a>
           </div>
+        </div>
+      </section>
+
+      {/* Other occasions. Deliberately quiet and placed low: weddings are the
+          pitch, and this exists so the answer to "do you do anything else" is
+          findable rather than prominent. */}
+      <section className="border-t border-taupe/40 px-6 py-16">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-baseline justify-between gap-6">
+          <div>
+            <p className="reve-eyebrow text-cocoa">Not a wedding</p>
+            <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-cocoa">
+              We design for engagements in the same hand, and for birthdays and
+              anniversaries in a lighter one.
+            </p>
+          </div>
+
+          <ul className="flex flex-wrap gap-3">
+            {EVENTS.map((event) => (
+              <li key={event.slug}>
+                <Link
+                  className="reve-crisp inline-block rounded-full border border-taupe px-6 py-2.5 text-[12px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-sand focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
+                  href={`/${event.slug}`}
+                >
+                  {event.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 

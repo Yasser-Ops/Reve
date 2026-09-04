@@ -3,16 +3,24 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { CONTACT, whatsappLink } from '@/lib/contact';
+import { LEAD_EVENTS } from '@/lib/events';
 
+/* Only lead occasions appear here. Secondary ones are real and have their own
+   pages, but the nav is the main pitch and they would dilute it; the footer
+   and the questions section carry them instead. */
 const LINKS = [
   { label: 'Collection', href: '/templates' },
+  ...LEAD_EVENTS.map((event) => ({
+    label: event.label,
+    href: `/${event.slug}`,
+  })),
   { label: 'How it works', href: '/#how-it-works' },
   { label: 'Pricing', href: '/#pricing' },
-  { label: 'Questions', href: '/#questions' },
 ];
 
-const START_MESSAGE =
-  "Hello Rêve, I'd like to create a wedding invitation.";
+/* The nav sits on every page, including the occasion pages, so its message
+   names no single occasion. Each landing page's own buttons carry theirs. */
+const START_MESSAGE = "Hello Rêve, I'd like to create an invitation.";
 
 /**
  * Floating pill navigation.
