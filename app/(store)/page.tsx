@@ -45,16 +45,20 @@ const TRUST_POINTS = [
   'A real person on WhatsApp',
 ];
 
+/*
+ * The rest of what an invitation carries.
+ *
+ * Deliberately excludes the envelope, the RSVP, the guest list, and WhatsApp
+ * sharing: each of those has a section of its own that shows the thing
+ * working, and listing them here as well made the page say everything twice.
+ * If a feature earns a demonstration, it comes out of this list.
+ */
 const INCLUDED = [
-  { title: 'Animated envelope', body: 'Guests tap a wax seal to open it.' },
   { title: 'Your own link', body: 'reve.lb/your-names, yours alone.' },
   { title: 'Countdown', body: 'Counts down to the hour of the ceremony.' },
   { title: 'Photo gallery', body: 'Your photographs, full width.' },
   { title: 'Venue and map', body: 'Directions in one tap.' },
   { title: 'Schedule', body: 'Ceremony, dinner, and everything after.' },
-  { title: 'RSVP', body: 'Guests reply on the page itself.' },
-  { title: 'Guest list', body: 'Every reply, counted for you.' },
-  { title: 'WhatsApp sharing', body: 'Built to be forwarded.' },
   { title: 'Works everywhere', body: 'Any phone, any browser, no app.' },
 ];
 
@@ -341,39 +345,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* What is included */}
-      <section className="px-6 py-24">
-        <div className="mx-auto max-w-5xl">
-          <Reveal>
-  <div className="text-center">
-              <p className="reve-eyebrow text-cocoa">In every invitation</p>
-              <h2 className="reve-display mt-6 text-4xl md:text-5xl">
-                Everything the day needs
-              </h2>
-            </div>
-
-          </Reveal>
-          <ul className="mt-14 grid gap-x-8 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
-            {INCLUDED.map((feature) => (
-              <li
-                className="group border-t border-taupe/40 pt-5 transition-transform duration-300 hover:-translate-y-1"
-                key={feature.title}
-              >
-                <h3 className="reve-display text-lg transition-colors duration-300 group-hover:text-wine">
-                  {feature.title}
-                </h3>
-                <p className="mt-2 text-[13.5px] leading-relaxed text-cocoa">
-                  {feature.body}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
       {/* How it arrives. The site says "built to be forwarded" in several
           places; this is the only one that shows it. */}
-      <section className="border-t border-taupe/40 px-6 py-24">
+      <section className="border-t border-taupe/40 bg-sand px-6 py-24">
         <div className="mx-auto grid max-w-5xl items-center gap-14 md:grid-cols-2 md:gap-20">
           <Reveal>
             <div>
@@ -415,7 +389,7 @@ export default function HomePage() {
       {/* And what comes back. Pairs with the block above: that one sends the
           invitation out, this one is the replies arriving. Reversed on desktop
           so the two sections do not read as one column of identical layouts. */}
-      <section className="border-t border-taupe/40 bg-sand px-6 py-24">
+      <section className="border-t border-taupe/40 px-6 py-24">
         <div className="mx-auto grid max-w-5xl items-center gap-14 md:grid-cols-2 md:gap-20">
           <Reveal>
             <div className="md:order-2">
@@ -457,6 +431,36 @@ export default function HomePage() {
               <RsvpPanel />
             </div>
           </Reveal>
+        </div>
+      </section>
+
+      {/* What is included */}
+      <section className="border-t border-taupe/40 bg-sand px-6 py-24">
+        <div className="mx-auto max-w-5xl">
+          <Reveal>
+  <div className="text-center">
+              <p className="reve-eyebrow text-cocoa">In every invitation</p>
+              <h2 className="reve-display mt-6 text-4xl md:text-5xl">
+                And everything else the day needs
+              </h2>
+            </div>
+
+          </Reveal>
+          <ul className="mt-14 grid gap-x-8 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
+            {INCLUDED.map((feature) => (
+              <li
+                className="group border-t border-taupe/40 pt-5 transition-transform duration-300 hover:-translate-y-1"
+                key={feature.title}
+              >
+                <h3 className="reve-display text-lg transition-colors duration-300 group-hover:text-wine">
+                  {feature.title}
+                </h3>
+                <p className="mt-2 text-[13.5px] leading-relaxed text-cocoa">
+                  {feature.body}
+                </p>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
