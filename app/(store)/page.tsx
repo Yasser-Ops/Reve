@@ -1,12 +1,21 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { CapBlanc } from '@/components/invitation/templates/cap-blanc';
+import { Nuit } from '@/components/invitation/templates/nuit';
 import { FaqList, type FaqItem } from '@/components/store/FaqList';
 import { HeroEnvelope } from '@/components/store/HeroEnvelope';
 import { InvitationDemo } from '@/components/store/InvitationDemo';
 import { PhoneFrame } from '@/components/store/PhoneFrame';
 import { Reveal } from '@/components/store/Reveal';
+import { TemplateCompare } from '@/components/store/TemplateCompare';
+import { TemplateThumbnail } from '@/components/store/TemplateThumbnail';
 import { CONTACT, whatsappLink } from '@/lib/contact';
 import { EVENTS } from '@/lib/events';
+import {
+  SAMPLE_CONTENT,
+  SAMPLE_ENTITLEMENTS,
+  SAMPLE_THEME,
+} from '@/lib/sample-invitation';
 
 export const metadata: Metadata = {
   // Absolute, so the root layout's "%s · Rêve" template does not append the
@@ -18,6 +27,7 @@ export const metadata: Metadata = {
 };
 
 const START_MESSAGE = "Hello Rêve, I'd like to create a wedding invitation.";
+
 
 /* ---------------------------------------------------------------------------
  * Content
@@ -260,6 +270,65 @@ export default function HomePage() {
           <PhoneFrame>
             <InvitationDemo />
           </PhoneFrame>
+        </div>
+      </section>
+
+      {/* Design comparison. Both halves are the real templates rendered from
+          one content object, so the seam separates art direction from data. */}
+      <section className="px-6 py-24">
+        <div className="mx-auto grid max-w-5xl items-center gap-14 md:grid-cols-2 md:gap-20">
+          <Reveal>
+            <div>
+              <p className="reve-eyebrow text-cocoa">The same wedding</p>
+              <h2 className="reve-display mt-6 text-4xl md:text-5xl">
+                Your details, in a
+                <span
+                  className="ms-3 text-wine"
+                  style={{
+                    fontFamily: 'var(--font-accent)',
+                    fontStyle: 'italic',
+                  }}
+                >
+                  different hand
+                </span>
+              </h2>
+              <p className="mt-7 max-w-md text-[15px] leading-relaxed text-cocoa">
+                Drag the divider. Both sides carry the same names, the same
+                date, the same venue and the same schedule. What changes is the
+                design around them.
+              </p>
+              <p className="mt-5 max-w-md text-[15px] leading-relaxed text-cocoa">
+                Choosing a design never changes what your invitation says, and
+                it never changes the price. Every design is available on every
+                tier.
+              </p>
+            </div>
+          </Reveal>
+
+          <Reveal delay={120}>
+            <TemplateCompare
+              base={
+                <TemplateThumbnail>
+                  <CapBlanc
+                    content={SAMPLE_CONTENT}
+                    entitlements={SAMPLE_ENTITLEMENTS}
+                    theme={SAMPLE_THEME}
+                  />
+                </TemplateThumbnail>
+              }
+              baseLabel="Cap Blanc"
+              overlay={
+                <TemplateThumbnail>
+                  <Nuit
+                    content={SAMPLE_CONTENT}
+                    entitlements={SAMPLE_ENTITLEMENTS}
+                    theme={SAMPLE_THEME}
+                  />
+                </TemplateThumbnail>
+              }
+              overlayLabel="Nuit"
+            />
+          </Reveal>
         </div>
       </section>
 

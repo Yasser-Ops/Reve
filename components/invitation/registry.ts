@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { CapBlanc } from '@/components/invitation/templates/cap-blanc';
+import { Nuit } from '@/components/invitation/templates/nuit';
 import type {
   Entitlements,
   InvitationContent,
@@ -20,6 +21,7 @@ export type TemplateComponent = (props: TemplateProps) => ReactNode;
  */
 const REGISTRY: Record<string, TemplateComponent> = {
   'cap-blanc': CapBlanc,
+  nuit: Nuit,
 };
 
 export const TEMPLATE_SLUGS: readonly string[] = Object.keys(REGISTRY);
