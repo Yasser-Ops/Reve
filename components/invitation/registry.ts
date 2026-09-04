@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { CapBlanc } from '@/components/invitation/templates/cap-blanc';
 import { Nuit } from '@/components/invitation/templates/nuit';
+import { Verdure } from '@/components/invitation/templates/verdure';
 import type {
   Entitlements,
   InvitationContent,
@@ -42,6 +43,14 @@ const REGISTRY = {
     summary: 'Pale, centred, and quiet. Everything sits on the page as it would on card.',
     character: ['Ivory ground', 'Centred', 'Understated'],
     component: CapBlanc,
+  },
+  verdure: {
+    slug: 'verdure',
+    name: 'Verdure',
+    summary:
+      'A drawn sheet. Greenery banks the page and the details are set into the spaces the artwork leaves.',
+    character: ['Drawn artwork', 'Garden green', 'Full bleed'],
+    component: Verdure,
   },
   nuit: {
     slug: 'nuit',

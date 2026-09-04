@@ -6,6 +6,14 @@ import { timeUntil, type CountdownParts } from '@/lib/countdown';
 
 type CountdownProps = {
   eventDate: string;
+  /**
+   * Drop the Section wrapper and its storefront padding.
+   *
+   * Sheet templates space their own bands, so the shared rhythm wrapper would
+   * push the dial off the sheet's text channel. The ticking logic is identical
+   * either way, so it lives here once rather than being reimplemented.
+   */
+  bare?: boolean;
 };
 
 const UNITS: Array<{ key: keyof Omit<CountdownParts, 'hasPassed'>; label: string }> = [
@@ -19,7 +27,7 @@ const UNITS: Array<{ key: keyof Omit<CountdownParts, 'hasPassed'>; label: string
  * Renders nothing until mounted, so the server and client agree on markup and
  * no hydration mismatch occurs on a page whose whole job is loading fast.
  */
-export function Countdown({ eventDate }: CountdownProps) {
+export function Countdown({ eventDate, bare = false }: CountdownProps) {
   const [parts, setParts] = useState<CountdownParts | null>(null);
 
   useEffect(() => {
@@ -33,22 +41,24 @@ export function Countdown({ eventDate }: CountdownProps) {
 
   if (!parts || parts.hasPassed) return null;
 
-  return (
-    <Section className="text-center">
-      <ul
-        className="flex justify-center gap-8"
-        style={{
-          WebkitFontSmoothing: 'antialiased',
-          textRendering: 'optimizeLegibility',
-        }}
-      >
-        {UNITS.map((unit) => (
-          <li key={unit.key}>
-            <p className="text-4xl tabular-nums">{parts[unit.key]}</p>
-            <p className="mt-2 text-[11px] uppercase tracking-[0.18em]">{unit.label}</p>
-          </li>
-        ))}
-      </ul>
-    </Section>
+  const dial = (
+    <ul
+      className="flex justify-center gap-8"
+      style={{
+        WebkitFontSmoothing: 'antialiased',
+        textRendering: 'optimizeLegibility',
+      }}
+    >
+      {UNITS.map((unit) => (
+        <li key={unit.key}>
+          <p className="text-4xl tabular-nums">{parts[unit.key]}</p>
+          <p className="mt-2 text-[11px] uppercase tracking-[0.18em]">{unit.label}</p>
+        </li>
+      ))}
+    </ul>
   );
+
+  if (bare) return dial;
+
+  return <Section className="text-center">{dial}</Section>;
 }

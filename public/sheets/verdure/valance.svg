@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300" width="720" height="300">
+  <!-- PLACEHOLDER. Stands in for a drawn divider until artwork exists.
+       Demonstrates the fade-to-ground rule: the band dissolves into
+       SHEET_GROUND at top and bottom, so it never has to meet its neighbour. -->
+  <defs>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4efe6"/>
+      <stop offset="26%" stop-color="#f4efe6" stop-opacity="0"/>
+      <stop offset="74%" stop-color="#f4efe6" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#f4efe6"/>
+    </linearGradient>
+  </defs>
+  <rect width="720" height="300" fill="#f4efe6"/>
+  <g stroke="#4a5c46" stroke-width="2.5" fill="none" opacity="0.85">
+    <path d="M0 96 H720"/>
+    <g>
+      <path d="M40 96 q10 46 -4 84"/><path d="M104 96 q-12 58 6 104"/>
+      <path d="M168 96 q14 40 0 70"/><path d="M232 96 q-8 64 8 112"/>
+      <path d="M296 96 q12 50 -2 92"/><path d="M360 96 q-10 70 6 124"/>
+      <path d="M424 96 q12 44 -4 78"/><path d="M488 96 q-8 60 8 106"/>
+      <path d="M552 96 q14 52 -2 96"/><path d="M616 96 q-10 42 6 74"/>
+      <path d="M680 96 q10 62 -4 108"/>
+    </g>
+  </g>
+  <g fill="#f7f4ee" stroke="#4a5c46" stroke-width="1.6" opacity="0.9">
+    <circle cx="72" cy="150" r="11"/><circle cx="200" cy="176" r="13"/>
+    <circle cx="328" cy="142" r="10"/><circle cx="456" cy="184" r="12"/>
+    <circle cx="584" cy="156" r="11"/>
+  </g>
+  <rect width="720" height="300" fill="url(#fade)"/>
+</svg>

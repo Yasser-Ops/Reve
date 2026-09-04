@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { TEMPLATES } from '@/components/invitation/registry';
 import { Reveal } from '@/components/store/Reveal';
-import { TemplatePreview } from '@/components/store/TemplatePreview';
+import { TemplateCard } from '@/components/store/TemplateCard';
 import { TemplateThumbnail } from '@/components/store/TemplateThumbnail';
+import { ENTRY_PRICE } from '@/lib/constants';
 import { whatsappLink } from '@/lib/contact';
 import {
   SAMPLE_CONTENT,
@@ -69,9 +70,11 @@ export default function TemplatesPage() {
 
             return (
               <Reveal delay={index * 110} key={template.slug}>
-                <TemplatePreview
+                <TemplateCard
                   character={template.character}
+                  fromPrice={ENTRY_PRICE}
                   name={template.name}
+                  slug={template.slug}
                   summary={template.summary}
                 >
                   <TemplateThumbnail>
@@ -81,14 +84,14 @@ export default function TemplatesPage() {
                       theme={SAMPLE_THEME}
                     />
                   </TemplateThumbnail>
-                </TemplatePreview>
+                </TemplateCard>
               </Reveal>
             );
           })}
         </div>
 
         <p className="mx-auto mt-16 max-w-lg text-center text-[14px] leading-relaxed text-cocoa">
-          Two designs today, and more as we draw them. If none of these is
+          Three designs today, and more as we draw them. If none of these is
           right, the Custom tier is a design made for you from scratch.
         </p>
       </section>

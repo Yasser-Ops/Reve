@@ -46,3 +46,10 @@ next-env.d.ts
 # Playwright
 test-results/
 playwright-report/
+
+# Reference material and failed experiments: kept on disk, never shipped.
+/public/sheets/incoming/
+/public/ornament/
+
+# Session scratch, per the staging protocol.
+STAGING_CHANGES.md
