@@ -9,6 +9,7 @@ import { PhoneFrame } from '@/components/store/PhoneFrame';
 import { Reveal } from '@/components/store/Reveal';
 import { TemplateCompare } from '@/components/store/TemplateCompare';
 import { TemplateThumbnail } from '@/components/store/TemplateThumbnail';
+import { WhatsappThread } from '@/components/store/WhatsappThread';
 import { CONTACT, whatsappLink } from '@/lib/contact';
 import { EVENTS } from '@/lib/events';
 import {
@@ -366,6 +367,47 @@ export default function HomePage() {
               </li>
             ))}
           </ul>
+        </div>
+      </section>
+
+      {/* How it arrives. The site says "built to be forwarded" in several
+          places; this is the only one that shows it. */}
+      <section className="border-t border-taupe/40 px-6 py-24">
+        <div className="mx-auto grid max-w-5xl items-center gap-14 md:grid-cols-2 md:gap-20">
+          <Reveal>
+            <div>
+              <p className="reve-eyebrow text-cocoa">How it arrives</p>
+
+              <h2 className="reve-display mt-6 text-balance text-4xl md:text-5xl">
+                One link, endlessly
+                <span
+                  className="ms-3 text-wine"
+                  style={{
+                    fontFamily: 'var(--font-accent)',
+                    fontStyle: 'italic',
+                  }}
+                >
+                  forwarded
+                </span>
+              </h2>
+
+              <p className="mt-7 max-w-md text-[15px] leading-relaxed text-cocoa">
+                You send the link once. It carries your names and the envelope
+                with it, so every guest who receives it sees the invitation
+                before they even tap.
+              </p>
+
+              <p className="mt-5 max-w-md text-[15px] leading-relaxed text-cocoa">
+                Nothing to download, no account to make, and no attachment to
+                lose. Guests forward it to their own families, and it keeps
+                working.
+              </p>
+            </div>
+          </Reveal>
+
+          <Reveal delay={120}>
+            <WhatsappThread />
+          </Reveal>
         </div>
       </section>
 
