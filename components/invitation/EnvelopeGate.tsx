@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import { SHEET_GROUND } from '@/lib/sheet';
+import { getEnvelope } from '@/lib/envelopes';
 import './envelope.css';
 
 type EnvelopeGateProps = {
   initials: string;
+  /** Which envelope to open. Falls back to the default design. */
+  envelope?: string;
   /**
    * Playing inside a frame rather than as the guest's whole phone.
    *
@@ -22,24 +24,6 @@ type GateState = 'sealed' | 'opening' | 'open';
 /** Matches the longest animation in envelope.css. */
 const REVEAL_MS = 3400;
 
-/** The envelope's flap: cream cotton, embossed vines, deckled edge. */
-const FLAP = '/envelope/flap-vine.webp';
-
-/** The wax, champagne gold, blank centre for the couple's initials. */
-const SEAL = '/envelope/seal.webp';
-
-/** The same paper seen from behind, for once the flap passes vertical. */
-const FLAP_OPEN = '/envelope/flap-vine-inner.webp';
-
-/*
- * Where the flap's V comes to a point, measured off flap-vine.webp: the seam
- * reads as a dark line at 74% down the image. The seal sits on that point, and
- * the flap hinges from the top edge. Re-generating the flap art means
- * re-measuring this one value and nothing else.
- */
-const SEAL_Y = '74%';
-const SEAL_SIZE = '17%';
-
 /**
  * Wraps an invitation with its opening ceremony.
  *
@@ -49,15 +33,27 @@ const SEAL_SIZE = '17%';
  * not friction. Skipping is always one tap away for anyone who came back only
  * to check the address.
  *
- * Children render underneath from the start, so the invitation is already
- * painted by the time the envelope clears and nothing pops in behind it.
+ * THE CARD IS THE INVITATION.
+ *
+ * `children` render INSIDE the card, scaled down, and the card grows until it
+ * is the viewport. They are never rendered twice and never cross-faded. The
+ * card's final geometry and the page's resting geometry are the same, so when
+ * the gate unmounts nothing moves: the thing the guest watched come out of the
+ * envelope is the thing they then read.
+ *
+ * The earlier version rendered the invitation as a sibling UNDERNEATH and rose
+ * a blank cream rectangle in front of it, then cross-faded the whole gate away.
+ * The card you watched emerge was not the card you ended up reading, which is
+ * what made the handover feel like a slide transition rather than an opening.
  */
 export function EnvelopeGate({
   initials,
+  envelope,
   contained = false,
   children,
 }: EnvelopeGateProps) {
   const [state, setState] = useState<GateState>('sealed');
+  const spec = getEnvelope(envelope);
 
   useEffect(() => {
     if (state !== 'opening') return;
@@ -66,9 +62,9 @@ export function EnvelopeGate({
     return () => window.clearTimeout(id);
   }, [state]);
 
-  /* The invitation is inert behind the envelope: it must not scroll away under
-     the ceremony. A contained demo skips this — the page around it is still
-     the visitor's to scroll. */
+  /* The invitation is inert while it is still inside the envelope: it must not
+     scroll away under the ceremony. A contained demo skips this — the page
+     around it is still the visitor's to scroll. */
   useEffect(() => {
     if (contained || state === 'open') return;
 
@@ -81,71 +77,81 @@ export function EnvelopeGate({
     };
   }, [contained, state]);
 
+  /* Once open, the gate is gone entirely and the invitation is simply the page.
+     No wrapper survives the ceremony, so nothing here can affect scrolling,
+     stacking or layout for the rest of the visit. */
+  if (state === 'open') return <>{children}</>;
+
   return (
-    <>
-      {state === 'sealed' || state === 'opening' ? (
-        <div
-          className="envelope-gate"
-          data-state={state}
-          style={
-            {
-              '--envelope-flap': `url(${FLAP})`,
-              '--envelope-flap-inner': `url(${FLAP_OPEN})`,
-              '--envelope-seal': `url(${SEAL})`,
-              '--envelope-seal-y': SEAL_Y,
-              '--envelope-seal-size': SEAL_SIZE,
-              '--envelope-card': SHEET_GROUND,
-            } as React.CSSProperties
-          }
-        >
-          <div className="envelope">
-            {/* The envelope back, and the card that rises out of it. */}
-            <div className="envelope-body" />
-            <div className="envelope-card" />
+    <div
+      className="envelope-gate"
+      data-state={state}
+      style={
+        {
+          '--envelope-body': `url(${spec.layers.body})`,
+          '--envelope-interior': `url(${spec.layers.interior})`,
+          '--envelope-pocket': `url(${spec.layers.pocket})`,
+          '--envelope-flap': `url(${spec.layers.flap})`,
+          '--envelope-flap-inner': `url(${spec.layers.flapInner})`,
+          '--envelope-seal': `url(${spec.layers.seal})`,
+          '--envelope-seal-y': spec.sealY,
+          '--envelope-seal-x': spec.sealX,
+          '--envelope-seal-size': spec.sealSize,
+        } as React.CSSProperties
+      }
+    >
+      <div className="envelope">
+        {/* The back panel, then the cavity in front of it. The cavity is
+            drawn, not photographed: a second photograph of the same envelope
+            never registers with the flap animating above it, which is what
+            made the two-envelope composite in the first attempt. */}
+        <div className="envelope-body" />
+        <div className="envelope-interior" />
 
-            {/* The soft light at the envelope's mouth as the flap clears. */}
-            <div className="envelope-glow" />
-
-            {/* Front face, in front of the card so the card emerges behind it. */}
-            <div className="envelope-pocket" />
-
-            {/* The falling flap, and the shadow it casts on the way down. The
-                two faces are backface-hidden siblings on one hinge: past
-                vertical the embossed front turns away and the plain inner face
-                turns toward the viewer, which is what a real flap does. */}
-            <div className="envelope-flap-shadow" />
-            <div className="envelope-hinge">
-              <div className="envelope-flap envelope-flap-front" />
-              <div className="envelope-flap envelope-flap-back" />
-            </div>
-
-            <span className="envelope-pulse" />
-
-            <button
-              aria-label="Open your invitation"
-              className="envelope-seal"
-              onClick={() => setState('opening')}
-              type="button"
-            >
-              {initials}
-            </button>
-
-            <p className="envelope-hint">Tap the seal</p>
-
-            {/* Always available, and it jumps straight to the invitation
-                rather than fast-forwarding the animation. */}
-            <button
-              className="envelope-skip"
-              onClick={() => setState('open')}
-              type="button"
-            >
-              Skip
-            </button>
-          </div>
+        {/* The card: the real invitation, scaled into the envelope's mouth. */}
+        <div className="envelope-card">
+          <div className="envelope-card-page">{children}</div>
         </div>
-      ) : null}
 
-      {children}
-    </>
+        {/* The soft light at the envelope's mouth as the flap clears. */}
+        <div className="envelope-glow" />
+
+        {/* Front face, in front of the card so the card emerges behind it. */}
+        <div className="envelope-pocket" />
+
+        {/* The falling flap, and the shadow it casts on the way down. The
+            two faces are backface-hidden siblings on one hinge: past
+            vertical the embossed front turns away and the plain inner face
+            turns toward the viewer, which is what a real flap does. */}
+        <div className="envelope-flap-shadow" />
+        <div className="envelope-hinge">
+          <div className="envelope-flap envelope-flap-front" />
+          <div className="envelope-flap envelope-flap-back" />
+        </div>
+
+        <span className="envelope-pulse" />
+
+        <button
+          aria-label="Open your invitation"
+          className="envelope-seal"
+          onClick={() => setState('opening')}
+          type="button"
+        >
+          {initials}
+        </button>
+
+        <p className="envelope-hint">Tap the seal</p>
+
+        {/* Always available, and it jumps straight to the invitation
+            rather than fast-forwarding the animation. */}
+        <button
+          className="envelope-skip"
+          onClick={() => setState('open')}
+          type="button"
+        >
+          Skip
+        </button>
+      </div>
+    </div>
   );
 }
