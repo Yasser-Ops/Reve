@@ -24,7 +24,10 @@
   place-items: center;
   background: var(--envelope-bg, #efe9e1);
   perspective: 1600px;
-  perspective-origin: var(--envelope-seal-x, 53.2%) var(--envelope-seal-y, 79.6%);
+  perspective-origin: var(--envelope-seal-x, 53.5%) var(--envelope-seal-y, 78.9%);
+  /* Animated as the flap falls: the envelope opens onto light, not onto the
+     colour of a closed envelope's shadow. */
+  transition: background 1200ms ease;
 }
 
 /*
@@ -42,6 +45,25 @@
 
 .envelope-scope .envelope-gate {
   position: absolute;
+}
+
+/*
+ * The ground goes to paper as the envelope opens.
+ *
+ * A closed envelope sits on the dim ground of something not yet opened; an
+ * open one should be on light. Deliberately the SHEET's own ground rather
+ * than pure white, because the card that arrives IS that colour — ending on
+ * #fff would make the invitation's paper read as dirty by contrast at the
+ * exact moment of the handover.
+ */
+.envelope-gate[data-state='opening'] {
+  animation: envelope-ground 2000ms ease-out forwards;
+}
+
+@keyframes envelope-ground {
+  to {
+    background: var(--envelope-card, #f4efe6);
+  }
 }
 
 /*
@@ -135,9 +157,9 @@
   clip-path: polygon(
     0 0,
     100% 0,
-    100% var(--envelope-seal-y, 79.6%),
-    var(--envelope-seal-x, 53.2%) 100%,
-    0 var(--envelope-seal-y, 79.6%)
+    100% var(--envelope-seal-y, 78.9%),
+    var(--envelope-seal-x, 53.5%) 100%,
+    0 var(--envelope-seal-y, 78.9%)
   );
 }
 
@@ -242,7 +264,7 @@
 .envelope-glow {
   position: absolute;
   inset-inline: 0;
-  inset-block-start: var(--envelope-seal-y, 79.6%);
+  inset-block-start: var(--envelope-seal-y, 78.9%);
   block-size: 60%;
   z-index: 6;
   transform: translateY(-50%);
@@ -306,29 +328,39 @@
  * never resolve to "the page", so it had to cross-fade into a second copy of
  * the invitation rendered underneath.
  */
+/*
+ * THE CARD IS THE INVITATION.
+ *
+ * Not a cream rectangle standing in for one: `children` render inside this, so
+ * what resolves is the real sheet, the same DOM the guest scrolls a moment
+ * later.
+ *
+ * It does NOT slide out of the pocket. A card travelling up the screen reads
+ * as a picture of a card being pulled from an envelope — an illustration of
+ * the act rather than the act itself, and at phone scale the movement is what
+ * the eye follows instead of the invitation. Instead the invitation is already
+ * where it belongs and simply comes forward: it holds slightly back and
+ * slightly small while the flap falls, then settles to its true size as the
+ * envelope recedes behind it. The two move in opposite directions, so the
+ * handover is a change of depth, not a slide.
+ */
 .envelope-card {
   position: absolute;
   inset: 0;
   z-index: 2;
   overflow: hidden;
   background: var(--envelope-card, #f4efe6);
-  /* Rounded and shadowed only while it is an object in an envelope. Both are
-     animated away as it becomes the page, since a page has neither. */
-  border-radius: 0.75rem;
-  box-shadow: 0 18px 40px -18px rgb(28 28 30 / 0.45);
-  transform-origin: 50% 100%;
-  /* Sits in the pocket: shrunk to card size and pushed down out of sight. */
-  transform: translateY(30%) scale(0.42) rotateX(8deg);
-  will-change: transform;
+  transform-origin: 50% 45%;
+  /* Held back and barely small. Not hidden in a pocket. */
+  transform: scale(0.94);
+  opacity: 0;
+  will-change: transform, opacity;
 }
 
 /*
- * The invitation inside the card.
- *
- * Held at the top so the card shows the HEAD of the sheet as it rises — a card
- * drawn from an envelope shows its first line first. `pointer-events: none`
- * until the ceremony is over, so a tap during the animation cannot land on a
- * link inside an invitation that is still in its envelope.
+ * The invitation inside the card. `pointer-events: none` until the ceremony
+ * ends, so a tap during the animation cannot land on a link inside an
+ * invitation that has not arrived yet.
  */
 .envelope-card-page {
   position: absolute;
@@ -338,34 +370,28 @@
 }
 
 .envelope-gate[data-state='opening'] .envelope-card {
-  animation: envelope-card-rise 2400ms cubic-bezier(0.22, 0.61, 0.24, 1) 1000ms
-    forwards;
+  animation: envelope-card-settle 2000ms cubic-bezier(0.22, 0.61, 0.24, 1)
+    1200ms forwards;
 }
 
 /*
- * Out of the pocket, then into the page.
+ * Comes forward and resolves.
  *
- * One continuous move in two readable halves: it clears the envelope's mouth
- * while still card-sized, then opens out to fill the screen. The tilt is gone
- * by the time it starts growing, so the sheet is never read through a
- * perspective distortion.
- *
- * It ends on `scale(1) translateY(0)` — the identity transform. That is not a
- * coincidence, it is the contract with the unmount.
+ * Ends on the identity transform at full opacity, which is exactly where an
+ * untransformed page already sits. That is the contract with the unmount:
+ * when the gate goes, nothing moves.
  */
-@keyframes envelope-card-rise {
+@keyframes envelope-card-settle {
   0% {
-    transform: translateY(30%) scale(0.42) rotateX(8deg);
-    border-radius: 0.75rem;
+    transform: scale(0.94);
+    opacity: 0;
   }
-  45% {
-    transform: translateY(-6%) scale(0.46) rotateX(0deg);
-    border-radius: 0.75rem;
+  40% {
+    opacity: 1;
   }
   100% {
-    transform: translateY(0) scale(1) rotateX(0deg);
-    border-radius: 0;
-    box-shadow: 0 0 0 0 rgb(28 28 30 / 0);
+    transform: scale(1);
+    opacity: 1;
   }
 }
 
@@ -378,12 +404,12 @@
   background-image: var(--envelope-pocket);
   background-size: cover;
   background-position: center;
-  clip-path: polygon(
-    0 var(--envelope-seal-y, 79.6%),
-    100% var(--envelope-seal-y, 79.6%),
-    100% 100%,
-    0 100%
-  );
+  background-repeat: no-repeat;
+  /* NO clip-path. pocket.webp is cut from the envelope on the same two lines
+     as the flap, so its mouth is already in the alpha. The old clip squared
+     the pocket off below the apex, which was how a rectangular photograph
+     faked a pocket; applied to a real cut-out it throws away the triangular
+     side walls that the cut kept. */
 }
 
 /*
@@ -394,8 +420,8 @@
  */
 .envelope-seal {
   position: absolute;
-  inset-block-start: var(--envelope-seal-y, 79.6%);
-  inset-inline-start: var(--envelope-seal-x, 53.2%);
+  inset-block-start: var(--envelope-seal-y, 78.9%);
+  inset-inline-start: var(--envelope-seal-x, 53.5%);
   inline-size: var(--envelope-seal-size, 17%);
   aspect-ratio: 1;
   z-index: 8;
@@ -463,8 +489,8 @@
  */
 .envelope-pulse {
   position: absolute;
-  inset-block-start: var(--envelope-seal-y, 79.6%);
-  inset-inline-start: var(--envelope-seal-x, 53.2%);
+  inset-block-start: var(--envelope-seal-y, 78.9%);
+  inset-inline-start: var(--envelope-seal-x, 53.5%);
   inline-size: var(--envelope-seal-size, 17%);
   aspect-ratio: 1;
   z-index: 7;
@@ -581,13 +607,13 @@
   }
 
   .envelope-gate[data-state='opening'] .envelope-card {
-    animation: envelope-card-settle 420ms ease forwards;
+    animation: envelope-card-instant 420ms ease forwards;
   }
 
-  @keyframes envelope-card-settle {
+  @keyframes envelope-card-instant {
     to {
-      transform: translateY(0) scale(1) rotateX(0deg);
-      border-radius: 0;
+      transform: scale(1);
+      opacity: 1;
     }
   }
 }
