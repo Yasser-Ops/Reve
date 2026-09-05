@@ -96,6 +96,7 @@ export function EnvelopeGate({
           '--envelope-seal': `url(${spec.layers.seal})`,
           '--envelope-seal-y': spec.sealY,
           '--envelope-seal-x': spec.sealX,
+          '--envelope-flap-top': spec.flapTop,
           '--envelope-seal-size': spec.sealSize,
         } as React.CSSProperties
       }

@@ -143,7 +143,10 @@
 
 .envelope-hinge {
   position: absolute;
-  inset: 0;
+  /* Inset to the flap's own top edge: the artwork is a cut-out that begins
+     partway down the frame, and a hinge pinned to the frame's top would swing
+     the flap about a line above the paper it is supposed to be folding. */
+  inset: var(--envelope-flap-top, 13.2%) 0 0;
   z-index: 3;
   transform-origin: 50% 0;
   transform-style: preserve-3d;
@@ -153,9 +156,12 @@
 .envelope-flap {
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: center;
-  clip-path: polygon(0 0, 100% 0, var(--envelope-seal-x, 53.2%) var(--envelope-seal-y, 79.6%));
+  /* NO clip-path. flap.webp is a genuine cut-out with its own alpha, so the
+     triangle is in the artwork. Clipping here would cut it a second time and
+     shave the deckled edge the cut was made to preserve. */
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: top center;
   backface-visibility: hidden;
 }
 
@@ -195,7 +201,7 @@
   position: absolute;
   inset: 0;
   z-index: 2;
-  clip-path: polygon(0 0, 100% 0, var(--envelope-seal-x, 53.2%) var(--envelope-seal-y, 79.6%));
+  clip-path: polygon(0 0, 100% 0, var(--envelope-seal-x, 51%) var(--envelope-seal-y, 88.6%));
   background: linear-gradient(
     to bottom,
     rgb(43 33 24 / 0.22),

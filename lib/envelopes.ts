@@ -46,6 +46,8 @@ export type EnvelopeSpec = {
   sealY: string;
   /** Across the artwork, as a percentage. A hand-made V is rarely centred. */
   sealX: string;
+  /** Top edge of the flap artwork, as a percentage down. The hinge axis. */
+  flapTop: string;
   /** The seal's width, as a percentage of envelope width. */
   sealSize: string;
 };
@@ -61,11 +63,15 @@ const BONE_VINE: EnvelopeSpec = {
     flapInner: '/envelope/bone-vine/flap-inner.webp',
     seal: '/envelope/bone-vine/seal.webp',
   },
-  /* MEASURED off flap.webp by fitting both seams of the V and solving for
-     their intersection: 79.6% down, 53.2% across. The code previously assumed
-     74% and 50%, which put the seal above the true apex and slightly left. */
-  sealY: '79.6%',
-  sealX: '53.2%',
+  /* MEASURED on flap.webp itself, from its alpha channel: the lowest opaque
+     row, and the centre of that row. Re-measure after ANY change to the flap
+     artwork — it positions the seal, sets the pocket's mouth and shapes the
+     cavity, so a stale value misplaces all three. */
+  sealY: '88.6%',
+  sealX: '51%',
+  /* The flap artwork's own top edge. A cut-out flap does not start at the top
+     of the frame, and the hinge rotates about THIS line, not about 0. */
+  flapTop: '13.2%',
   sealSize: '17%',
 };
 
