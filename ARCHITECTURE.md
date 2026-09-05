@@ -45,7 +45,7 @@ components/
     registry.ts                 slug -> {component, catalogue copy}
     TemplateRenderer.tsx
     EnvelopeGate.tsx            [CLIENT] fixed inset:0 — IS the guest's screen
-    envelope.css
+    envelope.css                One documented timeline; no animation JS
     primitives/                 Section, Hero, Details, Gallery, Countdown
     templates/cap-blanc/        Pale, centred
     templates/nuit/             Dark, gold rule, ruled column
@@ -56,7 +56,7 @@ lib/
   constants.ts, entitlements.ts, contact.ts, countdown.ts
   schemas/invitation.ts         zod: content, theme, entitlements
   invitations/get-published.ts  Anon PostgREST read
-  rest.ts, env.ts, envelope-storage.ts
+  rest.ts, env.ts, envelopes.ts
 ```
 
 **Client islands are deliberately shallow.** `InvitationDemo`, `RsvpPanel`,
@@ -81,9 +81,15 @@ WhatsApp link  ->  GET /i/[slug]
     getTemplate(template_slug)        components/invitation/registry.ts
     <Template content theme entitlements />
   EnvelopeGate [CLIENT] fixed inset:0
-    tap seal -> flap opens -> gate fades -> invitation beneath
-    open state persisted (lib/envelope-storage.ts) so a return visit
-    does not replay the reveal
+    getEnvelope(slug)                lib/envelopes.ts -> five layers + geometry
+    tap seal
+      0-2900   flap falls on its hinge (two backface-hidden faces)
+      0-2600   ground -> solid white
+      -2400    envelope gone; state 'settling'
+      2400+    children leave the card and BECOME the page, under a veil
+      -4600    veil fades out; state 'open', gate unmounts
+    The envelope replays on every visit. A returning guest is usually
+    showing it to someone; Skip is always one tap away.
 ```
 
 **Visitor compares two designs**
@@ -136,6 +142,72 @@ GET /[event]
 A `/weddings` route would compete with it for the same queries.
 
 Current: `engagements` (lead), `birthdays` (secondary).
+
+### The sheet — `lib/sheet.ts`
+
+An invitation is one long decorated sheet of paper with the couple's details set
+into the spaces the artist left for them. **A design is data, not code**: a
+`SheetSpec` is bands plus ink/accent/muted/ground, and `verdure` is pure data
+with zero layout JSX.
+
+A sheet is an ordered **stack of bands**, never one canvas with fixed zones.
+
+| kind | height | text | artwork |
+|---|---|---|---|
+| `content` | `max(minHeight, content)` | yes, in the channel | optional intrusion |
+| `divider` | fixed by `aspect` | never | full bleed, IS the band |
+
+- `SHEET_GROUND` `#f4efe6` — the paper, the only thing continuous down the doc.
+- `SHEET_CHANNEL_INSET` 12% — text never leaves it; artwork may cross it.
+- `SHEET_MAX_WIDTH` 720.
+- `ART_ROLES`: `full` (dividers), `corner`, `columns`. There is no `frame` role:
+  a closed frame would have to grow with content and would distort.
+
+**Why sections are not fixed percentages.** Real sections differ in height — a
+countdown is short, a schedule is long, and a schedule with nine events is
+longer than one with three. A fixed map forces identical heights and breaks on
+variable content. A stack makes it free: a band grows, the bands below start
+lower.
+
+**`minHeight` is `cqw`, never `vh`.** Bands measure against the SHEET, not the
+window. The sheet sets `container-type: inline-size`. Viewport units ignore the
+storefront's thumbnail scaling and overflow the frame.
+
+### The seam rule (`BAND_BRIEF`)
+
+1. **Draw scenes, never objects.** Elements must be embedded in surroundings.
+   Evidence: a standalone chandelier failed — with no drawn chain or ceiling it
+   hangs from nothing and reads as a sticker.
+2. **Fade to ground at every horizontal edge.** Artwork dissolves into
+   `SHEET_GROUND` before its own top and bottom, so every boundary is
+   ground-to-ground and adjacent tiles never have to align. This removes the
+   seam problem rather than solving it, and is what makes independently drawn
+   band art viable.
+3. **Content bands keep the channel clear.** Ornament to edges and corners.
+
+### `components/invitation/Sheet.tsx`
+
+Walks `spec.bands` and renders slots.
+
+- A band `section` is `overflow-hidden`: an intrusion must not spill onto a
+  neighbour and land on text no artist positioned it against.
+- The text wrapper is `z-10`. Words always sit above ornament.
+- A content band whose every slot resolves to nothing **returns null**, or it
+  holds open a `minHeight` gap the artwork was never drawn around.
+- Dates are set as stationery (`Monday, 12 July 2027`), never a numeric receipt.
+
+### What Rêve sells — `lib/offer.ts`
+
+`OFFER_TIERS`, `HOW_IT_WORKS`, `DELIVERY`, `ENTRY_TIER`. One source of truth:
+the home page maps `OFFER_TIERS` rather than carrying its own array.
+
+> **Nothing in this file may outrun the product.** Every line is a claim a
+> customer can hold Rêve to. Ratings and couple counts are deliberately absent:
+> Rêve is pre-launch and has none. `tests/lib/offer.test.ts` fails if catalogue
+> copy gains a rating, a customer count, or the word "reviews".
+
+`DELIVERY` carries `excludesTier: CUSTOM` — a design made from scratch cannot
+honour a 48-hour turnaround.
 
 ### Template registry — `components/invitation/registry.ts`
 
@@ -196,6 +268,20 @@ No dark mode. An invitation is a fixed artifact, like printed stationery.
 
 ### Invariants
 
+- **An envelope is five layers, never a frame.** `body`, `interior`, `pocket`,
+  `flap`, `flapInner`, `seal` — plus `seal`. A frame is a photograph of a whole
+  envelope in one state and cannot hinge, so the parts must ship separately.
+  Layers are cut from ONE photograph on fitted lines (`public/envelope/BRIEF.md`),
+  which is what makes them register: flap and pocket are exact complements and
+  reassemble the original at a mean per-pixel difference of 1.75.
+- **`sealY`/`sealX` are measured, never assumed**, from the flap's own alpha —
+  the lowest opaque row and its centre. They position the seal, set the pocket's
+  mouth and shape the cavity, so a stale value misplaces all three. Re-measure
+  after any change to the flap artwork.
+- **The reveal must not depend on the gate existing.** The white belongs to a
+  veil that outlives the gate. When the white was the gate's own background it
+  died with it, dropping the ground from `#fff` to the page colour in one frame
+  under a fully-faded invitation — which is what read as the invitation popping.
 - **The envelope is the screen.** `EnvelopeGate` is `fixed; inset: 0`, so a
   guest's whole phone is the envelope. Marketing that shows it inset is a
   diagram of the product, not a picture of it.
@@ -207,6 +293,19 @@ No dark mode. An invitation is a fixed artifact, like printed stationery.
   that exist on `rsvps`.
 - Windows: small/monospaced type needs `.reve-crisp`
   (`-webkit-font-smoothing: antialiased` + `text-rendering: optimizeLegibility`).
+
+### Scaling a real invitation into a thumbnail
+
+> **`scale()` needs a unitless number, and `calc()` cannot divide a length by a
+> length.** `calc(100cqw / 430)` is invalid, and an invalid transform silently
+> does not scale — rendering the invitation at full width and cutting it off.
+> Correct form: `calc((100cqw / 1px) / 430)`.
+
+`TemplateFrame` uses `cqw` and ships no JS; `TemplateCard` measures in JS
+because it reacts to a responsive grid. `LiveInvitationDemo` uses `zoom` rather
+than `transform`, because a transform does not change the layout box: the
+unscaled child still reserves its full width and `overflow-x: hidden` merely
+clips it, leaving the scroller draggable sideways over empty space.
 
 ### Assets
 
@@ -226,4 +325,14 @@ that photograph. Re-shooting the envelope means re-measuring them.
   once the published set is known at build time.
 - Testimonials are marked placeholders. Rêve is pre-launch.
 - RSVP submission, the guest-list dashboard, and payment are not built. The
-  storefront illustrates them; the tables exist; the routes do not.
+  storefront illustrates them; the tables exist; the routes do not. The write
+  path is specced but NOT implemented:
+  `docs/superpowers/specs/2026-09-05-guest-rsvp-design.md`.
+- `bone-vine`'s `interior` layer is a flat white fill, not artwork. The registry
+  slot takes a real one with no code change.
+- `app/lab/envelope` is development scaffolding (noindex): each layer alone and
+  in cumulative stacks. It exists because the live gate animates four layers at
+  once over a photograph and can only tell you that something is wrong, not
+  which layer is wrong. Delete it or keep it deliberately.
+- `/i/[slug]` full-screen has not been verified in a browser this session; only
+  the `contained` storefront demo has. The two branches differ.
