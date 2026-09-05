@@ -158,10 +158,15 @@
   inset: 0;
   /* NO clip-path. flap.webp is a genuine cut-out with its own alpha, so the
      triangle is in the artwork. Clipping here would cut it a second time and
-     shave the deckled edge the cut was made to preserve. */
-  background-size: contain;
+     shave the deckled edge the cut was made to preserve.
+
+     `cover`, matching every other layer. All four are cut from ONE photograph,
+     so they only stay registered while they are sized and anchored the same
+     way — `contain` pins to the top and re-fits to a slightly different box,
+     which slides the flap a few pixels off the pocket it has to meet. */
+  background-size: cover;
   background-repeat: no-repeat;
-  background-position: top center;
+  background-position: center;
   backface-visibility: hidden;
 }
 

@@ -67,11 +67,13 @@ const BONE_VINE: EnvelopeSpec = {
      row, and the centre of that row. Re-measure after ANY change to the flap
      artwork — it positions the seal, sets the pocket's mouth and shapes the
      cavity, so a stale value misplaces all three. */
-  sealY: '88.6%',
-  sealX: '51%',
-  /* The flap artwork's own top edge. A cut-out flap does not start at the top
-     of the frame, and the hinge rotates about THIS line, not about 0. */
-  flapTop: '13.2%',
+  sealY: '78.9%',
+  sealX: '53.5%',
+  /* The flap artwork's own top edge. This flap is cut from the envelope and
+     spans the full frame, so it is 0 — but a flap drawn as a loose triangle
+     would not be, and the hinge rotates about this line rather than the
+     frame's top. */
+  flapTop: '0%',
   sealSize: '17%',
 };
 
