@@ -382,8 +382,9 @@
 }
 
 .envelope-gate[data-state='opening'] .envelope-card {
-  animation: envelope-card-settle 2200ms cubic-bezier(0.4, 0.28, 0.2, 1) 2400ms
-    forwards;
+  /* The card's own fade is short and early. The rest of the arrival happens
+     under the veil, after the gate has gone. */
+  animation: envelope-card-settle 600ms ease-out 1900ms forwards;
 }
 
 /*
@@ -400,16 +401,44 @@
  */
 @keyframes envelope-card-settle {
   0% {
-    transform: scale(0.975);
+    transform: scale(0.985);
     opacity: 0;
   }
-  /* No mid keyframe on opacity. Keying 0.72 at 55% flattened the fade into a
-     plateau — it held at 0.72 for four hundred milliseconds and then resumed,
-     which read as a stall in the one moment that should feel inevitable. The
-     easing curve already carries it. */
   100% {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+/*
+ * The veil the invitation arrives through.
+ *
+ * White, over the page, fading away. This exists because the white used to
+ * belong to the GATE, and so died with it: the invitation finished fading up
+ * onto a white background, then the gate unmounted and the ground dropped to
+ * the page's own colour in a single frame. That one-frame change of ground is
+ * what read as the invitation popping.
+ *
+ * A veil cannot do that. It is a separate element that fades out over an
+ * invitation already sitting in its final position, so the ground never
+ * changes colour — it is simply revealed, continuously, from white.
+ */
+.envelope-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background: var(--envelope-open-bg, #fff);
+  animation: envelope-veil-out 2200ms cubic-bezier(0.4, 0.16, 0.28, 1) forwards;
+}
+
+.envelope-scope .envelope-veil {
+  position: absolute;
+}
+
+@keyframes envelope-veil-out {
+  to {
+    opacity: 0;
   }
 }
 

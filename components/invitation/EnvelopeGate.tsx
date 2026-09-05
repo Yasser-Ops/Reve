@@ -19,7 +19,7 @@ type EnvelopeGateProps = {
   children: ReactNode;
 };
 
-type GateState = 'sealed' | 'opening' | 'open';
+type GateState = 'sealed' | 'opening' | 'settling' | 'open';
 
 /**
  * Matches the longest animation in envelope.css.
@@ -29,6 +29,15 @@ type GateState = 'sealed' | 'opening' | 'open';
  * the envelope feel like a loading screen in front of the page.
  */
 const REVEAL_MS = 4600;
+
+/**
+ * When the envelope itself is finished and the gate stops drawing it.
+ *
+ * Deliberately shorter than REVEAL_MS: the invitation is still fading up at
+ * this point and finishes that fade as the page, under a veil, rather than
+ * inside the gate.
+ */
+const ENVELOPE_MS = 2400;
 
 /**
  * Wraps an invitation with its opening ceremony.
@@ -62,9 +71,21 @@ export function EnvelopeGate({
   const spec = getEnvelope(envelope);
 
   useEffect(() => {
-    if (state !== 'opening') return;
+    if (state === 'sealed' || state === 'open') return;
 
-    const id = window.setTimeout(() => setState('open'), REVEAL_MS);
+    /* Two steps, not one.
+     *
+     * At ENVELOPE_MS the envelope has gone and the gate has nothing left to
+     * draw but white, so it hands over: `children` move out of the card and
+     * become the page, and the FADE CONTINUES THERE. Waiting for the whole
+     * sequence meant the gate was still holding a white background under a
+     * fully faded-in invitation, and removing it dropped the ground from white
+     * to the page's own colour in a single frame. That discontinuity is what
+     * read as the invitation popping. */
+    const next = state === 'opening' ? 'settling' : 'open';
+    const delay = state === 'opening' ? ENVELOPE_MS : REVEAL_MS - ENVELOPE_MS;
+
+    const id = window.setTimeout(() => setState(next as GateState), delay);
     return () => window.clearTimeout(id);
   }, [state]);
 
@@ -73,6 +94,8 @@ export function EnvelopeGate({
      around it is still the visitor's to scroll. */
   useEffect(() => {
     if (contained || state === 'open') return;
+    /* Still locked through `settling`: the invitation is fading up and must not
+       be scrollable until it has fully arrived. */
 
     const { body } = document;
     const previous = body.style.overflow;
@@ -87,6 +110,21 @@ export function EnvelopeGate({
      No wrapper survives the ceremony, so nothing here can affect scrolling,
      stacking or layout for the rest of the visit. */
   if (state === 'open') return <>{children}</>;
+
+  /* Settling: the envelope is finished and unmounted, but the invitation is
+     still arriving. It renders as the page already — in its final position,
+     with no transform — under a white veil that fades out over it. The veil
+     is what the invitation fades IN from, and because it is a separate
+     element that fades rather than a background that vanishes, there is no
+     frame where the ground changes colour. */
+  if (state === 'settling') {
+    return (
+      <>
+        <span aria-hidden="true" className="envelope-veil" />
+        {children}
+      </>
+    );
+  }
 
   return (
     <div
