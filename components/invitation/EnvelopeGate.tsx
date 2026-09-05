@@ -21,8 +21,14 @@ type EnvelopeGateProps = {
 
 type GateState = 'sealed' | 'opening' | 'open';
 
-/** Matches the longest animation in envelope.css. */
-const REVEAL_MS = 3400;
+/**
+ * Matches the longest animation in envelope.css.
+ *
+ * The sequence is deliberately unhurried. An invitation opening is the one
+ * moment of the product a guest will actually remember, and rushing it makes
+ * the envelope feel like a loading screen in front of the page.
+ */
+const REVEAL_MS = 4600;
 
 /**
  * Wraps an invitation with its opening ceremony.

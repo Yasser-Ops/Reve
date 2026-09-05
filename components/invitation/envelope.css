@@ -48,21 +48,20 @@
 }
 
 /*
- * The ground goes to paper as the envelope opens.
+ * The ground goes to solid white as the envelope opens.
  *
- * A closed envelope sits on the dim ground of something not yet opened; an
- * open one should be on light. Deliberately the SHEET's own ground rather
- * than pure white, because the card that arrives IS that colour — ending on
- * #fff would make the invitation's paper read as dirty by contrast at the
- * exact moment of the handover.
+ * This is a beat in its own right, not a tint under the artwork: closed
+ * envelope, flap opens, WHITE, then the invitation. The white has to be
+ * reached and briefly held before the card appears, or the two blend into one
+ * another and the pause that makes the reveal land is lost.
  */
 .envelope-gate[data-state='opening'] {
-  animation: envelope-ground 2000ms ease-out forwards;
+  animation: envelope-ground 2600ms cubic-bezier(0.33, 0, 0.15, 1) forwards;
 }
 
 @keyframes envelope-ground {
   to {
-    background: var(--envelope-card, #f4efe6);
+    background: var(--envelope-open-bg, #fff);
   }
 }
 
@@ -85,7 +84,7 @@
 }
 
 .envelope-gate[data-state='opening'] .envelope {
-  animation: envelope-lift 3400ms cubic-bezier(0.33, 0, 0.2, 1) forwards;
+  animation: envelope-lift 4600ms cubic-bezier(0.32, 0, 0.12, 1) forwards;
 }
 
 /* The envelope settles a breath before it recedes, so the opening reads as a
@@ -100,18 +99,35 @@
  * eases it back as the card comes forward, so the two move in opposite
  * directions and the card reads as approaching the viewer.
  */
+/*
+ * The envelope holds while the flap falls, then leaves.
+ *
+ * It is fully gone by 68% of the sequence, which is what creates the beat of
+ * plain white between the envelope and the invitation. Fading it under the
+ * card instead would put paper behind paper and lose the pause.
+ */
 @keyframes envelope-lift {
-  0%,
-  30% {
+  0% {
     transform: scale(1);
     opacity: 1;
   }
-  55% {
-    transform: scale(1.03);
+  /* Breathes forward while the flap falls, so the frame is never still. */
+  38% {
+    transform: scale(1.012);
     opacity: 1;
   }
+  /* Already receding before the flap has landed: the beats overlap, which is
+     what makes one continuous movement instead of a list of steps. */
+  56% {
+    transform: scale(1.022);
+    opacity: 0.9;
+  }
+  /* Gone by 74%, while the invitation is still only part way up. Letting both
+     sit near 0.7 at once put paper behind paper and read as a cross-fade
+     between two images rather than one thing replacing another. */
+  74%,
   100% {
-    transform: scale(0.92);
+    transform: scale(1.06);
     opacity: 0;
   }
 }
@@ -126,34 +142,18 @@
 }
 
 /*
- * The cavity, drawn rather than photographed.
+ * Inside the envelope: white.
  *
- * A photograph of the same envelope standing open cannot register with a flap
- * animating above it: they are two exposures of one object at different
- * moments, so their seams, lighting and flap angle all disagree. Compositing
- * them shows two envelopes at once.
- *
- * A shadow shaped to the pocket's own mouth has no such problem — it is
- * generated from the SAME geometry the flap and pocket use, so it cannot
- * drift. It reads as depth because it is darkest where the flap just left.
- *
- * When a real `interior` layer exists (see BRIEF.md), this becomes the image
- * and the gradient stays behind it as contact shadow.
+ * Not a photographed interior and not a shadowed cavity. The envelope opens
+ * onto the light the invitation will arrive on, so what shows through the
+ * mouth is the same white the whole stage becomes. A dark cavity would read
+ * as a hole in the middle of a page that is about to turn white anyway.
  */
 .envelope-interior {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background:
-    radial-gradient(
-      120% 62% at var(--envelope-seal-x, 50%) 0%,
-      rgb(28 28 30 / 0.34),
-      rgb(28 28 30 / 0.16) 46%,
-      rgb(28 28 30 / 0) 78%
-    ),
-    var(--envelope-interior) center / cover;
-  /* Clipped to the pocket's mouth: the cavity exists only where the envelope
-     is actually open, never across the paper in front of it. */
+  background: var(--envelope-open-bg, #fff);
   clip-path: polygon(
     0 0,
     100% 0,
@@ -203,7 +203,7 @@
 }
 
 .envelope-gate[data-state='opening'] .envelope-hinge {
-  animation: envelope-flap-open 2200ms cubic-bezier(0.22, 0.04, 0.16, 1) forwards;
+  animation: envelope-flap-open 2900ms cubic-bezier(0.45, 0.05, 0.25, 1) forwards;
 }
 
 /*
@@ -211,12 +211,22 @@
  * point and settles — a single continuous fall, with no overshoot to snap the
  * eye. The grace is in the slowness, not in the flourish.
  */
+/*
+ * One continuous fall.
+ *
+ * Only the hesitation at the start is keyed; everything after it belongs to
+ * the easing curve. Keying the midpoint as well stacked a second deceleration
+ * on top of the curve's own, which stalled the flap at roughly vertical —
+ * precisely where a falling flap should be moving fastest. It went 47 degrees
+ * in one frame interval, then 9 across three, then lurched again.
+ */
 @keyframes envelope-flap-open {
   0% {
     transform: rotateX(0deg);
   }
-  20% {
-    transform: rotateX(-9deg);
+  /* Resists: the wax has just given and the fold is still stiff. */
+  12% {
+    transform: rotateX(-6deg);
   }
   100% {
     transform: rotateX(-172deg);
@@ -238,7 +248,7 @@
 }
 
 .envelope-gate[data-state='opening'] .envelope-flap-shadow {
-  animation: envelope-flap-shadow 2200ms ease-out forwards;
+  animation: envelope-flap-shadow 2900ms ease-out forwards;
 }
 
 @keyframes envelope-flap-shadow {
@@ -282,7 +292,9 @@
 }
 
 .envelope-gate[data-state='opening'] .envelope-glow {
-  animation: envelope-glow 3400ms ease-out forwards;
+  /* Ends with the envelope. Light spilling from the mouth of an envelope
+     that has already gone would bloom over plain white. */
+  animation: envelope-glow 3000ms ease-out forwards;
 }
 
 @keyframes envelope-glow {
@@ -370,25 +382,31 @@
 }
 
 .envelope-gate[data-state='opening'] .envelope-card {
-  animation: envelope-card-settle 2000ms cubic-bezier(0.22, 0.61, 0.24, 1)
-    1200ms forwards;
+  animation: envelope-card-settle 2200ms cubic-bezier(0.4, 0.28, 0.2, 1) 2400ms
+    forwards;
 }
 
 /*
- * Comes forward and resolves.
+ * The invitation arrives onto white, after the envelope has gone.
  *
- * Ends on the identity transform at full opacity, which is exactly where an
- * untransformed page already sits. That is the contract with the unmount:
- * when the gate goes, nothing moves.
+ * It starts at zero opacity and stays there until 2300ms — past the flap's
+ * fall and past the envelope's exit — so the invitation is never glimpsed
+ * inside the envelope it is supposed to be sealed in. A card visible through
+ * the mouth gives the ending away, and gives it away at the least flattering
+ * moment: shrunk, behind paper, half occluded.
+ *
+ * It ends on the identity transform, which is exactly where an untransformed
+ * page sits. That is the contract with the unmount: nothing moves.
  */
 @keyframes envelope-card-settle {
   0% {
-    transform: scale(0.94);
+    transform: scale(0.975);
     opacity: 0;
   }
-  40% {
-    opacity: 1;
-  }
+  /* No mid keyframe on opacity. Keying 0.72 at 55% flattened the fade into a
+     plateau — it held at 0.72 for four hundred milliseconds and then resumed,
+     which read as a stall in the one moment that should feel inevitable. The
+     easing curve already carries it. */
   100% {
     transform: scale(1);
     opacity: 1;
@@ -462,21 +480,33 @@
 
 /* The wax lifts and breaks with the flap rather than fading on the spot. */
 .envelope-gate[data-state='opening'] .envelope-seal {
-  animation: envelope-seal-fade 900ms cubic-bezier(0.4, 0, 0.3, 1) forwards;
+  animation: envelope-seal-fade 1200ms cubic-bezier(0.36, 0, 0.28, 1) forwards;
   pointer-events: none;
 }
 
+/*
+ * The wax gives, then goes with the flap.
+ *
+ * It presses in fractionally before it releases — the way a seal breaks under
+ * a thumb rather than dissolving where it sits — and it leaves upward with the
+ * fold it was holding, so the eye is carried into the opening instead of being
+ * left at a point where something used to be.
+ */
 @keyframes envelope-seal-fade {
   0% {
-    transform: scale(1);
+    transform: scale(1) translateY(0);
     opacity: 1;
   }
-  40% {
-    transform: scale(1.03);
-    opacity: 0.9;
+  18% {
+    transform: scale(0.97) translateY(0);
+    opacity: 1;
+  }
+  46% {
+    transform: scale(1.02) translateY(-4%);
+    opacity: 0.72;
   }
   100% {
-    transform: scale(0.96);
+    transform: scale(1.06) translateY(-16%);
     opacity: 0;
   }
 }
