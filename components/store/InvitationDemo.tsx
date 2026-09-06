@@ -24,7 +24,7 @@ const CYCLE_MS = 13000;
 const TRAVEL = '52%';
 
 /* The photographed envelope, full-bleed behind the animated layers. */
-const PAPER = '/envelope/bone-sealed.webp';
+const PAPER = '/envelope/demo/sealed.webp';
 
 /*
  * Where the wax seal sits in that photograph, measured from the top edge, and

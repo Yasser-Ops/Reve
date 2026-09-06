@@ -81,6 +81,22 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/*
+ * A scroller with no visible bar, for content shown inside a phone silhouette.
+ *
+ * Only for that: a real page keeps its scrollbar, because hiding the one piece
+ * of chrome that says "there is more below" costs a reader more than it gains.
+ * Inside a picture of a phone the opposite holds — the bar is desktop browser
+ * chrome painted across the invitation, and no phone would show it.
+ */
+.reve-no-scrollbar {
+  scrollbar-width: none;
+}
+
+.reve-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Eyebrow labels: wide-tracked small caps, never below 11px. */
 .reve-eyebrow {
   font-family: var(--font-sans);

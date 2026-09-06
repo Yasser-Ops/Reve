@@ -6,10 +6,12 @@
  * purpose — it has to respond to a tap, survive being skipped mid-flight, and
  * hold 60fps on a mid-range phone, none of which a video can do.
  *
- * The paper is generated artwork (public/envelope/flap-vine.webp) and its
- * geometry is measured, not guessed: --envelope-seal-y is where the V comes to
- * a point in that image, and the flap clip path is derived from it. Replacing
- * the artwork means re-measuring that one value and nothing else.
+ * The layers are cut by hand from one photograph
+ * (public/envelope/bone-vine/source-closed.png); flap and pocket are exact
+ * complements of it, so the sealed envelope is the photograph itself.
+ * --envelope-seal-y/-x are where the V READS as converging, judged by eye
+ * rather than measured off the alpha: they place the wax, the glow and the
+ * perspective origin, and the flap's true tip sits below them.
  *
  * Only transform, opacity and filter are animated. Layout properties are never
  * touched, so the whole sequence stays on the compositor.
@@ -48,22 +50,63 @@
 }
 
 /*
- * The ground goes to solid white as the envelope opens.
+ * ONCE OPEN, THE WRAPPERS ARE NEUTRALISED RATHER THAN REMOVED.
  *
- * This is a beat in its own right, not a tint under the artwork: closed
- * envelope, flap opens, WHITE, then the invitation. The white has to be
- * reached and briefly held before the card appears, or the two blend into one
- * another and the pause that makes the reveal land is lost.
+ * They cannot be removed. `children` render inside them, and moving a subtree
+ * to a different position in the React tree makes React unmount and rebuild
+ * it — the invitation would re-request its images and restart its countdown
+ * at the exact moment the envelope finished leaving. So the gate and the card
+ * survive as inert boxes: no position, no ground, no transform, nothing that
+ * can affect scrolling, stacking or layout for the rest of the visit.
  */
-.envelope-gate[data-state='opening'] {
-  animation: envelope-ground 2600ms cubic-bezier(0.33, 0, 0.15, 1) forwards;
+.envelope-gate[data-state='open'] {
+  position: static;
+  display: block;
+  overflow: visible;
+  background: none;
+  perspective: none;
+  z-index: auto;
+  transition: none;
 }
 
-@keyframes envelope-ground {
-  to {
-    background: var(--envelope-open-bg, #fff);
-  }
+.envelope-gate[data-state='open'] .envelope-card {
+  position: static;
+  overflow: visible;
+  background: none;
+  transform: none;
+  opacity: 1;
+  animation: none;
+  pointer-events: auto;
 }
+
+.envelope-gate[data-state='open'] .envelope-card-page {
+  position: static;
+  overflow: visible;
+  pointer-events: auto;
+}
+
+/*
+ * Except inside a demo frame, where the phone silhouette IS the viewport and
+ * the invitation has to keep filling it. Static boxes would collapse to the
+ * content's own height and the scroller inside would lose its 100%.
+ */
+.envelope-scope .envelope-gate[data-state='open'],
+.envelope-scope .envelope-gate[data-state='open'] .envelope-card,
+.envelope-scope .envelope-gate[data-state='open'] .envelope-card-page {
+  position: absolute;
+  inset: 0;
+}
+
+/*
+ * The ground does not change.
+ *
+ * It used to animate to solid white, because white was a beat in the sequence:
+ * closed envelope, flap opens, WHITE, then the invitation. There is no white
+ * beat now — the invitation is behind the paper the whole time and the paper
+ * slides off it — so the ground only ever shows in the sliver behind the
+ * envelope as it leaves, where it should stay the colour of the room the
+ * envelope was sitting in.
+ */
 
 /*
  * The gate does not fade.
@@ -80,88 +123,105 @@
   position: relative;
   inline-size: 100%;
   block-size: 100%;
+  /* Above `.envelope-card`, which is now a SIBLING rather than a child. Without
+     this the paper has `z-index: auto` against the card's 1, so the card paints
+     over the whole envelope and — being opacity 0, not hidden — silently eats
+     the tap on the seal. */
+  z-index: 2;
   transform-style: preserve-3d;
+  /*
+   * Bleed, so the photograph's own outer edge falls outside the frame.
+   *
+   * The envelope is photographed whole, deckle and all, and that outer deckle
+   * lands exactly on the frame's edge — where it reads as a ragged border
+   * rather than as paper. Scaling slightly pushes it out of view.
+   *
+   * The `scale` property, not `transform`: `envelope-lift` animates `transform`
+   * and the two compose, so the bleed survives the whole ceremony instead of
+   * being overwritten on the first keyframe. Uniform, because every layer and
+   * the seal are positioned in percentages of this box — scaling one axis
+   * would stretch the paper and slide the wax off the V.
+   */
+  scale: var(--envelope-bleed, 1.05);
+  /*
+   * The top edge is feathered, and only the top.
+   *
+   * The bleed above crops the photograph's own deckled top edge out of frame,
+   * so what is left is a machine-straight cut. Standing still that is
+   * invisible — it sits off-screen. Sliding down it sweeps across the
+   * invitation as a hard horizontal seam, which reads as a UI artefact rather
+   * than as the edge of a piece of paper. Feathering it costs nothing at rest,
+   * because the faded band is the part the bleed already pushed out of view.
+   */
+  mask-image: linear-gradient(to bottom, transparent 0, #000 5%);
 }
 
 .envelope-gate[data-state='opening'] .envelope {
-  animation: envelope-lift 4600ms cubic-bezier(0.32, 0, 0.12, 1) forwards;
+  /* `linear` on purpose: the easing lives in the keyframes below, one curve
+     per beat. A single curve across the whole animation has to serve both a
+     long hold and a slide, and it cannot — it stretched the start of the exit
+     into a stall, which is the dead time between the flap landing and the
+     envelope actually going anywhere. */
+  animation: envelope-lift 6000ms linear forwards;
 }
 
-/* The envelope settles a breath before it recedes, so the opening reads as a
-   held object rather than a slide transition. */
 /*
- * The envelope settles, then recedes.
+ * The envelope holds while the flap peels, then SINKS out of the frame.
  *
- * The previous keyframes were a plain linear creep from 1 to 1.06 across the
- * whole sequence, which is not what the comment above them claimed and read as
- * a slow drift with no articulation. This holds the envelope still while the
- * flap falls — it is a held object, and a held object does not wander — then
- * eases it back as the card comes forward, so the two move in opposite
- * directions and the card reads as approaching the viewer.
- */
-/*
- * The envelope holds while the flap falls, then leaves.
+ * It does not fade. A fade dissolves the paper in place and leaves the
+ * invitation to appear out of nothing; sliding it down means the invitation is
+ * uncovered by something physically moving off, which is what the object
+ * actually does in the hand. It stays fully opaque the whole way — it is a
+ * sheet of paper, and paper does not become transparent as it falls.
  *
- * It is fully gone by 68% of the sequence, which is what creates the beat of
- * plain white between the envelope and the invitation. Fading it under the
- * card instead would put paper behind paper and lose the pause.
+ * Nothing leaves before the flap is done at 3400ms (57%): the two beats are
+ * consecutive, not overlapping, or the envelope starts sinking while its own
+ * flap is still swinging and the movement reads as a slide transition.
  */
 @keyframes envelope-lift {
   0% {
-    transform: scale(1);
-    opacity: 1;
+    transform: translateY(0) scale(1);
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
-  /* Breathes forward while the flap falls, so the frame is never still. */
-  38% {
-    transform: scale(1.012);
-    opacity: 1;
+  /* Breathes forward while the flap peels, so the frame is never still. */
+  42% {
+    transform: translateY(0) scale(1.012);
+    animation-timing-function: linear;
   }
-  /* Already receding before the flap has landed: the beats overlap, which is
-     what makes one continuous movement instead of a list of steps. */
-  56% {
-    transform: scale(1.022);
-    opacity: 0.9;
-  }
-  /* Gone by 74%, while the invitation is still only part way up. Letting both
-     sit near 0.7 at once put paper behind paper and read as a cross-fade
-     between two images rather than one thing replacing another. */
-  74%,
-  100% {
-    transform: scale(1.06);
-    opacity: 0;
-  }
-}
+  /* The flap is done and faded at 3400ms — 57% — and the paper leaves straight
+     after it, with no gap. That gap used to run to 70%, which together with
+     the flap's invisible tail left two and a half seconds of nothing in the
+     middle of the ceremony.
 
-/* The back panel: the floor of the construction, behind everything. */
-.envelope-body {
-  position: absolute;
-  inset: 0;
-  background-image: var(--envelope-body);
-  background-size: cover;
-  background-position: center;
+     From here it is one continuous slide. No intermediate keyframe: the one
+     that used to sit at 76% reached only 14% of the travel and then had to
+     cover the remaining 98% in the last quarter — a pause, then a lurch. */
+  57% {
+    transform: translateY(0) scale(1.016);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  /*
+   * 102%, not 118%. The travel is a percentage of the envelope's OWN height,
+   * and the envelope is slightly taller than the frame, so about 97% already
+   * puts its top edge below the bottom of the screen. Overshooting meant the
+   * paper was gone with a second still to run — dead time at the end of the
+   * ceremony, which is exactly where it is least forgivable.
+   */
+  100% {
+    transform: translateY(102%) scale(1.016);
+  }
 }
 
 /*
- * Inside the envelope: white.
+ * THERE IS NO CAVITY LAYER.
  *
- * Not a photographed interior and not a shadowed cavity. The envelope opens
- * onto the light the invitation will arrive on, so what shows through the
- * mouth is the same white the whole stage becomes. A dark cavity would read
- * as a hole in the middle of a page that is about to turn white anyway.
+ * A white shape used to be painted behind the mouth, on the reasoning that the
+ * envelope opens onto the light the invitation would later arrive on. But the
+ * envelope contains the invitation, so what should show through the mouth is
+ * the invitation itself — the card is a sibling of `.envelope` and sits
+ * directly behind it. A white cavity would have hidden the very thing the
+ * opening exists to reveal.
  */
-.envelope-interior {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: var(--envelope-open-bg, #fff);
-  clip-path: polygon(
-    0 0,
-    100% 0,
-    100% var(--envelope-seal-y, 78.9%),
-    var(--envelope-seal-x, 53.5%) 100%,
-    0 var(--envelope-seal-y, 78.9%)
-  );
-}
 
 .envelope-hinge {
   position: absolute;
@@ -202,67 +262,99 @@
   transform: rotateX(180deg);
 }
 
+/*
+ * MOST OF THIS DURATION IS SPENT IN THE VISIBLE PART OF THE ARC.
+ *
+ * The hinge is the flap's top edge, so the flap rotates UP and out of frame:
+ * measured, it is completely gone by about 58% of its own rotation. A duration
+ * of 4200ms therefore bought only ~1740ms of visible peel and left two and a
+ * half seconds in which nothing whatsoever happened — the time went into the
+ * half of the arc nobody can see. Lengthening the animation made the dead
+ * stretch longer, not the peel.
+ *
+ * So the keyframes now hold most of the time between 0 and roughly -100
+ * degrees, which is all anyone watches, and cover the remaining 72 degrees in
+ * the last tenth, off-screen where the speed cannot be read.
+ */
 .envelope-gate[data-state='opening'] .envelope-hinge {
-  animation: envelope-flap-open 2900ms cubic-bezier(0.45, 0.05, 0.25, 1) forwards;
+  /* `linear`, with the shaping in the keyframes. A single curve across the
+     whole rotation is front-loaded against the part that matters: measured, a
+     cubic-bezier(0.3, 0.02, …) put the flap out of view by 1926ms of its own
+     3200, because it had already covered 85% of the arc. */
+  animation: envelope-flap-open 3400ms linear forwards;
 }
 
 /*
- * Paper has weight, but it should not bounce. The flap eases past its balance
- * point and settles — a single continuous fall, with no overshoot to snap the
- * eye. The grace is in the slowness, not in the flourish.
- */
-/*
- * One continuous fall.
+ * One continuous peel, with no bounce.
  *
  * Only the hesitation at the start is keyed; everything after it belongs to
  * the easing curve. Keying the midpoint as well stacked a second deceleration
  * on top of the curve's own, which stalled the flap at roughly vertical —
  * precisely where a falling flap should be moving fastest. It went 47 degrees
  * in one frame interval, then 9 across three, then lurched again.
+ *
+ * The curve is gentler at both ends than it was, and the whole fall is longer,
+ * because the flap is now the slowest thing on screen rather than a prelude to
+ * the reveal — the invitation is already visible behind it as it goes.
  */
 @keyframes envelope-flap-open {
   0% {
     transform: rotateX(0deg);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0.45);
   }
   /* Resists: the wax has just given and the fold is still stiff. */
-  12% {
-    transform: rotateX(-6deg);
+  8% {
+    transform: rotateX(-5deg);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.36, 0, 0.5, 0.94);
   }
+  /*
+   * −80 degrees, and 85% of the duration to get there.
+   *
+   * MEASURED: the flap leaves the frame at about −80, not at −172. Everything
+   * past this point is off-screen, so all of the visible peel lives in this
+   * one segment and it gets almost the whole animation. The rest of the arc
+   * gets the last 15%, where its speed cannot be read.
+   */
+  85% {
+    transform: rotateX(-80deg);
+    opacity: 1;
+    animation-timing-function: ease-in;
+  }
+  /*
+   * Retired while it cannot be seen.
+   *
+   * The hinge turns about the flap's TOP edge, so past vertical the flap
+   * swings UP and out of the frame — measured at −62px against a frame that
+   * starts at 441, so by here it is entirely above the screen. It has to go
+   * now, because it is a child of `.envelope`: when the paper slides down, an
+   * opened flap parked above the frame gets dragged back INTO view and lands
+   * as a large triangle across the middle of the invitation.
+   *
+   * Fading is normally the wrong tool for this envelope. It is right here only
+   * because it happens off-screen, where there is nothing to dissolve.
+   */
   100% {
     transform: rotateX(-172deg);
-  }
-}
-
-/* The shadow the falling flap casts on the paper beneath it. */
-.envelope-flap-shadow {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  clip-path: polygon(0 0, 100% 0, var(--envelope-seal-x, 51%) var(--envelope-seal-y, 88.6%));
-  background: linear-gradient(
-    to bottom,
-    rgb(43 33 24 / 0.22),
-    rgb(43 33 24 / 0) 72%
-  );
-  opacity: 0;
-}
-
-.envelope-gate[data-state='opening'] .envelope-flap-shadow {
-  animation: envelope-flap-shadow 2900ms ease-out forwards;
-}
-
-@keyframes envelope-flap-shadow {
-  0%,
-  10% {
-    opacity: 0;
-  }
-  40% {
-    opacity: 1;
-  }
-  100% {
     opacity: 0;
   }
 }
+
+/*
+ * THERE IS NO SYNTHETIC FLAP SHADOW.
+ *
+ * There used to be: a dark linear-gradient clipped to a triangle and faded in
+ * as the flap fell, meant to be the shadow the flap casts on the paper
+ * beneath. But that triangle covers the MOUTH, so the only place it ever
+ * painted was inside the cavity — the one part of the frame that is supposed
+ * to be plain light. It put a vertical ramp across the opening, 242 at the top
+ * against 255 at the bottom, which read as the white being unevenly lit.
+ *
+ * Softening it did not help: a fainter ramp is still a ramp. The flap's real
+ * shading is already in the photograph, cast by the light that lit the paper,
+ * so nothing has to be drawn here at all.
+ */
 
 /*
  * The light from inside.
@@ -318,55 +410,83 @@
 }
 
 /*
- * The card.
- *
- * Rises out of the pocket once the flap is clear, tilting upright as it comes
- * — a card drawn from an envelope pivots toward you before it straightens.
- */
-/*
- * THE CARD IS THE INVITATION.
- *
- * Not a cream rectangle standing in for one. `children` render inside this, so
- * what rises out of the envelope is the real sheet — the same DOM the guest
- * scrolls a moment later.
- *
- * The card is therefore sized as the VIEWPORT, not as a fraction of the
- * envelope, and it is transformed down into the pocket rather than being drawn
- * small. That inversion is the whole trick: the animation ends at `scale(1)`
- * with no translation, which is exactly where an untransformed page already
- * sits. When the gate unmounts, not one pixel moves.
- *
- * The old card was `inset-inline: 9%; block-size: 62%` — geometry that can
- * never resolve to "the page", so it had to cross-fade into a second copy of
- * the invitation rendered underneath.
- */
-/*
  * THE CARD IS THE INVITATION.
  *
  * Not a cream rectangle standing in for one: `children` render inside this, so
- * what resolves is the real sheet, the same DOM the guest scrolls a moment
- * later.
+ * the sheet the gate is holding is the real one, the same DOM the guest
+ * scrolls a moment later.
  *
- * It does NOT slide out of the pocket. A card travelling up the screen reads
- * as a picture of a card being pulled from an envelope — an illustration of
- * the act rather than the act itself, and at phone scale the movement is what
- * the eye follows instead of the invitation. Instead the invitation is already
- * where it belongs and simply comes forward: it holds slightly back and
- * slightly small while the flap falls, then settles to its true size as the
- * envelope recedes behind it. The two move in opposite directions, so the
- * handover is a change of depth, not a slide.
+ * It is sized as the VIEWPORT rather than as a fraction of the envelope, and
+ * it carries no transform, so its geometry and the page's resting geometry are
+ * identical. That is the contract with the unmount: when the gate goes, not
+ * one pixel moves. The old card was `inset-inline: 9%; block-size: 62%` —
+ * geometry that can never resolve to "the page", so it had to cross-fade into
+ * a second copy of the invitation rendered underneath.
+ *
+ * It sits BEHIND the paper, as a sibling of `.envelope`, so the pocket's mouth
+ * shows it and the paper can slide away in front of it.
  */
 .envelope-card {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 1;
   overflow: hidden;
   background: var(--envelope-card, #f4efe6);
-  transform-origin: 50% 45%;
-  /* Held back and barely small. Not hidden in a pocket. */
-  transform: scale(0.94);
+  /*
+   * Held a touch LARGER than the frame, never smaller.
+   *
+   * It used to start at scale(0.965) and grow into place, which left the card
+   * a few pixels short of the gate on every side — measured at 277.1 against
+   * the frame's 278 — so the gate's own background showed as a pale border
+   * around the invitation for most of the reveal. Anything under 1 uncovers
+   * the ground behind it. Starting over-size and settling back to identity
+   * keeps the frame covered the whole way and still lands exactly where an
+   * untransformed page sits, which is what makes the handover free.
+   */
+  transform: scale(1.02);
   opacity: 0;
+  /* Nothing here is tappable until the ceremony ends. Belt and braces with the
+     z-index above: an invisible full-screen layer over the seal is exactly the
+     kind of thing that works in every test and fails on a real thumb. */
+  pointer-events: none;
   will-change: transform, opacity;
+}
+
+.envelope-gate[data-state='opening'] .envelope-card {
+  animation: envelope-card-arrive 6000ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/*
+ * The invitation is uncovered, not faded in.
+ *
+ * It is already there, at full size, well before the flap has finished — so
+ * what the guest sees through the widening mouth is the real invitation, and
+ * the paper sliding away afterwards merely stops hiding it. The settle back to
+ * identity is held until the envelope actually starts leaving, so the two
+ * movements belong to the same beat instead of the card drifting for six
+ * seconds underneath a stationary envelope.
+ */
+@keyframes envelope-card-arrive {
+  0%,
+  8% {
+    transform: scale(1.02);
+    opacity: 0;
+  }
+  /* Up to full opacity while the flap is still peeling: it is being revealed
+     THROUGH the opening, so it must already be there to reveal. */
+  26% {
+    transform: scale(1.02);
+    opacity: 1;
+  }
+  /* The paper begins to leave here, and the settle goes with it. */
+  57% {
+    transform: scale(1.02);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /*
@@ -381,66 +501,21 @@
   pointer-events: none;
 }
 
-.envelope-gate[data-state='opening'] .envelope-card {
-  /* The card's own fade is short and early. The rest of the arrival happens
-     under the veil, after the gate has gone. */
-  animation: envelope-card-settle 600ms ease-out 1900ms forwards;
-}
-
 /*
- * The invitation arrives onto white, after the envelope has gone.
+ * THERE IS NO VEIL, AND NO WHITE BEAT.
  *
- * It starts at zero opacity and stays there until 2300ms — past the flap's
- * fall and past the envelope's exit — so the invitation is never glimpsed
- * inside the envelope it is supposed to be sealed in. A card visible through
- * the mouth gives the ending away, and gives it away at the least flattering
- * moment: shrunk, behind paper, half occluded.
+ * Both used to exist: the stage turned white as the envelope left, held there,
+ * and the invitation faded up out of it. That reads as a transition between
+ * two screens. What an envelope actually does is uncover something that was
+ * inside it all along — so the invitation is now behind the paper from the
+ * start, visible through the mouth as the flap peels, and the paper slides off
+ * it. Nothing fades into anything.
  *
- * It ends on the identity transform, which is exactly where an untransformed
- * page sits. That is the contract with the unmount: nothing moves.
+ * Dropping the veil also collapses the gate to a single state. The veil only
+ * ever existed to carry a white background across the moment the gate
+ * unmounted; with the card ending on the identity transform and the paper
+ * already off-screen, that moment changes no pixels at all.
  */
-@keyframes envelope-card-settle {
-  0% {
-    transform: scale(0.985);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/*
- * The veil the invitation arrives through.
- *
- * White, over the page, fading away. This exists because the white used to
- * belong to the GATE, and so died with it: the invitation finished fading up
- * onto a white background, then the gate unmounted and the ground dropped to
- * the page's own colour in a single frame. That one-frame change of ground is
- * what read as the invitation popping.
- *
- * A veil cannot do that. It is a separate element that fades out over an
- * invitation already sitting in its final position, so the ground never
- * changes colour — it is simply revealed, continuously, from white.
- */
-.envelope-veil {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  pointer-events: none;
-  background: var(--envelope-open-bg, #fff);
-  animation: envelope-veil-out 2200ms cubic-bezier(0.4, 0.16, 0.28, 1) forwards;
-}
-
-.envelope-scope .envelope-veil {
-  position: absolute;
-}
-
-@keyframes envelope-veil-out {
-  to {
-    opacity: 0;
-  }
-}
 
 /* The pocket: the envelope's front face, in front of the card so the card
    genuinely emerges from behind it. */
@@ -483,7 +558,13 @@
   background-position: center;
   filter: drop-shadow(0 3px 6px rgb(43 33 24 / 0.28));
   cursor: pointer;
-  font-size: clamp(0.75rem, 3.4vw, 1.1rem);
+  /* `cqw`, not `vw`: the storefront demo plays inside a phone silhouette that
+     is a fraction of the viewport, so `vw` sized the initials against the
+     browser window and they drifted off the wax as the page got wider.
+     `.envelope-scope` is the query container; a full-screen invitation has no
+     container ancestor, where `cqw` falls back to the viewport and so keeps
+     the behaviour the fixed gate always had. */
+  font-size: clamp(0.7rem, 5cqw, 1.4rem);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--envelope-seal-ink, #8a7658);
@@ -577,13 +658,21 @@
   opacity: 0;
 }
 
+/*
+ * The hint and the skip sit under the wax, and the wax is what sets how much
+ * room they have. It is centred on `--envelope-seal-y` and sized as a fraction
+ * of WIDTH, so in a 9:16 frame its lower edge lands around 84% down — these
+ * two then have the last sixth of the frame to share. At 13%/6% they had 2.7%
+ * of height between the wax and the hint and read as a stack of three things
+ * jammed together.
+ */
 .envelope-hint {
   position: absolute;
-  inset-block-end: 13%;
+  inset-block-end: 9%;
   inset-inline: 0;
   text-align: center;
-  font-size: 0.6875rem;
-  letter-spacing: 0.22em;
+  font-size: 0.625rem;
+  letter-spacing: 0.26em;
   text-transform: uppercase;
   z-index: 8;
   color: var(--envelope-hint, #7d6a56);
@@ -610,7 +699,7 @@
  */
 .envelope-skip {
   position: absolute;
-  inset-block-end: 6%;
+  inset-block-end: 2.5%;
   inset-inline: 0;
   margin-inline: auto;
   z-index: 8;
@@ -618,8 +707,8 @@
   padding: 0.5rem 1.25rem;
   border: 0;
   background: none;
-  font-size: 0.6875rem;
-  letter-spacing: 0.18em;
+  font-size: 0.625rem;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--envelope-hint, #7d6a56);
   opacity: 0.6;
@@ -641,8 +730,7 @@
 /*
  * Reduced motion keeps the tap-to-open interaction — the ceremony is the
  * product, and removing it entirely would hide what was bought. What goes is
- * the movement: the envelope crossfades instead of folding, and the light does
- * not bloom.
+ * the movement: nothing folds, nothing slides, and the light does not bloom.
  */
 @media (prefers-reduced-motion: reduce) {
   /* The hinge carries the flap animation. Listing `.envelope-flap` here (as
@@ -650,23 +738,23 @@
      172 degrees for exactly the users who asked it not to. */
   .envelope-gate[data-state='opening'] .envelope,
   .envelope-gate[data-state='opening'] .envelope-hinge,
-  .envelope-gate[data-state='opening'] .envelope-flap-shadow,
   .envelope-gate[data-state='opening'] .envelope-seal,
   .envelope-gate[data-state='opening'] .envelope-glow,
   .envelope-pulse {
     animation: none;
   }
 
-  /* The flap is simply gone rather than folded away, and the card arrives at
-     the page without travelling: the ceremony still happens, the motion does
-     not. */
-  .envelope-gate[data-state='opening'] .envelope-hinge,
-  .envelope-gate[data-state='opening'] .envelope-seal {
+  /* The paper is simply gone rather than peeled and slid away: the ceremony
+     still happens, the motion does not. */
+  .envelope-gate[data-state='opening'] .envelope {
     opacity: 0;
+    transition: opacity 400ms ease;
   }
 
+  /* The card still carries the reveal — it is the only thing that uncovers the
+     invitation — but it arrives without travelling. */
   .envelope-gate[data-state='opening'] .envelope-card {
-    animation: envelope-card-instant 420ms ease forwards;
+    animation: envelope-card-instant 400ms ease forwards;
   }
 
   @keyframes envelope-card-instant {

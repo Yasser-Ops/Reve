@@ -40,8 +40,12 @@ export function LiveInvitationDemo({
           />
 
           <EnvelopeGate contained initials={initials}>
+            {/* `reve-no-scrollbar`: this is a picture of a phone, and phones
+                do not paint a scrollbar down the side of the screen. Desktop
+                Chrome does, inside the silhouette, which reads as a browser
+                chrome artefact sitting on the invitation. */}
             <div
-              className="h-full w-full overscroll-contain"
+              className="reve-no-scrollbar h-full w-full overscroll-contain"
               style={{ overflowX: 'hidden', overflowY: 'auto' }}
             >
               {/* A transform does not change the layout box: the unscaled child

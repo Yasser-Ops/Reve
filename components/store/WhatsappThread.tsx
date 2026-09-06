@@ -146,7 +146,7 @@ export function WhatsappThread() {
                   alt=""
                   className="absolute left-1/2 top-1/2 h-auto max-w-none"
                   height={2752}
-                  src="/envelope/bone-sealed.webp"
+                  src="/envelope/demo/sealed.webp"
                   style={{
                     width: 'calc(100% / 1.91)',
                     transform: 'translate(-50%, -50%) rotate(-90deg) scale(1.91)',

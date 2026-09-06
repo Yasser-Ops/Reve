@@ -61,17 +61,20 @@ export default function EnvelopeLab() {
       </p>
 
       <div className="flex flex-wrap gap-8">
-        <Frame label="1 · body alone"><Layer src={l.body} /></Frame>
-        <Frame label="2 · pocket alone"><Layer src={l.pocket} /></Frame>
-        <Frame label="3 · flap alone"><Layer src={l.flap} /></Frame>
+        <Frame label="1 · pocket alone"><Layer src={l.pocket} /></Frame>
+        <Frame label="2 · flap alone"><Layer src={l.flap} /></Frame>
+        {/* The back face, which must share the flap's silhouette exactly. It
+            once shipped as a HORIZONTAL mirror of it — the two look equally
+            plausible alone and only disagree past vertical, mid-animation,
+            which is precisely why they are shown side by side here. */}
+        <Frame label="3 · flap-inner alone"><Layer src={l.flapInner} /></Frame>
         <Frame label="4 · pocket + flap">
           <Layer src={l.pocket} />
           <Layer src={l.flap} />
         </Frame>
-        <Frame label="5 · body + pocket + flap">
-          <Layer src={l.body} />
+        <Frame label="5 · pocket + flap-inner">
           <Layer src={l.pocket} />
-          <Layer src={l.flap} />
+          <Layer src={l.flapInner} />
         </Frame>
       </div>
     </main>

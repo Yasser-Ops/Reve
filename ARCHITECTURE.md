@@ -81,13 +81,24 @@ WhatsApp link  ->  GET /i/[slug]
     getTemplate(template_slug)        components/invitation/registry.ts
     <Template content theme entitlements />
   EnvelopeGate [CLIENT] fixed inset:0
-    getEnvelope(slug)                lib/envelopes.ts -> five layers + geometry
+    getEnvelope(slug)                lib/envelopes.ts -> four layers + geometry
     tap seal
       0-2900   flap falls on its hinge (two backface-hidden faces)
       0-2600   ground -> solid white
-      -2400    envelope gone; state 'settling'
-      2400+    children leave the card and BECOME the page, under a veil
-      -4600    veil fades out; state 'open', gate unmounts
+      2900     flap lands; envelope still whole, then fades
+      3600     envelope at opacity 0 -> state 'settling'
+               children leave the card and BECOME the page, under a veil
+      3600-4080  veil holds opaque: a held beat of plain white
+      4080-6000  veil clears; the invitation arrives at full size
+      6000     state 'open', gate unmounts
+
+      The handover must not come before envelope-lift reaches 0, or the
+      envelope is deleted mid-fade instead of fading. It used to hand over
+      at 2400 against a lift running to 4600, so the paper vanished at ~93%
+      opacity. The card never fades in inside the gate: it used to start at
+      1900, while the flap was still falling, so the invitation was legible
+      through the envelope's mouth and was then re-hidden by the veil and
+      revealed a second time.
     The envelope replays on every visit. A returning guest is usually
     showing it to someone; Skip is always one tap away.
 ```
@@ -268,16 +279,47 @@ No dark mode. An invitation is a fixed artifact, like printed stationery.
 
 ### Invariants
 
-- **An envelope is five layers, never a frame.** `body`, `interior`, `pocket`,
-  `flap`, `flapInner`, `seal` — plus `seal`. A frame is a photograph of a whole
-  envelope in one state and cannot hinge, so the parts must ship separately.
-  Layers are cut from ONE photograph on fitted lines (`public/envelope/BRIEF.md`),
-  which is what makes them register: flap and pocket are exact complements and
-  reassemble the original at a mean per-pixel difference of 1.75.
-- **`sealY`/`sealX` are measured, never assumed**, from the flap's own alpha —
-  the lowest opaque row and its centre. They position the seal, set the pocket's
-  mouth and shape the cavity, so a stale value misplaces all three. Re-measure
-  after any change to the flap artwork.
+- **An envelope is four layers, never a frame.** `pocket`, `flap`, `flapInner`,
+  `seal`. A frame is a photograph of a whole envelope in one state and cannot
+  hinge, so the parts must ship separately. There is no `body` or `interior`:
+  the pocket is opaque except at its mouth, so nothing behind it can be seen,
+  and the mouth shows a CSS white fill. Both shipped as files for a while and
+  neither was ever visible.
+- **The cut only ever reassigns pixels, never modifies them.** Flap and pocket
+  are complements of one photograph, so compositing them must return it —
+  `scripts/cut-envelope.mjs` asserts this and refuses to write otherwise. The
+  guarantee matters because the two pieces are exact: anything painted, blurred
+  or retouched *outside* the flap is visible while the envelope is sealed. An
+  attempt to erase a stray border off the pocket by blurring a band around its
+  mouth fixed the open state and silently wrecked the closed one, exactly this
+  way.
+- **Reassembly proves the pieces fit, never that they fit in the right place.**
+  "Flap and pocket reassemble the original at a mean per-pixel difference of
+  1.75" was recorded here as proof the cut was correct. It is not — *any* seam
+  reassembles perfectly, which is why a bad one went unnoticed. Seam placement
+  is judged by eye against the overlay `--dry` writes.
+- **The seam is the flap's outer edge, where its deckle meets the paper
+  beneath.** The original cut ran ~50px INSIDE that edge on the left arm, so a
+  band of flap carrying part of the embossed vine was assigned to the pocket.
+  Invisible while sealed; once the flap rotated away it left cut-off vine
+  clinging to the left of the mouth and none on the right, reading as a flap
+  cropped off-centre. Edge detection cannot find this seam unaided — over a
+  wide window it locks onto the vine's relief, a stronger gradient than the
+  paper edge, and cuts through the middle of the ornament. It works only inside
+  a narrow corridor around a hand-placed guide rail.
+- **The flap's two faces share one horizontal geometry.** The hinge rotates
+  about the X axis and the back face carries `rotateX(180deg)`, which mirrors
+  vertically — paper folded about its top edge keeps its x. `flapInner` shipped
+  as a *horizontal* mirror of `flap` (apex 46.3% against 53.6%), which threw the
+  flap 7.3% of the envelope's width sideways the moment the hinge passed
+  vertical. Its alpha is now taken from `flap` so the two cannot drift apart.
+- **`sealY`/`sealX` are where the V reads as converging, NOT the flap's alpha
+  apex.** They place the wax, the cavity, the glow and the perspective origin.
+  The two used to coincide only because the old cut stopped short of the
+  paper's tip; cutting to the true edge moved the alpha apex to 83.4%, and
+  putting the wax there dropped it off the point of the V onto the caption
+  below. `cut-envelope.mjs` prints the alpha apex for reference — the seal's
+  position is judged, not derived.
 - **The reveal must not depend on the gate existing.** The white belongs to a
   veil that outlives the gate. When the white was the gate's own background it
   died with it, dropping the ground from `#fff` to the page colour in one frame
@@ -312,7 +354,7 @@ clips it, leaving the scroller draggable sideways over empty space.
 `pnpm optimize:images` (`scripts/optimize-images.mjs`) converts `public/`
 rasters to WebP, capped at 1600px, skipping anything already current. Sources
 are committed alongside their `.webp` so the pipeline stays reproducible.
-`public/envelope/bone-sealed.webp` is the demo's paper: 6.13MB PNG -> 311KB.
+`public/envelope/demo/sealed.webp` is the marketing demo's paper: 6.13MB PNG -> 311KB.
 
 Seal geometry (`SEAL_Y`, `SEAL_SIZE` in `InvitationDemo.tsx`) is measured off
 that photograph. Re-shooting the envelope means re-measuring them.
@@ -328,8 +370,16 @@ that photograph. Re-shooting the envelope means re-measuring them.
   storefront illustrates them; the tables exist; the routes do not. The write
   path is specced but NOT implemented:
   `docs/superpowers/specs/2026-09-05-guest-rsvp-design.md`.
-- `bone-vine`'s `interior` layer is a flat white fill, not artwork. The registry
-  slot takes a real one with no code change.
+- `bone-vine`'s layers are cut from a closed-envelope photograph rather than
+  generated separately, which `public/envelope/BRIEF.md` forbids.
+  `scripts/cut-envelope.mjs` makes that photograph work — the seam follows the
+  flap's own deckle and reassembly is asserted — but the guide rail inside it
+  is hand-placed for this one envelope, and its shape assumes a pointed flap.
+  A different design needs its own rail, or a hand-authored mask.
+- Source photographs live under `public/`, so they are served even though only
+  the cut layers are ever requested — `demo/sealed.png` (6.3MB) and
+  `bone-vine/source-closed.png` (1.5MB). Committing them keeps the cut
+  reproducible; moving them outside `public/` would stop them shipping.
 - `app/lab/envelope` is development scaffolding (noindex): each layer alone and
   in cumulative stacks. It exists because the live gate animates four layers at
   once over a photograph and can only tell you that something is wrong, not

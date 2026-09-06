@@ -19,7 +19,7 @@ type EnvelopeGateProps = {
   children: ReactNode;
 };
 
-type GateState = 'sealed' | 'opening' | 'settling' | 'open';
+type GateState = 'sealed' | 'opening' | 'open';
 
 /**
  * Matches the longest animation in envelope.css.
@@ -27,17 +27,14 @@ type GateState = 'sealed' | 'opening' | 'settling' | 'open';
  * The sequence is deliberately unhurried. An invitation opening is the one
  * moment of the product a guest will actually remember, and rushing it makes
  * the envelope feel like a loading screen in front of the page.
- */
-const REVEAL_MS = 4600;
-
-/**
- * When the envelope itself is finished and the gate stops drawing it.
  *
- * Deliberately shorter than REVEAL_MS: the invitation is still fading up at
- * this point and finishes that fade as the page, under a veil, rather than
- * inside the gate.
+ * There is no intermediate state and no veil. The card ends on the identity
+ * transform, which is exactly where an untransformed page sits, and by this
+ * point the paper has travelled clear of the screen — so unmounting the gate
+ * changes not one pixel. The old two-step existed only to hand a white
+ * background over from the gate to a veil; nothing is white any more.
  */
-const ENVELOPE_MS = 2400;
+const REVEAL_MS = 6000;
 
 /**
  * Wraps an invitation with its opening ceremony.
@@ -71,21 +68,12 @@ export function EnvelopeGate({
   const spec = getEnvelope(envelope);
 
   useEffect(() => {
-    if (state === 'sealed' || state === 'open') return;
+    if (state !== 'opening') return;
 
-    /* Two steps, not one.
-     *
-     * At ENVELOPE_MS the envelope has gone and the gate has nothing left to
-     * draw but white, so it hands over: `children` move out of the card and
-     * become the page, and the FADE CONTINUES THERE. Waiting for the whole
-     * sequence meant the gate was still holding a white background under a
-     * fully faded-in invitation, and removing it dropped the ground from white
-     * to the page's own colour in a single frame. That discontinuity is what
-     * read as the invitation popping. */
-    const next = state === 'opening' ? 'settling' : 'open';
-    const delay = state === 'opening' ? ENVELOPE_MS : REVEAL_MS - ENVELOPE_MS;
-
-    const id = window.setTimeout(() => setState(next as GateState), delay);
+    /* One step. The handover waits for the whole sequence, because the card is
+       still animating up to its resting size until the very end and the paper
+       is still leaving the frame in front of it. */
+    const id = window.setTimeout(() => setState('open'), REVEAL_MS);
     return () => window.clearTimeout(id);
   }, [state]);
 
@@ -94,8 +82,6 @@ export function EnvelopeGate({
      around it is still the visitor's to scroll. */
   useEffect(() => {
     if (contained || state === 'open') return;
-    /* Still locked through `settling`: the invitation is fading up and must not
-       be scrollable until it has fully arrived. */
 
     const { body } = document;
     const previous = body.style.overflow;
@@ -106,34 +92,27 @@ export function EnvelopeGate({
     };
   }, [contained, state]);
 
-  /* Once open, the gate is gone entirely and the invitation is simply the page.
-     No wrapper survives the ceremony, so nothing here can affect scrolling,
-     stacking or layout for the rest of the visit. */
-  if (state === 'open') return <>{children}</>;
-
-  /* Settling: the envelope is finished and unmounted, but the invitation is
-     still arriving. It renders as the page already — in its final position,
-     with no transform — under a white veil that fades out over it. The veil
-     is what the invitation fades IN from, and because it is a separate
-     element that fades rather than a background that vanishes, there is no
-     frame where the ground changes colour. */
-  if (state === 'settling') {
-    return (
-      <>
-        <span aria-hidden="true" className="envelope-veil" />
-        {children}
-      </>
-    );
-  }
-
+  /*
+   * `children` NEVER MOVE IN THE TREE.
+   *
+   * This used to `return <>{children}</>` once open, which put them at a
+   * different position in the React tree from where they had been rendering —
+   * inside the card, inside the gate. React cannot reconcile that: it unmounts
+   * the whole invitation and mounts a new copy. Images re-request, the
+   * countdown restarts from scratch, any scroll position is lost. It reads as
+   * the invitation refreshing the instant the envelope finishes leaving,
+   * which is the worst possible moment for a flicker.
+   *
+   * So the wrappers stay for the life of the page and are neutralised instead:
+   * once open they carry no position, no background and no transform, and the
+   * paper is simply not rendered. See `[data-state='open']` in envelope.css.
+   */
   return (
     <div
       className="envelope-gate"
       data-state={state}
       style={
         {
-          '--envelope-body': `url(${spec.layers.body})`,
-          '--envelope-interior': `url(${spec.layers.interior})`,
           '--envelope-pocket': `url(${spec.layers.pocket})`,
           '--envelope-flap': `url(${spec.layers.flap})`,
           '--envelope-flap-inner': `url(${spec.layers.flapInner})`,
@@ -145,30 +124,28 @@ export function EnvelopeGate({
         } as React.CSSProperties
       }
     >
+      {/* THE INVITATION SITS BEHIND THE PAPER, NOT INSIDE IT.
+          A sibling of `.envelope`, never a child: the paper has to slide away
+          on its own, and anything inside it travels with it. What shows
+          through the pocket's mouth is this — the real invitation — which is
+          why there is no cavity layer any more. The envelope opens onto the
+          thing it contains. */}
+      <div className="envelope-card">
+        <div className="envelope-card-page">{children}</div>
+      </div>
+
+      {state !== 'open' && (
       <div className="envelope">
-        {/* The back panel, then the cavity in front of it. The cavity is
-            drawn, not photographed: a second photograph of the same envelope
-            never registers with the flap animating above it, which is what
-            made the two-envelope composite in the first attempt. */}
-        <div className="envelope-body" />
-        <div className="envelope-interior" />
-
-        {/* The card: the real invitation, scaled into the envelope's mouth. */}
-        <div className="envelope-card">
-          <div className="envelope-card-page">{children}</div>
-        </div>
-
         {/* The soft light at the envelope's mouth as the flap clears. */}
         <div className="envelope-glow" />
 
         {/* Front face, in front of the card so the card emerges behind it. */}
         <div className="envelope-pocket" />
 
-        {/* The falling flap, and the shadow it casts on the way down. The
-            two faces are backface-hidden siblings on one hinge: past
-            vertical the embossed front turns away and the plain inner face
-            turns toward the viewer, which is what a real flap does. */}
-        <div className="envelope-flap-shadow" />
+        {/* The falling flap. The two faces are backface-hidden siblings on one
+            hinge: past vertical the embossed front turns away and the plain
+            inner face turns toward the viewer, which is what a real flap does.
+            No shadow element — see envelope.css. */}
         <div className="envelope-hinge">
           <div className="envelope-flap envelope-flap-front" />
           <div className="envelope-flap envelope-flap-back" />
@@ -197,6 +174,7 @@ export function EnvelopeGate({
           Skip
         </button>
       </div>
+      )}
     </div>
   );
 }

@@ -14,12 +14,16 @@
  * outside — the flap lifted to reveal another flap.
  */
 
-/** Every layer an envelope is built from. All five are required. */
+/**
+ * Every layer an envelope is built from. All four are required.
+ *
+ * There is no `body` and no `interior`. The pocket is opaque everywhere except
+ * its mouth, so a back panel behind it can never be seen; and what shows
+ * through the mouth is `.envelope-interior`, a CSS white fill rather than
+ * artwork, because the gate turns the whole ground white as it opens anyway.
+ * Both shipped as files for a while and neither was ever visible.
+ */
 export type EnvelopeLayers = {
-  /** The back panel. The floor of the whole construction. */
-  body: string;
-  /** Inside the pocket: what is seen down inside once the flap lifts away. */
-  interior: string;
   /** The front face. The card slides out from behind this. */
   pocket: string;
   /** The flap's outer face, embossed. Hinges. */
@@ -56,25 +60,31 @@ const BONE_VINE: EnvelopeSpec = {
   slug: 'bone-vine',
   name: 'Bone, embossed vine',
   layers: {
-    body: '/envelope/bone-vine/body.webp',
-    interior: '/envelope/bone-vine/interior.webp',
     pocket: '/envelope/bone-vine/pocket.webp',
     flap: '/envelope/bone-vine/flap.webp',
     flapInner: '/envelope/bone-vine/flap-inner.webp',
     seal: '/envelope/bone-vine/seal.webp',
   },
-  /* MEASURED on flap.webp itself, from its alpha channel: the lowest opaque
-     row, and the centre of that row. Re-measure after ANY change to the flap
-     artwork — it positions the seal, sets the pocket's mouth and shapes the
-     cavity, so a stale value misplaces all three. */
-  sealY: '78.9%',
-  sealX: '53.5%',
+  /* Where the wax sits, and with it the cavity, the glow and the perspective
+     origin: the point the V reads as converging on, a little ABOVE the paper's
+     actual tip.
+
+     NOT the flap's alpha apex, though it used to be by accident. The old cut
+     ran inside the flap and stopped short of the tip, so the two coincided at
+     78.9%. Re-cutting on the true outer edge moved the alpha apex down to
+     83.4% — and putting the wax there dropped it off the point of the V and
+     onto the caption beneath. `scripts/cut-envelope.mjs` prints the alpha apex
+     for reference; this is a separate, judged value. */
+  sealY: '79.5%',
+  sealX: '50.5%',
   /* The flap artwork's own top edge. This flap is cut from the envelope and
      spans the full frame, so it is 0 — but a flap drawn as a loose triangle
      would not be, and the hinge rotates about this line rather than the
      frame's top. */
   flapTop: '0%',
-  sealSize: '17%',
+  /* Of the envelope's WIDTH, so in a 9:16 frame it occupies about 9/16ths as
+     much height — a value that looks generous here reads small on the page. */
+  sealSize: '23%',
 };
 
 export const ENVELOPES: Record<string, EnvelopeSpec> = {
