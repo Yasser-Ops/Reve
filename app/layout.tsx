@@ -1,9 +1,16 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { cormorant, geist, marcellus } from './fonts';
+import { SITE_URL } from '@/lib/site';
 import './globals.css';
 
 export const metadata: Metadata = {
+  /* Every page's `alternates.canonical` and `openGraph` fields are relative —
+     "/weddings", not "https://…/weddings" — and Next resolves those against
+     this. Without it they resolve against localhost in production, which is
+     why the working canonical and the sharable Open Graph preview did not
+     exist yet: nothing broken to see locally, silently wrong once deployed. */
+  metadataBase: new URL(SITE_URL),
   title: {
     default: 'Rêve',
     template: '%s · Rêve',

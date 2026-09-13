@@ -11,6 +11,7 @@ import { OfferTabs } from '@/components/store/OfferTabs';
 import { Reveal } from '@/components/store/Reveal';
 import { TemplateFrame } from '@/components/store/TemplateFrame';
 import { whatsappLink } from '@/lib/contact';
+import { designJsonLd } from '@/lib/json-ld';
 import { DELIVERY, ENTRY_TIER, OFFER_TIERS } from '@/lib/offer';
 import {
   SAMPLE_CONTENT,
@@ -69,6 +70,11 @@ export default async function DesignPage({
 
   const Template = entry.component;
   const others = TEMPLATES.filter((other) => other.slug !== slug);
+  const jsonLd = designJsonLd({
+    name: entry.name,
+    story: entry.story,
+    href: `/weddings/${entry.slug}`,
+  });
 
   /* Built once: the page asks for the order in two places, and the two must
      open the same conversation. */
@@ -78,6 +84,12 @@ export default async function DesignPage({
 
   return (
     <main className="bg-bone text-ink">
+      {/* Structured data built by lib/json-ld.ts, never user input. */}
+      <script
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        type="application/ld+json"
+      />
+
       <section className="px-6 pb-14 pt-10 md:pt-14">
         <div className="mx-auto max-w-3xl">
           <Link

@@ -7,6 +7,7 @@ import { Reveal } from '@/components/store/Reveal';
 import { TemplateCard } from '@/components/store/TemplateCard';
 import { TemplatePlaceholder } from '@/components/store/TemplatePlaceholder';
 import { whatsappLink } from '@/lib/contact';
+import { catalogueJsonLd } from '@/lib/json-ld';
 
 /**
  * One half of the catalogue, rendered.
@@ -45,6 +46,12 @@ export function CataloguePage({
 
   return (
     <main className="bg-bone text-ink">
+      {/* Structured data built by lib/json-ld.ts, never user input. */}
+      <script
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(catalogueJsonLd(entry)) }}
+        type="application/ld+json"
+      />
+
       <section className="px-6 pb-16 pt-14 md:pt-20">
         <div className="mx-auto max-w-3xl text-center">
           <p className="reve-eyebrow text-cocoa">{entry.title}</p>
