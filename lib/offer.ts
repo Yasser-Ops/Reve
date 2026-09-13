@@ -24,6 +24,12 @@ export type OfferTier = {
   cta: string;
   /** The one tier the pricing table lifts. Exactly one may be true. */
   featured: boolean;
+  /**
+   * The badge worn by the featured tier, set here so the home page and every
+   * product page cannot label the same tier differently. Rêve is pre-launch,
+   * so this states what Rêve recommends and never what other couples chose.
+   */
+  badge?: string;
 };
 
 export const OFFER_TIERS: readonly OfferTier[] = [
@@ -31,7 +37,8 @@ export const OFFER_TIERS: readonly OfferTier[] = [
     tier: TIERS.BASIC,
     name: 'Basic',
     price: '$50',
-    summary: 'A live invitation page at your own link.',
+    summary:
+      'A live invitation page at your own link, sent to guests however you like.',
     includes: [
       'Your own web address',
       'Animated envelope and wax seal',
@@ -46,7 +53,8 @@ export const OFFER_TIERS: readonly OfferTier[] = [
     tier: TIERS.MANAGED,
     name: 'Managed',
     price: '$100',
-    summary: 'Everything in Basic, plus replies you can actually track.',
+    summary:
+      'You will not have to chase anyone for a number. Guests tap yes or no on the invitation, and you watch the headcount build.',
     includes: [
       'Everything in Basic',
       'RSVP collection',
@@ -56,12 +64,14 @@ export const OFFER_TIERS: readonly OfferTier[] = [
     ],
     cta: 'Start with Managed',
     featured: true,
+    badge: 'Recommended',
   },
   {
     tier: TIERS.CUSTOM,
     name: 'Custom',
     price: '$200',
-    summary: 'A design made for you, from scratch.',
+    summary:
+      'A design drawn for you from scratch, in your own colours and lettering.',
     includes: [
       'Everything in Managed',
       'Original art direction',

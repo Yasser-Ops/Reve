@@ -37,7 +37,7 @@ export function TemplateCard({ entry }: { entry: TemplateEntry }) {
     <article className="group">
       <Link
         className="block overflow-hidden rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
-        href={`/collection/${entry.slug}`}
+        href={`/weddings/${entry.slug}`}
       >
         <Image
           alt={`${entry.name}: the sealed envelope, and the invitation it opens into`}
@@ -53,7 +53,7 @@ export function TemplateCard({ entry }: { entry: TemplateEntry }) {
       <h2 className="reve-display mt-4 text-[1.35rem]">
         <Link
           className="focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
-          href={`/collection/${entry.slug}`}
+          href={`/weddings/${entry.slug}`}
         >
           {entry.name}
         </Link>

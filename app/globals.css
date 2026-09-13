@@ -33,6 +33,17 @@
   --reve-wine: #6f2233;
   --reve-wine-deep: #571a28;
 
+  /* THE CELEBRATORY ACCENT, and the only token that separates the two halves
+     of the catalogue. Formal work (weddings, engagements) is signed in wine;
+     birthdays and anniversaries are signed in this warmer gold.
+
+     A second accent rather than a second palette: the neutrals above already
+     read under any occasion — see the note on the ink — so changing only what
+     is saturated keeps both pages recognisably Rêve while giving the lighter
+     one its own register. Gold at this depth holds its contrast on bone. */
+  --reve-gilt: #9a6b2f;
+  --reve-gilt-deep: #7c5423;
+
   --background: var(--reve-bone);
   --foreground: var(--reve-ink);
 }
@@ -48,6 +59,8 @@
   --color-ink: var(--reve-ink);
   --color-wine: var(--reve-wine);
   --color-wine-deep: var(--reve-wine-deep);
+  --color-gilt: var(--reve-gilt);
+  --color-gilt-deep: var(--reve-gilt-deep);
 
   /* The phone's screen: a shade off the bone ground so the device reads as a
      separate surface sitting on the page rather than a hole cut through it. */

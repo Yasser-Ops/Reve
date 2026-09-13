@@ -44,7 +44,7 @@ afterEach(() => {
 
 function renderBar() {
   return render(
-    <StickyCta href="/collection" label="See the collection" message="Hello" />,
+    <StickyCta href="/weddings" label="See the collection" message="Hello" />,
   );
 }
 

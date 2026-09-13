@@ -3,17 +3,14 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { CONTACT, whatsappLink } from '@/lib/contact';
-import { LEAD_EVENTS } from '@/lib/events';
 
-/* Only lead occasions appear here. Secondary ones are real and have their own
-   pages, but the nav is the main pitch and they would dilute it; the footer
-   and the questions section carry them instead. */
+/* The catalogue is two pages and the nav names both. Collection is the formal
+   half — weddings and engagements — and Celebrations the lighter one; they are
+   different art direction rather than the same designs relabelled, so each is
+   a destination of its own rather than a section of the other. */
 const LINKS = [
-  { label: 'Collection', href: '/collection' },
-  ...LEAD_EVENTS.map((event) => ({
-    label: event.label,
-    href: `/${event.slug}`,
-  })),
+  { label: 'Weddings', href: '/weddings' },
+  { label: 'Celebrations', href: '/celebrations' },
   { label: 'How it works', href: '/#how-it-works' },
   { label: 'Pricing', href: '/#pricing' },
 ];
@@ -44,7 +41,12 @@ export function SiteNav() {
     <header className="sticky top-0 z-40 px-4 pt-4">
       <nav
         aria-label="Main"
-        className={`mx-auto flex max-w-5xl items-center justify-between gap-4 rounded-full px-5 py-2.5 transition-colors duration-300 ${
+        /* CENTRED BY GRID, NOT justify-between. With three flex children the
+           link row sat in whatever space the logo and the button left over, so
+           "Rêve" being narrow and "START YOURS" being wide pushed it off true
+           centre. Equal outer columns make the middle one actually central,
+           whatever those two grow to. */
+        className={`mx-auto grid max-w-5xl grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-full px-5 py-2.5 transition-colors duration-300 ${
           scrolled
             ? 'border border-taupe/40 bg-bone/92 backdrop-blur-md'
             : 'border border-transparent'
@@ -57,7 +59,7 @@ export function SiteNav() {
           Rêve
         </Link>
 
-        <ul className="hidden items-center gap-7 md:flex">
+        <ul className="hidden items-center justify-center gap-7 md:flex">
           {LINKS.map((link) => (
             <li key={link.href}>
               <Link
@@ -70,7 +72,7 @@ export function SiteNav() {
           ))}
         </ul>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-2">
           <a
             className="reve-crisp rounded-full bg-wine px-4 py-2.5 text-[11px] uppercase tracking-[0.12em] text-bone transition-colors hover:bg-wine-deep focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine sm:px-5 sm:text-[12px] sm:tracking-[0.14em]"
             href={whatsappLink(START_MESSAGE)}

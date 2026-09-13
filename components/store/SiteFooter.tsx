@@ -6,7 +6,7 @@ const COLUMNS = [
   {
     heading: 'Invitations',
     links: [
-      { label: 'The collection', href: '/collection' },
+      { label: 'Weddings', href: '/weddings' },
       /* Custom is a tier on the pricing table, not a page of its own, so it
          is reached through pricing rather than listed separately. */
       { label: 'Pricing', href: '/#pricing' },
@@ -14,14 +14,14 @@ const COLUMNS = [
     ],
   },
   {
-    /* Weddings lead and live on the home page; the rest come from the
-       registry, so a new occasion appears here without an edit. */
+    /* Weddings lead and live on the home page; the rest are sections of the
+       collection, so a new occasion appears here without an edit. */
     heading: 'Occasions',
     links: [
       { label: 'Weddings', href: '/' },
       ...EVENTS.map((event) => ({
         label: event.label,
-        href: `/${event.slug}`,
+        href: event.href,
       })),
     ],
   },

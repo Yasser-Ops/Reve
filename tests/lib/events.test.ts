@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  EVENT_PROMINENCE,
-  EVENTS,
-  LEAD_EVENTS,
-  getEvent,
-} from '@/lib/events';
+import { CATALOGUE_ENTRIES } from '@/components/invitation/registry';
+import { EVENTS, getEvent } from '@/lib/events';
 
 describe('getEvent', () => {
   it('returns the entry for a known slug', () => {
@@ -15,42 +11,31 @@ describe('getEvent', () => {
     expect(getEvent('graduations')).toBeUndefined();
   });
 
-  /* Weddings live on the home page. A /weddings route would compete with it
-     for the same queries, so the registry must not produce one. */
+  /* Weddings live on the home page, which carries that pitch in full. */
   it('does not carry weddings, which the home page owns', () => {
     expect(getEvent('weddings')).toBeUndefined();
   });
 });
 
-describe('LEAD_EVENTS', () => {
-  it('carries only lead occasions, since the nav renders from it', () => {
-    expect(LEAD_EVENTS.every((e) => e.prominence === EVENT_PROMINENCE.LEAD)).toBe(
-      true,
-    );
-  });
-
-  it('keeps birthdays out of the main pitch', () => {
-    expect(LEAD_EVENTS.map((e) => e.slug)).not.toContain('birthdays');
-  });
-});
-
 describe('the registry', () => {
-  it('has unique slugs, so routes cannot collide', () => {
-    const slugs = EVENTS.map((e) => e.slug);
+  it('has unique slugs', () => {
+    const slugs = EVENTS.map((event) => event.slug);
     expect(new Set(slugs).size).toBe(slugs.length);
   });
 
-  it('uses URL-safe slugs', () => {
-    for (const event of EVENTS) {
-      expect(event.slug).toMatch(/^[a-z0-9-]+$/);
-    }
-  });
+  /* An occasion is reached by a link into whichever half shelves it. A link
+     naming a page or a section that does not exist fails silently in the
+     browser, so both halves of the href are checked against the registry. */
+  it('points every occasion at a section some catalogue renders', () => {
+    /* A half holding one section is linked bare: the section is the page, and
+       a fragment to the only thing on it would scroll past its own heading. */
+    const targets = CATALOGUE_ENTRIES.flatMap((entry) => [
+      entry.href,
+      ...entry.sections.map((section) => `${entry.href}#${section.occasion}`),
+    ]);
 
-  /* The landing page splits the heading on this word to set it in italic.
-     If it is absent the split silently renders the heading unstyled. */
-  it('has a heading accent that appears in its own heading', () => {
     for (const event of EVENTS) {
-      expect(event.heading).toContain(event.headingAccent);
+      expect(targets).toContain(event.href);
     }
   });
 
@@ -60,12 +45,10 @@ describe('the registry', () => {
     }
   });
 
-  it('gives every occasion the copy its page and metadata need', () => {
+  it('gives every occasion the copy a link needs', () => {
     for (const event of EVENTS) {
-      expect(event.title.length).toBeGreaterThan(0);
-      expect(event.description.length).toBeGreaterThan(0);
-      expect(event.intro.length).toBeGreaterThan(0);
-      expect(event.points.length).toBeGreaterThan(0);
+      expect(event.label.length).toBeGreaterThan(0);
+      expect(event.startMessage.length).toBeGreaterThan(0);
     }
   });
 });

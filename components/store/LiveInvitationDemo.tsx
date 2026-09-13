@@ -45,6 +45,24 @@ export function LiveInvitationDemo({
 
   return (
     <div className="relative mx-auto w-full max-w-[300px]">
+      {/* The device's side buttons. Purely decorative, and drawn on the shell
+          rather than the screen: they sit just outside the bezel's rounded
+          edge, half-tucked behind it, which is how a phone's hardware reads
+          from the front. Percentages, not pixels, so they keep their place as
+          the frame scales with the column. */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-[3px] top-[26%] z-10 h-[7.5%] w-[3px] rounded-l-sm bg-ink/85"
+      />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-[3px] top-[35.5%] z-10 h-[7.5%] w-[3px] rounded-l-sm bg-ink/85"
+      />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-[3px] top-[29%] z-10 h-[11%] w-[3px] rounded-r-sm bg-ink/85"
+      />
+
       <div className="rounded-[2.5rem] border border-taupe/60 bg-ink p-2.5 shadow-[0_30px_60px_-30px_rgb(var(--reve-shadow-rgb)/0.6)]">
         {/* envelope-scope contains the gate, which is `fixed` on a real
             invitation. The gate is a sibling of the scroller, never inside it,

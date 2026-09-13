@@ -13,7 +13,7 @@ import { TemplateThumbnail } from '@/components/store/TemplateThumbnail';
 import { WhatsappThread } from '@/components/store/WhatsappThread';
 import { CONTACT, whatsappLink } from '@/lib/contact';
 import { EVENTS } from '@/lib/events';
-import { ENTRY_TIER, OFFER_TIERS } from '@/lib/offer';
+import { DELIVERY, ENTRY_TIER, OFFER_TIERS } from '@/lib/offer';
 import {
   SAMPLE_CONTENT,
   SAMPLE_ENTITLEMENTS,
@@ -40,10 +40,21 @@ const START_MESSAGE = "Hello Rêve, I'd like to create a wedding invitation.";
  * process, a real phone number — rather than review counts it has not earned.
  * ------------------------------------------------------------------------- */
 
+/*
+ * The three things worth knowing before scrolling.
+ *
+ * "A real person on WhatsApp" used to hold the third slot. It was dropped:
+ * answering your own phone is the default for a small business here, so it
+ * differentiates nothing, and stating it in the hero plants a fear of bots the
+ * visitor had not had. It still earns its place lower down, next to the order
+ * button, where a human on the other end is genuine reassurance rather than an
+ * opening claim. Delivery takes the slot instead — it is the honest advantage
+ * over a bespoke studio, and it is a reason to act rather than bookmark.
+ */
 const TRUST_POINTS = [
   'Designed by hand, never generated',
-  'English and Arabic',
-  'A real person on WhatsApp',
+  'One invitation, in English and Arabic',
+  DELIVERY.headline,
 ];
 
 /*
@@ -190,7 +201,7 @@ export default function HomePage() {
             <div className="mt-10 flex flex-wrap items-center justify-center gap-3 md:justify-start">
               <Link
                 className="reve-crisp rounded-full bg-wine px-8 py-3.5 text-[13px] uppercase tracking-[0.16em] text-bone transition-colors hover:bg-wine-deep focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
-                href="/collection"
+                href="/weddings"
               >
                 See the collection
               </Link>
@@ -210,27 +221,33 @@ export default function HomePage() {
                 No rating and no couple count beside it: Rêve is pre-launch and
                 has neither. See the note in lib/offer.ts — this page earns
                 trust through the live demo and a named process instead. */}
-            <p className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[13px] text-cocoa md:justify-start">
+            {/* A PRICE IS A FACT AND A LINK IS AN ACTION. These used to be
+                joined by a "·", which made them read as two peers in a list —
+                the same shape as the trust points further down, so nothing in
+                the stack looked clickable. The price now carries the weight,
+                and the link is set in wine with a standing underline: at rest
+                `reve-underline` is scaled to nothing and only draws on hover,
+                which left this looking like one more line of grey text. */}
+            <p className="mt-5 flex flex-wrap items-baseline justify-center gap-x-2.5 gap-y-1 text-[13px] text-cocoa md:justify-start">
               <span className="reve-crisp">
-                From <span className="text-ink">{ENTRY_TIER.price}</span>
-              </span>
-
-              <span aria-hidden="true" className="text-taupe">
-                ·
+                From{' '}
+                <span className="reve-numeral text-[15px] text-ink">
+                  {ENTRY_TIER.price}
+                </span>
               </span>
 
               <Link
-                className="reve-crisp reve-underline text-cocoa transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
+                className="reve-crisp text-wine underline decoration-wine/35 underline-offset-4 transition-colors hover:decoration-wine focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
                 href="/#pricing"
               >
-                View our pricing
+                See what is included
               </Link>
             </p>
 
             {/* The process, condensed to its three moves. The full version is
                 the How it works section; this is here so a visitor knows what
                 they are agreeing to before they scroll for it. */}
-            <ol className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3 md:justify-start">
+            <ol className="mt-11 flex flex-wrap justify-center gap-x-6 gap-y-3 md:justify-start">
               {HERO_STEPS.map((step, index) => (
                 <li
                   className="reve-crisp flex items-center gap-2 text-[12px] text-cocoa"
@@ -247,12 +264,14 @@ export default function HomePage() {
               ))}
             </ol>
 
-            <ul className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 md:justify-start">
+            {/* NO ::before BULLET HERE. The dot sits inside the item's content
+                box, so it pushed the text right and this was the one row in the
+                hero whose left edge did not line up with the headline, the
+                buttons and the steps. One point per line, too: three of them
+                wrapped 2 + 1 and left the last stranded on a line of its own. */}
+            <ul className="mt-4 space-y-1.5 text-center md:text-start">
               {TRUST_POINTS.map((point) => (
-                <li
-                  className="reve-crisp text-[12px] text-cocoa before:me-2 before:text-wine before:content-['·']"
-                  key={point}
-                >
+                <li className="reve-crisp text-[12px] text-cocoa" key={point}>
                   {point}
                 </li>
               ))}
@@ -267,7 +286,7 @@ export default function HomePage() {
           appears exactly as the hero's own buttons leave the screen, and never
           while they are still on it. */}
       <StickyCta
-        href="/collection"
+        href="/weddings"
         label="See the collection"
         message={START_MESSAGE}
       />
@@ -335,7 +354,7 @@ export default function HomePage() {
 
               <Link
                 className="reve-crisp mt-9 inline-block rounded-full border border-taupe px-8 py-3.5 text-[13px] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-sand focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
-                href="/collection"
+                href="/weddings"
               >
                 See it in full
               </Link>
@@ -580,7 +599,7 @@ export default function HomePage() {
               <li key={event.slug}>
                 <Link
                   className="reve-crisp inline-block rounded-full border border-taupe px-6 py-2.5 text-[12px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-sand focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
-                  href={`/${event.slug}`}
+                  href={event.href}
                 >
                   {event.label}
                 </Link>
@@ -646,9 +665,9 @@ export default function HomePage() {
                     : 'border-taupe/50 bg-transparent hover:border-taupe'
                 }`}
               >
-                {tier.featured ? (
+                {tier.badge ? (
                   <p className="reve-crisp absolute -top-3 start-8 rounded-full bg-wine px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-bone">
-                    Most chosen
+                    {tier.badge}
                   </p>
                 ) : null}
 
