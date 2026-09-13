@@ -37,7 +37,10 @@ const COLUMNS = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-taupe/40 bg-sand px-6 py-16">
+    <footer
+      className="border-t border-taupe/40 bg-sand px-6 py-16"
+      data-reve-closing
+    >
       <div className="mx-auto max-w-5xl">
         <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>

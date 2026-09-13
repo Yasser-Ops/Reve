@@ -3,14 +3,7 @@ import Link from 'next/link';
 import { TEMPLATES } from '@/components/invitation/registry';
 import { Reveal } from '@/components/store/Reveal';
 import { TemplateCard } from '@/components/store/TemplateCard';
-import { TemplateThumbnail } from '@/components/store/TemplateThumbnail';
 import { whatsappLink } from '@/lib/contact';
-import { ENTRY_TIER } from '@/lib/offer';
-import {
-  SAMPLE_CONTENT,
-  SAMPLE_ENTITLEMENTS,
-  SAMPLE_THEME,
-} from '@/lib/sample-invitation';
 
 export const metadata: Metadata = {
   title: 'The collection',
@@ -31,9 +24,11 @@ const START_MESSAGE =
 /**
  * The collection.
  *
- * Designs render live from the template registry rather than from exported
- * screenshots, so this page cannot drift from what the renderer produces, and
- * adding a template makes it appear here with no edit.
+ * Cards come from the template registry, so adding a design makes it appear
+ * here with no edit to this page. Each pairs the sealed envelope with the
+ * invitation it opens into, because the envelope alone is identical across
+ * every design and would leave the page's own claim — that what you are
+ * choosing between is the art direction — visibly unsupported by the grid.
  *
  * Static: the registry is known at build time.
  */
@@ -45,55 +40,47 @@ export default function TemplatesPage() {
           <p className="reve-eyebrow text-cocoa">The collection</p>
 
           <h1 className="reve-display mt-7 text-5xl md:text-6xl">
-            Every design, the same
+            Designs, shown with
             <span
               className="ms-3 text-wine"
               style={{ fontFamily: 'var(--font-accent)', fontStyle: 'italic' }}
             >
-              wedding
+              one wedding
             </span>
           </h1>
 
           <p className="mx-auto mt-7 max-w-xl text-[15px] leading-relaxed text-cocoa">
-            Each design below is showing the same names, the same date and the
-            same venue, so what you are comparing is the art direction and
-            nothing else. Every one is available on every tier, at the same
-            price.
+            Every design carries the same names, the same date and the same
+            evening, so what you are choosing between is the art direction and
+            nothing else. Each is available on every tier, at the same price.
           </p>
         </div>
       </section>
 
+      {/* Cards come from the template registry, so a new design appears here
+          with no edit to this page, and the grid fills on its own.
+
+          Four across on a wide screen, at a narrow gutter, in a container wide
+          enough that each card carries real size. A chooser wants the designs
+          comparable in one glance, and generous gutters buy nothing here — the
+          photograph already carries its own margin of plaster, so space
+          between cards only shrinks the thing being chosen.
+
+          Centred with flex-wrap rather than a plain grid: until the collection
+          divides evenly by four, a final short row would otherwise hang
+          against the left edge. */}
       <section className="px-6 pb-24">
-        <div className="mx-auto grid max-w-5xl gap-x-10 gap-y-16 sm:grid-cols-2">
-          {TEMPLATES.map((template, index) => {
-            const Template = template.component;
-
-            return (
-              <Reveal delay={index * 110} key={template.slug}>
-                <TemplateCard
-                  character={template.character}
-                  fromPrice={ENTRY_TIER.price}
-                  name={template.name}
-                  slug={template.slug}
-                  summary={template.summary}
-                >
-                  <TemplateThumbnail>
-                    <Template
-                      content={SAMPLE_CONTENT}
-                      entitlements={SAMPLE_ENTITLEMENTS}
-                      theme={SAMPLE_THEME}
-                    />
-                  </TemplateThumbnail>
-                </TemplateCard>
-              </Reveal>
-            );
-          })}
+        <div className="mx-auto flex max-w-[88rem] flex-wrap justify-center gap-x-3 gap-y-12">
+          {TEMPLATES.map((template, index) => (
+            <Reveal
+              className="w-[15rem] max-w-full sm:w-[calc(50%-0.375rem)] lg:w-[calc(25%-0.5625rem)]"
+              delay={index * 90}
+              key={template.slug}
+            >
+              <TemplateCard entry={template} />
+            </Reveal>
+          ))}
         </div>
-
-        <p className="mx-auto mt-16 max-w-lg text-center text-[14px] leading-relaxed text-cocoa">
-          Three designs today, and more as we draw them. If none of these is
-          right, the Custom tier is a design made for you from scratch.
-        </p>
       </section>
 
       <section className="bg-ink px-6 py-24 text-bone">

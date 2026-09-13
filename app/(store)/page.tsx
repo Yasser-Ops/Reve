@@ -1,19 +1,19 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { CapBlanc } from '@/components/invitation/templates/cap-blanc';
-import { Nuit } from '@/components/invitation/templates/nuit';
+import { Lin } from '@/components/invitation/templates/lin';
 import { FaqList, type FaqItem } from '@/components/store/FaqList';
 import { HeroEnvelope } from '@/components/store/HeroEnvelope';
 import { InvitationDemo } from '@/components/store/InvitationDemo';
 import { PhoneFrame } from '@/components/store/PhoneFrame';
 import { Reveal } from '@/components/store/Reveal';
 import { RsvpPanel } from '@/components/store/RsvpPanel';
+import { StickyCta } from '@/components/store/StickyCta';
 import { TemplateCompare } from '@/components/store/TemplateCompare';
 import { TemplateThumbnail } from '@/components/store/TemplateThumbnail';
 import { WhatsappThread } from '@/components/store/WhatsappThread';
 import { CONTACT, whatsappLink } from '@/lib/contact';
 import { EVENTS } from '@/lib/events';
-import { OFFER_TIERS } from '@/lib/offer';
+import { ENTRY_TIER, OFFER_TIERS } from '@/lib/offer';
 import {
   SAMPLE_CONTENT,
   SAMPLE_ENTITLEMENTS,
@@ -61,6 +61,21 @@ const INCLUDED = [
   { title: 'Venue and map', body: 'Directions in one tap.' },
   { title: 'Schedule', body: 'Ceremony, dinner, and everything after.' },
   { title: 'Works everywhere', body: 'Any phone, any browser, no app.' },
+];
+
+/*
+ * The process at a glance, for the hero.
+ *
+ * Deliberately three rather than the four below: "approve it and share the
+ * link" is one moment to a reader deciding whether to start, and a hero strip
+ * that lists every step stops being a glance. Titles are written here rather
+ * than sliced off STEPS because the two are read at different distances — a
+ * hero wants "We design it, you approve", a section wants the fuller account.
+ */
+const HERO_STEPS = [
+  'Choose a design',
+  'Send your details',
+  'We design it, you approve',
 ];
 
 const STEPS = [
@@ -187,7 +202,52 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <ul className="mt-10 flex flex-wrap justify-center gap-x-6 gap-y-2 md:justify-start">
+            {/* Price in the hero, quoted from the offer rather than typed
+                here, so it cannot drift from the pricing table below. A
+                visitor's first question is what this costs, and making them
+                scroll for it is a cost of its own.
+
+                No rating and no couple count beside it: Rêve is pre-launch and
+                has neither. See the note in lib/offer.ts — this page earns
+                trust through the live demo and a named process instead. */}
+            <p className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[13px] text-cocoa md:justify-start">
+              <span className="reve-crisp">
+                From <span className="text-ink">{ENTRY_TIER.price}</span>
+              </span>
+
+              <span aria-hidden="true" className="text-taupe">
+                ·
+              </span>
+
+              <Link
+                className="reve-crisp reve-underline text-cocoa transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
+                href="/#pricing"
+              >
+                View our pricing
+              </Link>
+            </p>
+
+            {/* The process, condensed to its three moves. The full version is
+                the How it works section; this is here so a visitor knows what
+                they are agreeing to before they scroll for it. */}
+            <ol className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3 md:justify-start">
+              {HERO_STEPS.map((step, index) => (
+                <li
+                  className="reve-crisp flex items-center gap-2 text-[12px] text-cocoa"
+                  key={step}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="grid h-5 w-5 place-items-center rounded-full border border-taupe/60 text-[10px] text-wine"
+                  >
+                    {index + 1}
+                  </span>
+                  {step}
+                </li>
+              ))}
+            </ol>
+
+            <ul className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 md:justify-start">
               {TRUST_POINTS.map((point) => (
                 <li
                   className="reve-crisp text-[12px] text-cocoa before:me-2 before:text-wine before:content-['·']"
@@ -202,6 +262,15 @@ export default function HomePage() {
           <HeroEnvelope />
         </div>
       </section>
+
+      {/* Mounted here so its sentinel sits at the hero's lower edge: the bar
+          appears exactly as the hero's own buttons leave the screen, and never
+          while they are still on it. */}
+      <StickyCta
+        href="/collection"
+        label="See the collection"
+        message={START_MESSAGE}
+      />
 
       {/* Live demo. For a studio with no reviews yet, the product itself is
           the strongest argument available. */}
@@ -235,13 +304,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Design comparison. Both halves are the real templates rendered from
-          one content object, so the seam separates art direction from data. */}
+      {/* The design, rendered live from the template itself rather than from a
+          screenshot, so this section cannot drift from what a guest receives. */}
       <section className="px-6 py-24">
         <div className="mx-auto grid max-w-5xl items-center gap-14 md:grid-cols-2 md:gap-20">
           <Reveal>
             <div>
-              <p className="reve-eyebrow text-cocoa">The same wedding</p>
+              <p className="reve-eyebrow text-cocoa">The design</p>
               <h2 className="reve-display mt-6 text-4xl md:text-5xl">
                 Your details, in a
                 <span
@@ -251,51 +320,54 @@ export default function HomePage() {
                     fontStyle: 'italic',
                   }}
                 >
-                  different hand
+                  careful hand
                 </span>
               </h2>
               <p className="mt-7 max-w-md text-[15px] leading-relaxed text-cocoa">
-                Drag the divider. Both sides carry the same names, the same
-                date, the same venue and the same schedule. What changes is the
-                design around them.
+                Your own film behind your names, a countdown to the day, the
+                venue drawn by hand, and the evening laid out as a timeline your
+                guests follow as they scroll.
               </p>
               <p className="mt-5 max-w-md text-[15px] leading-relaxed text-cocoa">
-                Choosing a design never changes what your invitation says, and
-                it never changes the price. Every design is available on every
-                tier.
+                Your details are yours to change at any time, and the design
+                never changes the price. Lin is available on every tier.
               </p>
 
               <Link
                 className="reve-crisp mt-9 inline-block rounded-full border border-taupe px-8 py-3.5 text-[13px] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-sand focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
                 href="/collection"
               >
-                See all designs
+                See it in full
               </Link>
             </div>
           </Reveal>
 
           <Reveal delay={120}>
+            {/* PLACEHOLDER: Lin stands on both sides of the divider until a
+                second design exists, so the comparison currently reveals the
+                same design twice. Restore a real pair — or drop
+                TemplateCompare for a single thumbnail — once there is one. */}
             <TemplateCompare
               base={
                 <TemplateThumbnail>
-                  <CapBlanc
+                  <Lin
                     content={SAMPLE_CONTENT}
                     entitlements={SAMPLE_ENTITLEMENTS}
                     theme={SAMPLE_THEME}
                   />
                 </TemplateThumbnail>
               }
-              baseLabel="Cap Blanc"
+              baseLabel="Lin"
               overlay={
                 <TemplateThumbnail>
-                  <Nuit
+                  <Lin
                     content={SAMPLE_CONTENT}
                     entitlements={SAMPLE_ENTITLEMENTS}
                     theme={SAMPLE_THEME}
                   />
                 </TemplateThumbnail>
               }
-              overlayLabel="Nuit"
+              overlayLabel="Lin"
             />
           </Reveal>
         </div>
@@ -645,8 +717,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Closing call to action */}
-      <section className="bg-ink px-6 py-24 text-bone">
+      {/* Closing call to action. Marked so the sticky bar stands down here
+          rather than laying a smaller version of this offer over it. */}
+      <section className="bg-ink px-6 py-24 text-bone" data-reve-closing>
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="reve-display text-4xl md:text-5xl">
             Start with a message

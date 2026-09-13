@@ -35,8 +35,11 @@ components/
     invitation-demo.css         One documented timeline drives all 7 layers
     HeroEnvelope.tsx            Static envelope, above the fold
     TemplateCompare.tsx         [CLIENT] draggable seam between two templates
-    TemplatePreview.tsx         [CLIENT] measures + frames one template
+    TemplateCard.tsx            Collection grid card; shows the composed mockup
+    TemplateFrame.tsx           Known-aspect crop of a scrolling invitation
     TemplateThumbnail.tsx       Renders at RENDER_WIDTH, scaled to fit
+    LiveInvitationDemo.tsx      [CLIENT] the real gate + invitation, in a phone
+    StickyCta.tsx               [CLIENT]
     WhatsappThread.tsx          Illustration of the forwarded link
     RsvpPanel.tsx               Illustration of the guest list
     FaqList.tsx                 [CLIENT] disclosure
@@ -45,10 +48,10 @@ components/
     registry.ts                 slug -> {component, catalogue copy}
     TemplateRenderer.tsx
     EnvelopeGate.tsx            [CLIENT] fixed inset:0 — IS the guest's screen
-    envelope.css                One documented timeline; no animation JS
-    primitives/                 Section, Hero, Details, Gallery, Countdown
-    templates/cap-blanc/        Pale, centred
-    templates/nuit/             Dark, gold rule, ruled column
+    FrameSequence.tsx           [CLIENT] plays the rendered opening
+    envelope.css                Stage, card and seal; the paper is a render
+    motifs/                     SHARED VISUALS ONLY. Petals.
+    templates/lin/              Film hero, sage/cream bands, falling petals
 
 lib/
   events.ts                     Occasion registry (see 03)
@@ -56,13 +59,24 @@ lib/
   constants.ts, entitlements.ts, contact.ts, countdown.ts
   schemas/invitation.ts         zod: content, theme, entitlements
   invitations/get-published.ts  Anon PostgREST read
+  hooks/useCountdown.ts         Ticking clock; every dial is drawn per design
+  mockup.ts                     ads.jpg geometry (shared with the composer)
   rest.ts, env.ts, envelopes.ts
+
+scripts/
+  compose-mockup.mjs            Cuts stills into ads.jpg -> collection card
+  optimize-images.mjs
 ```
 
 **Client islands are deliberately shallow.** `InvitationDemo`, `RsvpPanel`,
 and `WhatsappThread` are server components: they are pure CSS and markup, so
 nothing ships to the browser for them. Only genuine interaction
-(`TemplateCompare`, `SiteNav`, `FaqList`, `Countdown`) crosses the boundary.
+(`TemplateCompare`, `SiteNav`, `FaqList`, `StickyCta`) crosses the boundary,
+plus the two halves of the ceremony: `EnvelopeGate` and `FrameSequence`.
+
+A template is a SERVER component. `Lin` renders on the server; only its
+`CountdownDial` and `Petals` are islands, so a design's typography and layout
+cost the browser nothing.
 
 ---
 
@@ -81,24 +95,23 @@ WhatsApp link  ->  GET /i/[slug]
     getTemplate(template_slug)        components/invitation/registry.ts
     <Template content theme entitlements />
   EnvelopeGate [CLIENT] fixed inset:0
-    getEnvelope(slug)                lib/envelopes.ts -> four layers + geometry
+    getEnvelope(slug)                lib/envelopes.ts -> frames + seal geometry
+    FrameSequence preloads EVERY frame; seal disabled, hint "One moment"
     tap seal
-      0-2900   flap falls on its hinge (two backface-hidden faces)
-      0-2600   ground -> solid white
-      2900     flap lands; envelope still whole, then fades
-      3600     envelope at opacity 0 -> state 'settling'
-               children leave the card and BECOME the page, under a veil
-      3600-4080  veil holds opaque: a held beat of plain white
-      4080-6000  veil clears; the invitation arrives at full size
-      6000     state 'open', gate unmounts
+      0 .. openingDurationMs(frames)   the RENDERED opening plays
+                                       (flap, paper, wax, exit: all in Blender)
+      + CARD_SETTLE_MS (900)           the card finishes growing to the viewport
+      then state 'open', gate unmounts
 
-      The handover must not come before envelope-lift reaches 0, or the
-      envelope is deleted mid-fade instead of fading. It used to hand over
-      at 2400 against a lift running to 4600, so the paper vanished at ~93%
-      opacity. The card never fades in inside the gate: it used to start at
-      1900, while the flap was still falling, so the invitation was legible
-      through the envelope's mouth and was then re-hidden by the veil and
-      revealed a second time.
+      Two clocks, not one: the render's own length says when the paper is
+      gone, and the tail is what the card still needs to reach full size. The
+      card ends on the identity transform — exactly where an untransformed
+      page sits — so unmounting the gate changes not one pixel. There is no
+      veil and no white beat; both existed only to carry a background across
+      that moment.
+
+      reduced motion: the sequence never plays. Frame 1 holds, and the
+      invitation arrives after 400ms. A render cannot be partially stilled.
     The envelope replays on every visit. A returning guest is usually
     showing it to someone; Skip is always one tap away.
 ```
@@ -154,58 +167,105 @@ A `/weddings` route would compete with it for the same queries.
 
 Current: `engagements` (lead), `birthdays` (secondary).
 
-### The sheet — `lib/sheet.ts`
+### A design is built from scratch — there is no shared sheet
 
-An invitation is one long decorated sheet of paper with the couple's details set
-into the spaces the artist left for them. **A design is data, not code**: a
-`SheetSpec` is bands plus ink/accent/muted/ground, and `verdure` is pure data
-with zero layout JSX.
+`lib/sheet.ts`, `components/invitation/Sheet.tsx` and the band/`BAND_BRIEF`
+model are GONE, along with `cap-blanc`, `nuit` and `verdure`. A design is now a
+directory under `components/invitation/templates/<slug>/` that owns its whole
+layout.
 
-A sheet is an ordered **stack of bands**, never one canvas with fixed zones.
+The reason is commercial rather than technical. A wedding invitation is bought
+on how it looks, and every wrapper held in common pulls the next design toward
+the last one's silhouette. The shared `Countdown` had grown a `bare` flag and a
+`numeralClassName` prop — one per template that wanted its own dial. That is
+the shape a shared component takes when designs that should own their layout
+have to negotiate for it.
 
-| kind | height | text | artwork |
-|---|---|---|---|
-| `content` | `max(minHeight, content)` | yes, in the channel | optional intrusion |
-| `divider` | fixed by `aspect` | never | full bleed, IS the band |
+What is shared is narrow and deliberate:
 
-- `SHEET_GROUND` `#f4efe6` — the paper, the only thing continuous down the doc.
-- `SHEET_CHANNEL_INSET` 12% — text never leaves it; artwork may cross it.
-- `SHEET_MAX_WIDTH` 720.
-- `ART_ROLES`: `full` (dividers), `corner`, `columns`. There is no `frame` role:
-  a closed frame would have to grow with content and would distort.
+- `motifs/` — visuals that paint OVER a design without shaping it. `Petals` is
+  the first. Any template may opt in; none inherits a silhouette by doing so.
+- `lib/hooks/useCountdown.ts` — a clock, not a look. It returns four numbers;
+  each design draws its own dial. A hook has nothing to negotiate over.
+- `lib/schemas/invitation.ts` — ONE superset content schema.
 
-**Why sections are not fixed percentages.** Real sections differ in height — a
-countdown is short, a schedule is long, and a schedule with nine events is
-longer than one with three. A fixed map forces identical heights and breaks on
-variable content. A stack makes it free: a band grows, the bands below start
-lower.
+**Freedom is in rendering, not in storage.** Every field past the core four is
+optional or defaulted, so a template renders what it wants and ignores the
+rest. Per-design schemas would mean per-design forms and per-design migrations
+for what is one row in one table.
 
-**`minHeight` is `cqw`, never `vh`.** Bands measure against the SHEET, not the
-window. The sheet sets `container-type: inline-size`. Viewport units ignore the
-storefront's thumbnail scaling and overflow the frame.
+DEFERRED: a per-template `uses: [...]` declaration in the registry, so an
+editor form asks only for the fields a chosen design actually renders. Not
+worth guessing at with one template and no form built.
 
-### The seam rule (`BAND_BRIEF`)
+### The envelope — `lib/envelopes.ts`
 
-1. **Draw scenes, never objects.** Elements must be embedded in surroundings.
-   Evidence: a standalone chandelier failed — with no drawn chain or ceiling it
-   hangs from nothing and reads as a sticker.
-2. **Fade to ground at every horizontal edge.** Artwork dissolves into
-   `SHEET_GROUND` before its own top and bottom, so every boundary is
-   ground-to-ground and adjacent tiles never have to align. This removes the
-   seam problem rather than solving it, and is what makes independently drawn
-   band art viable.
-3. **Content bands keep the channel clear.** Ornament to edges and corners.
+**The opening is a PRE-RENDERED FRAME SEQUENCE.** It was four cut layers
+(pocket/flap/flap-inner/seal) hinged by CSS `rotateX`; it is not any more.
+Flap, paper, wax and the envelope leaving frame are authored in Blender, and
+the browser advances through numbered stills compositing nothing.
 
-### `components/invitation/Sheet.tsx`
+The trade, stated plainly. Layers kept the timing adjustable per template and
+cost four files. But a hinge built from flat planes cannot show paper BENDING
+or wax TEARING — the two moments the ceremony exists for — and every piece had
+to be cut as an exact complement of every other, where a seam could reassemble
+perfectly and still be misplaced. Frames give up adjustable timing, which is
+baked into the render, and buy physical behaviour under real light.
 
-Walks `spec.bands` and renders slots.
+`EnvelopeSpec` = `{ slug, name, frames: {dir, count, pad, fps, width, height} }`
+plus seal geometry. Adding an envelope is a directory under
+`public/envelope/<slug>/frames/` plus one entry. No CSS, no component edit.
 
-- A band `section` is `overflow-hidden`: an intrusion must not spill onto a
-  neighbour and land on text no artist positioned it against.
-- The text wrapper is `z-10`. Words always sit above ornament.
-- A content band whose every slot resolves to nothing **returns null**, or it
-  holds open a `minHeight` gap the artwork was never drawn around.
-- Dates are set as stationery (`Monday, 12 July 2027`), never a numeric receipt.
+- **The wax is baked; its placement is not.** The wax is rendered, lit and
+  broken in Blender, so `.envelope-seal` paints no image — it is a transparent
+  hit target over the rendered wax. `sealX`/`sealY`/`sealSize` survive because
+  they place the couple's INITIALS drawn over it in CSS, which change per
+  invitation and cannot be baked into frames every couple shares.
+- **All frames decode before the seal arms** (`FrameSequence`, hint reads "One
+  moment"). A sequence that fetches as it plays stutters in the one moment of
+  the product a guest remembers.
+- **Reduced motion holds frame 1** and cuts to the invitation. A render is
+  indivisible: unlike CSS transforms there is no way to still part of it.
+- **`frames.width/height` size the demo screen.** Frames fill their box with
+  `object-fit: cover`, so a box of a different shape crops the envelope's flap
+  point and foot off.
+
+Current honest state: `lin.frames.count === 1`. Only the sealed frame is
+rendered, so the envelope is correct at rest and does not animate.
+`openingDurationMs` floors at `HOLD_MS` (1200ms) so one 33ms frame still reads
+as a ceremony. Raise `count` as frames land; nothing else changes.
+
+### The collection card — `scripts/compose-mockup.mjs`
+
+A design's stills cut into the two blank canvases of `public/ads.jpg`: the
+phone's screen and the paper beside it. The base is a photograph, so its
+plaster, shadows and bezel highlights are real — no arrangement of flat CSS
+layers reaches that, and the collection and an ad stay the same picture rather
+than drifting apart.
+
+`CANVASES` holds 18 numbers measured off that photograph. **They are constants
+of the base, not settings**: any envelope or invitation handed to the script is
+cut to them, so a new design needs no change here. Verified by composing two
+deliberately wrong stills (a square and a tall strip, in saturated colours
+nothing can hide behind) — both came out cut to the frame with every pixel
+outside the canvases unchanged.
+
+Three things the measurement must respect, each learned by getting it wrong:
+
+- **Measure by MATERIAL, not brightness.** The screen is pure neutral white
+  against a dark bezel; the paper is neutral against warm plaster. Hunting
+  bright pixels finds the lit background and overshoots every edge.
+- **FIT the corner radii.** The inset profile down a corner is a circular arc;
+  least-squares gives 76 and 45 to sub-pixel error. Assumed values of 58 and 38
+  squared the stills off over the curves.
+- **Bleed only as far as the soft edge goes.** The paper shades up over 1-2px,
+  so `bleed: 2` runs the still under that rim. At 5 it painted onto the
+  plaster — invisible under a dark invitation, obvious under a light one.
+
+Both cutouts are PUNCHED, not drawn: one SVG path, `fill-rule="evenodd"`,
+composited `dest-in`. What shows through is the photograph's own lens and its
+own cut paper edge. Drawing them would mean inventing both, flat, over a
+photograph.
 
 ### What Rêve sells — `lib/offer.ts`
 
@@ -279,51 +339,28 @@ No dark mode. An invitation is a fixed artifact, like printed stationery.
 
 ### Invariants
 
-- **An envelope is four layers, never a frame.** `pocket`, `flap`, `flapInner`,
-  `seal`. A frame is a photograph of a whole envelope in one state and cannot
-  hinge, so the parts must ship separately. There is no `body` or `interior`:
-  the pocket is opaque except at its mouth, so nothing behind it can be seen,
-  and the mouth shows a CSS white fill. Both shipped as files for a while and
-  neither was ever visible.
-- **The cut only ever reassigns pixels, never modifies them.** Flap and pocket
-  are complements of one photograph, so compositing them must return it —
-  `scripts/cut-envelope.mjs` asserts this and refuses to write otherwise. The
-  guarantee matters because the two pieces are exact: anything painted, blurred
-  or retouched *outside* the flap is visible while the envelope is sealed. An
-  attempt to erase a stray border off the pocket by blurring a band around its
-  mouth fixed the open state and silently wrecked the closed one, exactly this
-  way.
-- **Reassembly proves the pieces fit, never that they fit in the right place.**
-  "Flap and pocket reassemble the original at a mean per-pixel difference of
-  1.75" was recorded here as proof the cut was correct. It is not — *any* seam
-  reassembles perfectly, which is why a bad one went unnoticed. Seam placement
-  is judged by eye against the overlay `--dry` writes.
-- **The seam is the flap's outer edge, where its deckle meets the paper
-  beneath.** The original cut ran ~50px INSIDE that edge on the left arm, so a
-  band of flap carrying part of the embossed vine was assigned to the pocket.
-  Invisible while sealed; once the flap rotated away it left cut-off vine
-  clinging to the left of the mouth and none on the right, reading as a flap
-  cropped off-centre. Edge detection cannot find this seam unaided — over a
-  wide window it locks onto the vine's relief, a stronger gradient than the
-  paper edge, and cuts through the middle of the ornament. It works only inside
-  a narrow corridor around a hand-placed guide rail.
-- **The flap's two faces share one horizontal geometry.** The hinge rotates
-  about the X axis and the back face carries `rotateX(180deg)`, which mirrors
-  vertically — paper folded about its top edge keeps its x. `flapInner` shipped
-  as a *horizontal* mirror of `flap` (apex 46.3% against 53.6%), which threw the
-  flap 7.3% of the envelope's width sideways the moment the hinge passed
-  vertical. Its alpha is now taken from `flap` so the two cannot drift apart.
-- **`sealY`/`sealX` are where the V reads as converging, NOT the flap's alpha
-  apex.** They place the wax, the cavity, the glow and the perspective origin.
-  The two used to coincide only because the old cut stopped short of the
-  paper's tip; cutting to the true edge moved the alpha apex to 83.4%, and
-  putting the wax there dropped it off the point of the V onto the caption
-  below. `cut-envelope.mjs` prints the alpha apex for reference — the seal's
-  position is judged, not derived.
-- **The reveal must not depend on the gate existing.** The white belongs to a
-  veil that outlives the gate. When the white was the gate's own background it
-  died with it, dropping the ground from `#fff` to the page colour in one frame
-  under a fully-faded invitation — which is what read as the invitation popping.
+- **An envelope is a rendered sequence, never cut layers.** The reverse of
+  what stood here. Four hinged layers could not show paper bending or wax
+  tearing, and every piece had to be an exact complement of every other — a
+  seam could reassemble perfectly and still be in the wrong place. The opening
+  is authored in Blender; the browser only advances frames.
+- **The camera is locked and the paper must leave frame.** The sequence paints
+  into one `<img>` with `object-fit: cover`, so a drifting camera reads as the
+  whole screen sliding. And the gate hands over by unmounting the paper: if the
+  last frame still has envelope in it, the envelope vanishes on a cut.
+- **No text in a render, ever.** Embossed words come out in wrong letterforms
+  and cannot be removed once baked into paper texture. The couple's initials
+  are drawn over the wax in CSS — every couple shares one sequence.
+- **Every frame decodes before the seal arms.** A sequence that fetches as it
+  plays stutters partway through the opening, which is the worst possible
+  moment in the product for a hitch. This is what makes frame count a real
+  cost rather than a free parameter.
+- **A contained ceremony must isolate.** `.envelope-scope` carries
+  `isolation: isolate`. The gate's `z-index: 50` exists for the full-screen
+  invitation; with no stacking context around it that 50 competed on the page's
+  root context and beat the storefront's sticky nav at `z-40`, so the envelope
+  scrolled OVER the wordmark. Lowering the inner z-indexes would break the
+  full-screen case — the EMBEDDING wrapper is what must isolate.
 - **The envelope is the screen.** `EnvelopeGate` is `fixed; inset: 0`, so a
   guest's whole phone is the envelope. Marketing that shows it inset is a
   diagram of the product, not a picture of it.
@@ -370,19 +407,30 @@ that photograph. Re-shooting the envelope means re-measuring them.
   storefront illustrates them; the tables exist; the routes do not. The write
   path is specced but NOT implemented:
   `docs/superpowers/specs/2026-09-05-guest-rsvp-design.md`.
-- `bone-vine`'s layers are cut from a closed-envelope photograph rather than
-  generated separately, which `public/envelope/BRIEF.md` forbids.
-  `scripts/cut-envelope.mjs` makes that photograph work — the seam follows the
-  flap's own deckle and reassembly is asserted — but the guide rail inside it
-  is hand-placed for this one envelope, and its shape assumes a pointed flap.
-  A different design needs its own rail, or a hand-authored mask.
-- Source photographs live under `public/`, so they are served even though only
-  the cut layers are ever requested — `demo/sealed.png` (6.3MB) and
-  `bone-vine/source-closed.png` (1.5MB). Committing them keeps the cut
-  reproducible; moving them outside `public/` would stop them shipping.
-- `app/lab/envelope` is development scaffolding (noindex): each layer alone and
-  in cumulative stacks. It exists because the live gate animates four layers at
-  once over a photograph and can only tell you that something is wrong, not
-  which layer is wrong. Delete it or keep it deliberately.
+- **Lin's envelope has ONE frame.** `frames.count === 1`: the sealed render
+  exists and the sequence does not. Tapping the seal holds that frame for
+  `HOLD_MS` and hands over. The count is what makes this visible rather than
+  disguised — raise it as frames land and the opening starts moving, with no
+  other change anywhere. Requirements are in `public/envelope/BRIEF.md`.
+- **The collection card is a build artefact and nothing detects staleness.**
+  `card.webp` is composed from a design's stills, one of which is captured off
+  the live template. A design change means recomposing; nothing warns that the
+  picture no longer matches.
+- **The image cache is at `.next/dev/cache/images`**, not `.next/cache/images`.
+  Clearing the wrong path silently succeeds and the browser keeps serving a
+  stale derivative — which reads as "the fix did not work" and cost most of a
+  session. After `node scripts/compose-mockup.mjs <slug>`, clear that path and
+  hard reload. Verify by reading pixels out of the page's OWN `<img>` via
+  canvas: fetching the URL separately can hit a different cache entry than the
+  one the page is displaying.
+- **The card's cutouts are invisible at grid size.** `next/image` serves a
+  ~441px derivative for a 240px card, so a 188px camera in a 2000px composite
+  lands at ~41px and is then JPEG-compressed. The detail is in the bytes; the
+  display size throws it away. Unresolved: render the card larger, or crop the
+  composite tighter so the objects are bigger in frame.
+- **The right-hand panel reads as a second phone, not paper.** In `ads.jpg` it
+  is white textured card. The Lin still is the dark full-bleed hero, so it
+  covers the paper entirely. The cutout is correct either way; matching the
+  reference means feeding that panel a still from a lighter part of the design.
 - `/i/[slug]` full-screen has not been verified in a browser this session; only
   the `contained` storefront demo has. The two branches differ.

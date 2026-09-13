@@ -1,0 +1,94 @@
+/*
+ * Falling petals for the Lin template.
+ *
+ * Only transform and opacity are animated, so the whole fall stays on the
+ * compositor and never triggers layout — the same constraint envelope.css
+ * works under, and the reason fourteen petals cost nothing on a phone.
+ *
+ * The layer is fixed, not per-section: petals that reset at every band
+ * boundary read as a loop, and a fixed layer keeps the count constant however
+ * long the invitation runs.
+ */
+
+/*
+ * Absolute, not fixed. A fixed layer is pinned to the viewport, so the page
+ * slides underneath while the petals hang still — they read as stuck to the
+ * screen rather than falling through the invitation. Absolute ties them to the
+ * document, so they scroll away with the bands they fall past.
+ */
+.lin-petals {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* Above each band's opaque ground (z-auto) but below band content (z-20), so
+     petals drift over every section and never across the text. */
+  z-index: 10;
+}
+
+.lin-petal {
+  position: absolute;
+  top: 0;
+  left: var(--lin-petal-left);
+  width: var(--lin-petal-size);
+  height: var(--lin-petal-size);
+  background-image: var(--lin-petal-art);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0;
+  will-change: transform, opacity;
+  /* Negative delays on the component start the loop mid-flight, so petals are
+     already scattered down the screen on first paint rather than all entering
+     from the top together. */
+  /* Sway is a fixed cycle rather than a fraction of the fall: the fall is now
+     measured in minutes, and a proportional sway would be one slow lean over
+     the length of the page instead of a drift. */
+  animation:
+    lin-petal-fall var(--lin-petal-duration) linear var(--lin-petal-delay) infinite,
+    lin-petal-sway 7s ease-in-out var(--lin-petal-delay) infinite alternate;
+}
+
+/*
+ * Distance comes from --lin-petal-fall, measured off the rendered page: a
+ * percentage would resolve against the sprite's own 26px, and a vh value would
+ * strand every petal in the first screen of a page many screens long.
+ */
+@keyframes lin-petal-fall {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+    opacity: 0;
+  }
+  4% {
+    opacity: 0.55;
+  }
+  94% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translate3d(0, var(--lin-petal-fall, 100vh), 0)
+      rotate(var(--lin-petal-spin));
+    opacity: 0;
+  }
+}
+
+/* Horizontal drift is its own animation on a shorter, alternating cycle, so
+   the sway never lands in step with the fall and the path reads as wandering
+   rather than as a straight diagonal. */
+@keyframes lin-petal-sway {
+  from {
+    margin-left: 0;
+  }
+  to {
+    margin-left: var(--lin-petal-sway);
+  }
+}
+
+/* Continuous background motion is precisely what this preference asks to be
+   spared. The component also drops the layer entirely for a 'reduced' theme;
+   this covers a viewer whose OS asks but whose invitation does not. */
+@media (prefers-reduced-motion: reduce) {
+  .lin-petals {
+    display: none;
+  }
+}

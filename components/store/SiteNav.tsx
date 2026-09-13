@@ -61,7 +61,7 @@ export function SiteNav() {
           {LINKS.map((link) => (
             <li key={link.href}>
               <Link
-                className="reve-crisp text-[13px] text-cocoa transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
+                className="reve-crisp reve-underline text-[13px] text-cocoa transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
                 href={link.href}
               >
                 {link.label}

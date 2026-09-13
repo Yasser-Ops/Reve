@@ -1,116 +1,67 @@
-'use client';
-
+import Image from 'next/image';
 import Link from 'next/link';
-import { useCallback, useState, type ReactNode } from 'react';
-import { RENDER_WIDTH } from '@/components/store/TemplateThumbnail';
-
-type TemplateCardProps = {
-  slug: string;
-  name: string;
-  summary: string;
-  character: readonly string[];
-  /** Lowest tier this design can be bought on, e.g. "$50". */
-  fromPrice: string;
-  /**
-   * The rendered template. Passed as children rather than as a component
-   * reference: a server component cannot cross the client boundary as a prop,
-   * so the page renders it and this island only measures and frames it.
-   */
-  children: ReactNode;
-};
+import type { TemplateEntry } from '@/components/invitation/registry';
 
 /**
- * One design in the collection, presented as something a couple can act on.
+ * The composed mockup's pixel size, from `scripts/compose-mockup.mjs`.
  *
- * The card is a product surface, not a picture: the crop is a preview that
- * hands off to the full sheet rather than trying to be it. A drawn sheet runs
- * far longer than any card, so the frame deliberately shows the opening and
- * fades out, and the design's own page is where it is actually sold.
- *
- * Client-side only because the preview's scale comes from the card's measured
- * width. The template inside is ordinary server-rendered markup.
+ * Every design's card is cropped to the same box by that script, so this is a
+ * property of the format rather than of any one design. Declared because
+ * `next/image` needs intrinsic dimensions for a runtime `src` and will
+ * otherwise reserve a box of the wrong shape — a square reservation around a
+ * wider-than-tall image letterboxes it, which reads as the photograph having
+ * too much empty ground around it.
  */
-export function TemplateCard({
-  slug,
-  name,
-  summary,
-  character,
-  fromPrice,
-  children,
-}: TemplateCardProps) {
-  const [scale, setScale] = useState(1);
+const CARD_WIDTH = 2000;
+const CARD_HEIGHT = 2000;
 
-  const measure = useCallback((node: HTMLAnchorElement | null) => {
-    if (!node) return;
-
-    const observer = new ResizeObserver(([entry]) => {
-      setScale(entry.contentRect.width / RENDER_WIDTH);
-    });
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
+/**
+ * One design in the collection: its envelope on a phone, its opening page on
+ * the card beside it, photographed.
+ *
+ * The pairing is the card's whole argument. The envelope alone says nothing
+ * about the art direction — every design ships the same cream linen — and the
+ * invitation alone loses the ceremony the product is sold on. Together they
+ * read as one sentence: this arrives, and this is what it becomes.
+ *
+ * No phone frame or ground is drawn here. Both are in the photograph, which is
+ * also what makes this image the house format for advertising: the storefront
+ * and an ad are the same picture rather than two that drift apart.
+ *
+ * The whole card is the link. There is no button, because a button inside a
+ * card that is already a link gives a visitor two targets for one destination
+ * and competes with the page's real call to action further down.
+ */
+export function TemplateCard({ entry }: { entry: TemplateEntry }) {
   return (
-    <article className="group flex flex-col">
+    <article className="group">
       <Link
-        aria-label={`See the ${name} design`}
-        className="relative block aspect-9/16 overflow-hidden rounded-[1.5rem] border border-taupe/50 shadow-[0_20px_44px_-24px_rgb(var(--reve-shadow-rgb)/0.45)] transition-transform duration-300 group-hover:-translate-y-1.5"
-        href={`/collection/${slug}`}
-        ref={measure}
-        style={{ '--thumb-scale': scale } as React.CSSProperties}
+        className="block overflow-hidden rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
+        href={`/collection/${entry.slug}`}
       >
-        {children}
-
-        {/* The sheet continues past the crop. Fading the cut edge says so,
-            instead of letting it read as the design ending mid-page. */}
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-24"
-          style={{
-            background:
-              'linear-gradient(to bottom, transparent, rgb(var(--reve-shadow-rgb)/0.04) 40%, var(--color-screen))',
-          }}
+        <Image
+          alt={`${entry.name}: the sealed envelope, and the invitation it opens into`}
+          className="w-full transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+          height={CARD_HEIGHT}
+          priority
+          sizes="(min-width: 1024px) 23vw, (min-width: 640px) 48vw, 88vw"
+          src={entry.preview}
+          width={CARD_WIDTH}
         />
       </Link>
 
-      <div className="mt-6 flex items-baseline justify-between gap-4">
-        <h3 className="reve-display text-2xl">{name}</h3>
-        <p className="reve-crisp shrink-0 text-[12px] uppercase tracking-[0.12em] text-taupe">
-          From {fromPrice}
-        </p>
-      </div>
-
-      <p className="mt-2 text-[13.5px] leading-relaxed text-cocoa">{summary}</p>
-
-      <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5">
-        {character.map((trait) => (
-          <li
-            className="reve-crisp text-[11px] uppercase tracking-[0.12em] text-taupe"
-            key={trait}
-          >
-            {trait}
-          </li>
-        ))}
-      </ul>
-
-      {/* mt-auto keeps the actions on a common baseline when cards in a row
-          have summaries of different lengths. */}
-      <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-3 pt-6">
+      <h2 className="reve-display mt-4 text-[1.35rem]">
         <Link
-          className="reve-crisp rounded-full bg-wine px-5 py-2.5 text-[11px] uppercase tracking-[0.16em] text-bone transition-opacity hover:opacity-90"
-          href={`/collection/${slug}`}
+          className="focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
+          href={`/collection/${entry.slug}`}
         >
-          See this design
+          {entry.name}
         </Link>
+      </h2>
 
-        <Link
-          className="reve-crisp text-[11px] uppercase tracking-[0.14em] text-cocoa underline-offset-4 hover:underline"
-          href={`/preview/${slug}`}
-        >
-          View demo
-        </Link>
-      </div>
+      <p className="mt-2 text-[13.5px] leading-relaxed text-cocoa">
+        {entry.summary}
+      </p>
     </article>
   );
 }

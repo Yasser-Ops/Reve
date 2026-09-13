@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { EnvelopeGate } from '@/components/invitation/EnvelopeGate';
 import { RENDER_WIDTH } from '@/components/store/TemplateThumbnail';
+import { frameAspect, getEnvelope } from '@/lib/envelopes';
 
 /**
  * The real invitation, playing inside a phone, scrollable by the visitor.
@@ -19,44 +20,59 @@ import { RENDER_WIDTH } from '@/components/store/TemplateThumbnail';
  */
 export function LiveInvitationDemo({
   initials,
+  envelope,
   children,
 }: {
   initials: string;
+  /** Which envelope opens over the invitation. Defaults to the house design. */
+  envelope?: string;
   children: ReactNode;
 }) {
+  const spec = getEnvelope(envelope);
+
+  /* The scroller is identical under either rig, so it is built once and handed
+     to whichever gate is playing. */
+  const scroller = (
+    <div
+      className="reve-no-scrollbar h-full w-full overscroll-contain"
+      style={{ overflowX: 'hidden', overflowY: 'auto' }}
+    >
+      <div style={{ width: `${RENDER_WIDTH}px`, zoom: `calc((100cqw / 1px) / ${RENDER_WIDTH})` }}>
+        {children}
+      </div>
+    </div>
+  );
+
   return (
     <div className="relative mx-auto w-full max-w-[300px]">
       <div className="rounded-[2.5rem] border border-taupe/60 bg-ink p-2.5 shadow-[0_30px_60px_-30px_rgb(var(--reve-shadow-rgb)/0.6)]">
         {/* envelope-scope contains the gate, which is `fixed` on a real
             invitation. The gate is a sibling of the scroller, never inside it,
             or the ceremony would scroll away with the invitation behind it. */}
+        {/* THE SCREEN IS THE SHAPE OF THE ENVELOPE IT SHOWS. Taken from the
+            render rather than fixed at 9/16: the frames fill this box with
+            `object-fit: cover`, so a box of a different shape crops the
+            envelope's top and foot off. */}
         <div
-          className="envelope-scope aspect-9/16 rounded-[2rem] bg-bone"
-          style={{ containerType: 'inline-size' }}
+          className="envelope-scope rounded-[2rem] bg-bone"
+          style={{
+            aspectRatio: frameAspect(spec.frames),
+            containerType: 'inline-size',
+          }}
         >
           <div
             aria-hidden="true"
             className="absolute left-1/2 top-2 z-[60] h-5 w-20 -translate-x-1/2 rounded-full bg-ink"
           />
 
-          <EnvelopeGate contained initials={initials}>
-            {/* `reve-no-scrollbar`: this is a picture of a phone, and phones
-                do not paint a scrollbar down the side of the screen. Desktop
-                Chrome does, inside the silhouette, which reads as a browser
-                chrome artefact sitting on the invitation. */}
-            <div
-              className="reve-no-scrollbar h-full w-full overscroll-contain"
-              style={{ overflowX: 'hidden', overflowY: 'auto' }}
-            >
-              {/* A transform does not change the layout box: the unscaled child
-                  still reserves its full width, and `overflow-x: hidden` only
-                  clips it — the scroller can still be dragged sideways to 152px
-                  of nothing. `zoom` resizes the box itself, so there is no
-                  surplus width to scroll to and the frame has one axis. */}
-              <div style={{ width: `${RENDER_WIDTH}px`, zoom: `calc((100cqw / 1px) / ${RENDER_WIDTH})` }}>
-                {children}
-              </div>
-            </div>
+          {/* `reve-no-scrollbar` on the scroller: this is a picture of a
+              phone, and phones do not paint a scrollbar down the side of the
+              screen. And `zoom` rather than a transform, because a transform
+              does not change the layout box — the unscaled child would still
+              reserve its full width and the frame would drag sideways to 152px
+              of nothing. */}
+          <EnvelopeGate contained envelope={spec.slug} initials={initials}>
+            {scroller}
           </EnvelopeGate>
         </div>
       </div>

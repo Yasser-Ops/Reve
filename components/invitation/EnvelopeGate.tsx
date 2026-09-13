@@ -1,7 +1,14 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
-import { getEnvelope } from '@/lib/envelopes';
+import {
+  useCallback,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react';
+import { getEnvelope, openingDurationMs } from '@/lib/envelopes';
+import { FrameSequence } from './FrameSequence';
 import './envelope.css';
 
 type EnvelopeGateProps = {
@@ -22,19 +29,30 @@ type EnvelopeGateProps = {
 type GateState = 'sealed' | 'opening' | 'open';
 
 /**
- * Matches the longest animation in envelope.css.
+ * How long the card keeps growing after the paper has finished leaving.
  *
- * The sequence is deliberately unhurried. An invitation opening is the one
- * moment of the product a guest will actually remember, and rushing it makes
- * the envelope feel like a loading screen in front of the page.
+ * The rendered opening and the card's growth are two clocks, not one. The
+ * render's own length says when the envelope is done; this is the tail the
+ * card still needs to reach viewport size afterwards, so the invitation
+ * settles rather than snapping to full size the instant the paper clears.
  *
  * There is no intermediate state and no veil. The card ends on the identity
- * transform, which is exactly where an untransformed page sits, and by this
- * point the paper has travelled clear of the screen — so unmounting the gate
- * changes not one pixel. The old two-step existed only to hand a white
- * background over from the gate to a veil; nothing is white any more.
+ * transform, which is exactly where an untransformed page sits, so unmounting
+ * the gate changes not one pixel.
  */
-const REVEAL_MS = 6000;
+const CARD_SETTLE_MS = 900;
+
+const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
+
+function subscribeToReducedMotion(onChange: () => void) {
+  const query = window.matchMedia(REDUCED_MOTION);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+}
+
+function getReducedMotion() {
+  return window.matchMedia(REDUCED_MOTION).matches;
+}
 
 /**
  * Wraps an invitation with its opening ceremony.
@@ -66,16 +84,36 @@ export function EnvelopeGate({
 }: EnvelopeGateProps) {
   const [state, setState] = useState<GateState>('sealed');
   const spec = getEnvelope(envelope);
+  /* The seal stays inert until every frame is decoded: see FrameSequence. */
+  const [ready, setReady] = useState(false);
+  const handleReady = useCallback(() => setReady(true), []);
+
+  /*
+   * A rendered opening cannot be partially stilled the way the old CSS
+   * transforms could — it plays or it does not — so a guest who asked for
+   * reduced motion gets frame 1 held and an immediate cut to the invitation.
+   */
+  const reducedMotion = useSyncExternalStore(
+    subscribeToReducedMotion,
+    getReducedMotion,
+    /* The server cannot know the preference, so it renders the full ceremony
+       and the client corrects on hydration. It only ever gates an animation,
+       never what is on the page. */
+    () => false,
+  );
 
   useEffect(() => {
     if (state !== 'opening') return;
 
-    /* One step. The handover waits for the whole sequence, because the card is
-       still animating up to its resting size until the very end and the paper
-       is still leaving the frame in front of it. */
-    const id = window.setTimeout(() => setState('open'), REVEAL_MS);
+    /* One step. The handover waits for the render to finish AND for the card
+       to settle after it, because the card is still growing to its resting
+       size once the paper has left the frame. */
+    const id = window.setTimeout(
+      () => setState('open'),
+      reducedMotion ? 400 : openingDurationMs(spec.frames) + CARD_SETTLE_MS,
+    );
     return () => window.clearTimeout(id);
-  }, [state]);
+  }, [state, spec, reducedMotion]);
 
   /* The invitation is inert while it is still inside the envelope: it must not
      scroll away under the ceremony. A contained demo skips this — the page
@@ -113,14 +151,10 @@ export function EnvelopeGate({
       data-state={state}
       style={
         {
-          '--envelope-pocket': `url(${spec.layers.pocket})`,
-          '--envelope-flap': `url(${spec.layers.flap})`,
-          '--envelope-flap-inner': `url(${spec.layers.flapInner})`,
-          '--envelope-seal': `url(${spec.layers.seal})`,
           '--envelope-seal-y': spec.sealY,
           '--envelope-seal-x': spec.sealX,
-          '--envelope-flap-top': spec.flapTop,
           '--envelope-seal-size': spec.sealSize,
+          '--envelope-open-ms': `${openingDurationMs(spec.frames)}ms`,
         } as React.CSSProperties
       }
     >
@@ -136,33 +170,38 @@ export function EnvelopeGate({
 
       {state !== 'open' && (
       <div className="envelope">
-        {/* The soft light at the envelope's mouth as the flap clears. */}
-        <div className="envelope-glow" />
-
-        {/* Front face, in front of the card so the card emerges behind it. */}
-        <div className="envelope-pocket" />
-
-        {/* The falling flap. The two faces are backface-hidden siblings on one
-            hinge: past vertical the embossed front turns away and the plain
-            inner face turns toward the viewer, which is what a real flap does.
-            No shadow element — see envelope.css. */}
-        <div className="envelope-hinge">
-          <div className="envelope-flap envelope-flap-front" />
-          <div className="envelope-flap envelope-flap-back" />
-        </div>
+        {/* THE WHOLE PAPER, AS ONE RENDERED SEQUENCE.
+            Flap, pocket, the wax and its breaking are all in the render — the
+            browser composites nothing. It sits in front of the card, so the
+            card emerges from behind it exactly as it did when this was four
+            hinged layers. */}
+        <FrameSequence
+          frames={spec.frames}
+          onReady={handleReady}
+          playing={state === 'opening' && !reducedMotion}
+        />
 
         <span className="envelope-pulse" />
 
+        {/* The wax is PART OF THE RENDER, so this button draws no seal: it is
+            a transparent hit target sized and placed over the rendered wax,
+            carrying the couple's initials. Initials change per invitation and
+            so cannot be baked into a render every couple shares.
+
+            Inert until the sequence is decoded — a seal that responds before
+            the frames are ready buys a stutter in the one moment of the
+            product a guest actually remembers. */}
         <button
           aria-label="Open your invitation"
           className="envelope-seal"
+          disabled={!ready}
           onClick={() => setState('opening')}
           type="button"
         >
           {initials}
         </button>
 
-        <p className="envelope-hint">Tap the seal</p>
+        <p className="envelope-hint">{ready ? 'Tap the seal' : 'One moment'}</p>
 
         {/* Always available, and it jumps straight to the invitation
             rather than fast-forwarding the animation. */}

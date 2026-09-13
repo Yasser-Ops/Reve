@@ -57,6 +57,34 @@ describe('EnvelopeGate', () => {
     expect(screen.queryByRole('button', { name: /open/i })).not.toBeInTheDocument();
   });
 
+  /* A sequence that fetches as it plays stutters partway through the opening,
+     which is the one moment of the product a guest actually remembers. The
+     seal must not respond until every frame is decoded. */
+  it('holds the seal inert until the frames are decoded', () => {
+    renderGate();
+
+    expect(screen.getByRole('button', { name: /open/i })).toBeDisabled();
+    expect(screen.getByText('One moment')).toBeInTheDocument();
+  });
+
+  it('arms the seal once the frames are decoded', async () => {
+    renderGate();
+
+    expect(await screen.findByText('Tap the seal')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /open/i })).toBeEnabled();
+  });
+
+  /* Frame 1 is the sealed envelope and paints before anything else loads, so
+     the gate never shows an empty rectangle while the rest arrives. */
+  it('paints the sealed frame first', () => {
+    const { container } = renderGate();
+
+    expect(container.querySelector('.envelope-frame')).toHaveAttribute(
+      'src',
+      '/envelope/lin/frames/0001.webp',
+    );
+  });
+
   it('locks the page behind a full-screen envelope', async () => {
     renderGate();
     await screen.findByRole('button', { name: /open/i });

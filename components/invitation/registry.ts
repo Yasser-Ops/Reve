@@ -1,7 +1,5 @@
 import type { ReactNode } from 'react';
-import { CapBlanc } from '@/components/invitation/templates/cap-blanc';
-import { Nuit } from '@/components/invitation/templates/nuit';
-import { Verdure } from '@/components/invitation/templates/verdure';
+import { Lin } from '@/components/invitation/templates/lin';
 import type {
   Entitlements,
   InvitationContent,
@@ -33,6 +31,22 @@ export type TemplateEntry = {
   story: string;
   /** The art direction in a few words, for the collection's card. */
   character: readonly string[];
+  /**
+   * The design as one photographed image: its envelope on a phone screen and
+   * its opening page on the card beside it.
+   *
+   * Composed rather than assembled in CSS. The base is a photograph, so its
+   * plaster ground, shadows and bezel highlights are real, and no arrangement
+   * of flat layers reaches that. It is also the house format for advertising,
+   * which means the collection and an ad are the same picture rather than two
+   * things that drift apart.
+   *
+   * Built by `pnpm mockup:compose <slug>` from the design's own stills, one of
+   * which is captured off the live template. Because it is a build artefact
+   * rather than a drawing, a design change means recomposing: nothing here can
+   * detect that the picture has gone stale.
+   */
+  preview: string;
   component: TemplateComponent;
 };
 
@@ -45,33 +59,16 @@ export type TemplateEntry = {
  * describe one differently from how it actually presents.
  */
 const REGISTRY = {
-  'cap-blanc': {
-    slug: 'cap-blanc',
-    name: 'Cap Blanc',
-    summary: 'Pale, centred, and quiet. Everything sits on the page as it would on card.',
-    story:
-      'Ivory paper, a centred column, and nothing else. The restraint is the design: your names are the only thing on the page with any weight.',
-    character: ['Ivory ground', 'Centred', 'Understated'],
-    component: CapBlanc,
-  },
-  verdure: {
-    slug: 'verdure',
-    name: 'Verdure',
+  lin: {
+    slug: 'lin',
+    name: 'Lin',
     summary:
-      'A drawn sheet. Greenery banks the page and the details are set into the spaces the artwork leaves.',
+      'Your film behind your names, then sage and cream bands carrying the evening, with petals falling the length of the page.',
     story:
-      'Greenery banks the page and falls away between each section, so the invitation reads as one long decorated sheet. Your details are set into the spaces the artwork leaves for them.',
-    character: ['Drawn artwork', 'Garden green', 'Full bleed'],
-    component: Verdure,
-  },
-  nuit: {
-    slug: 'nuit',
-    name: 'Nuit',
-    summary: 'An evening invitation. Dark ground, gold rule, details set in a column.',
-    story:
-      'An invitation for an evening wedding. The page goes dark, a gold rule divides it, and the details are set in a single quiet column beneath.',
-    character: ['Dark ground', 'Gold accent', 'Ruled column'],
-    component: Nuit,
+      'Your own film plays behind your names, and the invitation settles into sage and cream: a countdown, the venue drawn by hand, and the evening laid out as a timeline you follow as you scroll. White petals fall the whole way down.',
+    character: ['Film behind the names', 'Drawn illustration', 'Falling petals'],
+    preview: '/collection/lin/card.webp',
+    component: Lin,
   },
 } as const satisfies Record<string, TemplateEntry>;
 

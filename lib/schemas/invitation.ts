@@ -32,6 +32,11 @@ const galleryItemSchema = z.object({
   alt: z.string().min(1),
 });
 
+const heroMediaSchema = z.object({
+  type: z.enum(['image', 'video']),
+  src: z.string().min(1),
+});
+
 export const invitationContentSchema = z.object({
   coupleFirstName: z.string().min(1),
   couplePartnerName: z.string().min(1),
@@ -42,6 +47,10 @@ export const invitationContentSchema = z.object({
   venue: venueSchema,
   schedule: z.array(scheduleItemSchema).default([]),
   gallery: z.array(galleryItemSchema).default([]),
+  /** Full-bleed hero background. Falls back to a flat ground when absent. */
+  heroMedia: heroMediaSchema.optional(),
+  /** Free text for the registry/bank-details section. */
+  registryMessage: z.string().optional(),
 });
 
 export type InvitationContent = z.infer<typeof invitationContentSchema>;

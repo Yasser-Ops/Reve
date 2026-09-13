@@ -115,6 +115,53 @@ body {
   line-height: 1.08;
 }
 
+/*
+ * A rule that wipes in under a link on hover, left to right.
+ *
+ * Drawn as a pseudo-element rather than with text-decoration, because only a
+ * box can be animated: `text-decoration` has no transitionable length. Scaled
+ * on the X axis from a left origin, so the line draws itself in the reading
+ * direction rather than fading in everywhere at once.
+ *
+ * It also appears on :focus-visible. A keyboard reader gets the same signal a
+ * pointer does, and the outline alone reads as a focus ring rather than as the
+ * link being live.
+ */
+.reve-underline {
+  position: relative;
+}
+
+.reve-underline::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: -0.2em;
+  height: 1px;
+  background-color: currentColor;
+  transform: scaleX(0);
+  /* Physical, so it is mirrored for Arabic below: the line must draw in the
+     reading direction, and `left` would run it backwards under RTL text. */
+  transform-origin: left;
+  transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+[dir='rtl'] .reve-underline::after {
+  transform-origin: right;
+}
+
+.reve-underline:hover::after,
+.reve-underline:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* The line is the affordance, so a reader who has asked for less motion still
+   gets it — it simply arrives rather than travels. */
+@media (prefers-reduced-motion: reduce) {
+  .reve-underline::after {
+    transition: none;
+  }
+}
+
 /* Numerals that change in place: tabular so digits never shift the layout. */
 .reve-numeral {
   font-family: var(--font-sans);
