@@ -19,7 +19,8 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }));
 
-import { SIGN_IN_MESSAGES, signInAdmin, signOut } from '@/lib/auth/actions';
+import { signInAdmin, signOut } from '@/lib/auth/actions';
+import { SIGN_IN_MESSAGES } from '@/lib/auth/messages';
 
 function form(fields: Record<string, string>) {
   const data = new FormData();

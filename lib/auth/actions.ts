@@ -3,17 +3,9 @@
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { isAdmin } from '@/lib/auth/admin-membership';
+import { SIGN_IN_MESSAGES, type SignInResult } from '@/lib/auth/messages';
 import { ROUTES } from '@/lib/routes';
 import { createClient } from '@/lib/supabase/server';
-
-export const SIGN_IN_MESSAGES = {
-  INVALID_INPUT: 'Enter your email address and password.',
-  BAD_CREDENTIALS: 'That email and password do not match an account.',
-  NOT_ADMIN: 'This account does not have admin access.',
-} as const;
-
-/** Only failure comes back: success redirects and never returns. */
-export type SignInResult = { ok: false; message: string };
 
 const signInSchema = z.object({
   email: z.email(),
