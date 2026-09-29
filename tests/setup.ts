@@ -27,6 +27,10 @@ vi.mock('next/font/google', () => {
   };
 });
 
+// `server-only` exists to throw when a client bundle imports a server module.
+// Vitest is neither, so the guard is stubbed; `next build` still enforces it.
+vi.mock('server-only', () => ({}));
+
 // Testing Library only auto-cleans when Vitest runs with `globals: true`.
 // This project keeps globals off and unmounts explicitly instead, so renders
 // from one test cannot leak into the next.
