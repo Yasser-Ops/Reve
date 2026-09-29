@@ -32,6 +32,39 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          notes: string
+          phone: string
+          terms_accepted_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          notes?: string
+          phone: string
+          terms_accepted_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          notes?: string
+          phone?: string
+          terms_accepted_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       custom_leads: {
         Row: {
           brief: string
@@ -103,6 +136,47 @@ export type Database = {
           },
         ]
       }
+      invitation_reviews: {
+        Row: {
+          content_snapshot: Json
+          created_at: string
+          created_by: string
+          decision: Database["public"]["Enums"]["review_decision"]
+          id: string
+          invitation_id: string
+          note: string
+          on_behalf: boolean
+        }
+        Insert: {
+          content_snapshot: Json
+          created_at?: string
+          created_by?: string
+          decision: Database["public"]["Enums"]["review_decision"]
+          id?: string
+          invitation_id: string
+          note?: string
+          on_behalf?: boolean
+        }
+        Update: {
+          content_snapshot?: Json
+          created_at?: string
+          created_by?: string
+          decision?: Database["public"]["Enums"]["review_decision"]
+          id?: string
+          invitation_id?: string
+          note?: string
+          on_behalf?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitation_reviews_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitations: {
         Row: {
           content: Json
@@ -110,7 +184,6 @@ export type Database = {
           entitlements: Json
           expires_at: string | null
           id: string
-          manage_token_hash: string | null
           order_id: string
           published_at: string | null
           slug: string
@@ -124,7 +197,6 @@ export type Database = {
           entitlements?: Json
           expires_at?: string | null
           id?: string
-          manage_token_hash?: string | null
           order_id: string
           published_at?: string | null
           slug: string
@@ -138,7 +210,6 @@ export type Database = {
           entitlements?: Json
           expires_at?: string | null
           id?: string
-          manage_token_hash?: string | null
           order_id?: string
           published_at?: string | null
           slug?: string
@@ -150,75 +221,62 @@ export type Database = {
           {
             foreignKeyName: "invitations_order_id_fkey"
             columns: ["order_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "orders"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invitations_template_slug_fkey"
-            columns: ["template_slug"]
-            isOneToOne: false
-            referencedRelation: "templates"
-            referencedColumns: ["slug"]
           },
         ]
       }
       orders: {
         Row: {
           amount: number
+          client_id: string
           created_at: string
-          customer_email: string | null
-          customer_name: string
-          customer_phone: string
+          due_at: string | null
           event_date: string | null
           id: string
           notes: string | null
           payment_proof_url: string | null
           reference: string
           status: Database["public"]["Enums"]["order_status"]
-          template_slug: string
           tier: Database["public"]["Enums"]["tier"]
           updated_at: string
         }
         Insert: {
           amount: number
+          client_id: string
           created_at?: string
-          customer_email?: string | null
-          customer_name: string
-          customer_phone: string
-          event_date?: string | null
-          id?: string
-          notes?: string | null
-          payment_proof_url?: string | null
-          reference: string
-          status?: Database["public"]["Enums"]["order_status"]
-          template_slug: string
-          tier: Database["public"]["Enums"]["tier"]
-          updated_at?: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          customer_email?: string | null
-          customer_name?: string
-          customer_phone?: string
+          due_at?: string | null
           event_date?: string | null
           id?: string
           notes?: string | null
           payment_proof_url?: string | null
           reference?: string
           status?: Database["public"]["Enums"]["order_status"]
-          template_slug?: string
+          tier: Database["public"]["Enums"]["tier"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          due_at?: string | null
+          event_date?: string | null
+          id?: string
+          notes?: string | null
+          payment_proof_url?: string | null
+          reference?: string
+          status?: Database["public"]["Enums"]["order_status"]
           tier?: Database["public"]["Enums"]["tier"]
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "orders_template_slug_fkey"
-            columns: ["template_slug"]
+            foreignKeyName: "orders_client_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "templates"
-            referencedColumns: ["slug"]
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -273,48 +331,6 @@ export type Database = {
           },
         ]
       }
-      templates: {
-        Row: {
-          created_at: string
-          description: string
-          id: string
-          is_bestseller: boolean
-          is_new: boolean
-          name: string
-          preview_images: string[]
-          slug: string
-          sort_order: number
-          status: Database["public"]["Enums"]["template_status"]
-          tier_floor: Database["public"]["Enums"]["tier"]
-        }
-        Insert: {
-          created_at?: string
-          description?: string
-          id?: string
-          is_bestseller?: boolean
-          is_new?: boolean
-          name: string
-          preview_images?: string[]
-          slug: string
-          sort_order?: number
-          status?: Database["public"]["Enums"]["template_status"]
-          tier_floor?: Database["public"]["Enums"]["tier"]
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          id?: string
-          is_bestseller?: boolean
-          is_new?: boolean
-          name?: string
-          preview_images?: string[]
-          slug?: string
-          sort_order?: number
-          status?: Database["public"]["Enums"]["template_status"]
-          tier_floor?: Database["public"]["Enums"]["tier"]
-        }
-        Relationships: []
-      }
     }
     Views: {
       published_invitations: {
@@ -342,30 +358,24 @@ export type Database = {
           template_slug?: string | null
           theme?: Json | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "invitations_template_slug_fkey"
-            columns: ["template_slug"]
-            isOneToOne: false
-            referencedRelation: "templates"
-            referencedColumns: ["slug"]
-          },
-        ]
+        Relationships: []
       }
     }
     Functions: {
-      is_admin: { Args: never; Returns: boolean }
+      [_ in never]: never
     }
     Enums: {
       invitation_status: "draft" | "published" | "archived"
       order_status:
         | "pending_payment"
         | "paid"
+        | "brief"
+        | "concept"
         | "in_design"
         | "review"
         | "delivered"
         | "cancelled"
-      template_status: "draft" | "published"
+      review_decision: "approved" | "changes_requested"
       tier: "basic" | "managed" | "custom"
     }
     CompositeTypes: {
@@ -498,12 +508,14 @@ export const Constants = {
       order_status: [
         "pending_payment",
         "paid",
+        "brief",
+        "concept",
         "in_design",
         "review",
         "delivered",
         "cancelled",
       ],
-      template_status: ["draft", "published"],
+      review_decision: ["approved", "changes_requested"],
       tier: ["basic", "managed", "custom"],
     },
   },
