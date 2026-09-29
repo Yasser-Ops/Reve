@@ -5,7 +5,7 @@ import { EnvelopeGate } from '@/components/invitation/EnvelopeGate';
 
 function renderGate(props: { contained?: boolean } = {}) {
   return render(
-    <EnvelopeGate initials="SA" {...props}>
+    <EnvelopeGate {...props}>
       <p>Invitation body</p>
     </EnvelopeGate>,
   );
@@ -17,9 +17,12 @@ describe('EnvelopeGate', () => {
     expect(await screen.findByRole('button', { name: /open/i })).toBeInTheDocument();
   });
 
-  it('shows the couple initials on the seal', async () => {
+  /* The seal DRAWS NOTHING: the wax and its monogram are both in the render,
+     so this asserts the button stays an empty hit target. It once carried the
+     couple's initials in CSS, which put flat letters over pressed ones. */
+  it('draws nothing over the rendered wax', async () => {
     renderGate();
-    expect(await screen.findByText('SA')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /open/i })).toBeEmptyDOMElement();
   });
 
   it('reveals the invitation after the seal is tapped', async () => {

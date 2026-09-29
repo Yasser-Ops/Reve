@@ -12,7 +12,6 @@ import { FrameSequence } from './FrameSequence';
 import './envelope.css';
 
 type EnvelopeGateProps = {
-  initials: string;
   /** Which envelope to open. Falls back to the default design. */
   envelope?: string;
   /**
@@ -77,7 +76,6 @@ function getReducedMotion() {
  * what made the handover feel like a slide transition rather than an opening.
  */
 export function EnvelopeGate({
-  initials,
   envelope,
   contained = false,
   children,
@@ -183,10 +181,14 @@ export function EnvelopeGate({
 
         <span className="envelope-pulse" />
 
-        {/* The wax is PART OF THE RENDER, so this button draws no seal: it is
-            a transparent hit target sized and placed over the rendered wax,
-            carrying the couple's initials. Initials change per invitation and
-            so cannot be baked into a render every couple shares.
+        {/* The wax is PART OF THE RENDER, monogram included, so this button
+            draws nothing at all: it is a transparent hit target sized and
+            placed over the rendered wax.
+
+            It carried the couple's initials in CSS until the seal was
+            engraved in Blender. Two monograms then sat on one piece of wax —
+            flat letters floating over pressed ones — so the drawn pair went
+            and the rendered pressing stands alone.
 
             Inert until the sequence is decoded — a seal that responds before
             the frames are ready buys a stutter in the one moment of the
@@ -197,9 +199,7 @@ export function EnvelopeGate({
           disabled={!ready}
           onClick={() => setState('opening')}
           type="button"
-        >
-          {initials}
-        </button>
+        />
 
         <p className="envelope-hint">{ready ? 'Tap the seal' : 'One moment'}</p>
 

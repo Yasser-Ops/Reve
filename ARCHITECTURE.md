@@ -198,6 +198,28 @@ DEFERRED: a per-template `uses: [...]` declaration in the registry, so an
 editor form asks only for the fields a chosen design actually renders. Not
 worth guessing at with one template and no form built.
 
+**Ornament: drawn or painted?** Jardin's countdown ornament went through four
+drawn versions before becoming a plate, and the rule that came out of it is
+worth stating once. An object that reads through its INTERIOR — a basin, a
+vessel, a rose with depth — cannot be depicted with outline strokes at small
+size: there is nothing for the eye to resolve them into, and no position fixes
+it. Two concentric hairline ellipses read as a strike-through when they
+overlapped the numerals and as a stray oval when they did not.
+
+What DOES work drawn is ornament that is a MARK rather than a depicted thing:
+`GardenPath`'s vine and its five-petal blooms, filled shapes with a stroke. A
+painted plate is right when the thing has to have depth; a drawn mark is right
+when it only has to be a gesture. A plate laid BELOW live text is also safe
+where one behind it is not — nothing is set over it, so no contrast surface
+has to be pinned down.
+
+**Section padding is proportional, not flat.** `Section` takes a `density`
+(`FULL` | `CLOSE`); a section holding one sentence paid the same `py-20
+md:py-28` as one holding a five-item timeline, which left the closing thanks
+50% air — the emptiest moment on the page, immediately before the dusk plate.
+Measure slack as the share of a section's height occupied by nothing before
+reaching for decoration to fill it.
+
 ### The envelope — `lib/envelopes.ts`
 
 **The opening is a PRE-RENDERED FRAME SEQUENCE.** It was four cut layers
@@ -209,12 +231,24 @@ The trade, stated plainly. Layers kept the timing adjustable per template and
 cost four files. But a hinge built from flat planes cannot show paper BENDING
 or wax TEARING — the two moments the ceremony exists for — and every piece had
 to be cut as an exact complement of every other, where a seam could reassemble
-perfectly and still be misplaced. Frames give up adjustable timing, which is
-baked into the render, and buy physical behaviour under real light.
+perfectly and still be misplaced. Frames buy physical behaviour under real
+light, and **timing is recovered by rendering DENSELY** rather than given up:
+render a motion across twice the frames it needs and playback can choose a
+rate or slow one phase against another via `tail`. Frame count is the budget
+that buys adjustable timing back, and near-identical frames are dropped before
+shipping.
 
-`EnvelopeSpec` = `{ slug, name, frames: {dir, count, pad, fps, width, height} }`
-plus seal geometry. Adding an envelope is a directory under
+`EnvelopeSpec` = `{ slug, name, frames: {dir, count, pad, fps, width, height,
+tail?, holdMs?} }` plus seal geometry. Adding an envelope is a directory under
 `public/envelope/<slug>/frames/` plus one entry. No CSS, no component edit.
+
+**The masters live outside this repo**, at `~/Desktop/INVITATION SYSTEM/`:
+`00_MASTER/` holds one .blend per envelope SHAPE (geometry, rig, animation),
+`02_ASSETS/` a shared library of papers, seals and alpha trims. Its README
+documents a ~2 minute retexture workflow — link the master, library-override,
+swap `PAPER_*`, drop a seal into `SLOT_Seal`, assign the camera. A new envelope
+is a RETEXTURE, not a modelling job, and any shape exposing the same slot
+contract inherits the animation unchanged.
 
 - **The wax is baked; its placement is not.** The wax is rendered, lit and
   broken in Blender, so `.envelope-seal` paints no image — it is a transparent
@@ -234,6 +268,26 @@ Current honest state: `lin.frames.count === 1`. Only the sealed frame is
 rendered, so the envelope is correct at rest and does not animate.
 `openingDurationMs` floors at `HOLD_MS` (1200ms) so one 33ms frame still reads
 as a ceremony. Raise `count` as frames land; nothing else changes.
+
+`jardin` and `dentelle` both run the same two-phase timing: the flap at 30fps,
+the departure slowed to 24 via `tail`. Jardin was re-rendered to reach it —
+its first cut moved 29-49px between frames, too sparse to slow down without
+interpolation cross-fading a displacement into a double image.
+
+**Three traps in producing a sequence**, each paid for:
+
+- **A motion's frame budget is what the CAMERA sees, not what the rig does.**
+  Jardin's envelope clears frame at render 152; the range was set to 168 by
+  copying Dentelle's, so 17 frames rendered nothing. `envelope-frames.mjs`
+  drops them and reports `longestStillRun`, which is the check that catches it.
+- **Blender 5.x slotted actions evaluate ONE channelbag.** `WaxSeal` carried
+  two slots (`WaxSeal`, `WaxSeal.001`); a write to the unbound one reports
+  success and changes nothing, which shipped a render with the seal vanishing
+  mid-peel. Verify by frame-setting and reading `hide_render` BACK — never
+  trust the curve you just wrote.
+- **Frame indices quoted from Blender must be mapped through the drop list**
+  in `.frames/<slug>.json` before they land in `tail.from`. Jardin's slide
+  starts at render 82 and ships as 79.
 
 ### The collection card — `scripts/compose-mockup.mjs`
 
@@ -267,6 +321,21 @@ composited `dest-in`. What shows through is the photograph's own lens and its
 own cut paper edge. Drawing them would mean inventing both, flat, over a
 photograph.
 
+**Capturing `opened.webp`** — the paper half is a screenshot of the template
+actually running, and two things about taking it are not obvious:
+
+- **Emulate the viewport at `647x1395x2,mobile`**, matching the paper canvas
+  exactly. Resizing the browser WINDOW does not work: the layout centres for
+  the window rather than the screenshot, which lands the names off-centre and
+  clips the message line.
+- **The Next dev badge lives in shadow DOM.** A CSS `display:none` rule does
+  not reach it; remove every `body > *` carrying a `shadowRoot`, with a
+  MutationObserver to catch re-insertion. It reached a composed card once.
+
+The card is a BUILD ARTEFACT and nothing detects that it has gone stale — an
+edit to a hero plate or the type leaves it showing the previous design.
+Recompose whenever the design or its envelope's frame 1 changes.
+
 ### What Rêve sells — `lib/offer.ts`
 
 `OFFER_TIERS`, `HOW_IT_WORKS`, `DELIVERY`, `ENTRY_TIER`. One source of truth:
@@ -285,6 +354,13 @@ honour a 48-hour turnaround.
 Carries the component **and** its catalogue copy, so the storefront cannot
 list a design the renderer lacks. Adding a template = a directory + one entry;
 it then appears on `/collection` with no page edit.
+
+**Drafts.** `draft?: true` marks a design mid-build. It still prerenders (via
+`TEMPLATE_SLUGS`) so it opens by URL for review, and its page is `noindex`.
+`LISTED_TEMPLATES` is the registry less drafts, and it alone feeds the shelves
+(`templatesForOccasion`), `app/sitemap.ts` and a design page's "others" row.
+Dentelle is a draft, borrowing Jardin's component and card. The pipeline from
+brief to live card is `docs/design-roadmap.md`.
 
 ### Sample invitation — `lib/sample-invitation.ts`
 
@@ -370,6 +446,15 @@ No dark mode. An invitation is a fixed artifact, like printed stationery.
   home page, or the page says everything twice.
 - **Marketing must not outrun the schema.** `RsvpPanel` shows only columns
   that exist on `rsvps`.
+- **An SVG with a `viewBox` has an INTRINSIC height** and sizes to it in
+  preference to resolving `top` against `bottom` — and `h-auto` resolves to
+  that same intrinsic height rather than releasing it. An absolutely
+  positioned SVG that must span a container needs its height set explicitly
+  (`h-[calc(100%-6rem)]`). This cost two separate bugs in one session: a
+  countdown basin stretching to its container, and a timeline vine running 130px
+  past its last bloom into the next section.
+- **Reserve an ornament's MEASURED height, not its assumed one.** A plate 83px
+  tall in a slot reserving 40px rides up over the text under it.
 - Windows: small/monospaced type needs `.reve-crisp`
   (`-webkit-font-smoothing: antialiased` + `text-rendering: optimizeLegibility`).
 
@@ -396,6 +481,27 @@ are committed alongside their `.webp` so the pipeline stays reproducible.
 Seal geometry (`SEAL_Y`, `SEAL_SIZE` in `InvitationDemo.tsx`) is measured off
 that photograph. Re-shooting the envelope means re-measuring them.
 
+**Painted plates.** A design's artwork is generated externally and dropped into
+`public/invitation/<slug>/`. Two conversion recipes that are not guessable:
+
+- **Keying a plate off a black ground:** map luma 8→64 to partial alpha so the
+  painted feather survives instead of cutting jagged, then UNMULTIPLY against
+  black or pale petals read grey. Ship as WebP with `alphaQuality: 100`.
+- **A plate with its own deckled edge needs no padding.** Transparency lets it
+  rest on whatever ground the section sets. An earlier venue plate whose brush
+  edge ran off three sides had a flat 4% margin added at conversion; a torn
+  edge the painter actually made is what that margin was standing in for.
+
+**A hero plate is measured before it ships.** The hero lays NOTHING over the
+painting — no scrim, by decision — so a replacement is checked against `INK`
+across the headline, names and message bands. Jardin's current plate: 9.3:1,
+10.4:1, 10.2:1, with under 3.5% of any band below 4.5:1. A plate whose centre
+goes dark has no fallback.
+
+Snag: `optimize:images` walks ALL of `public/` and so converts `ads.jpg`, the
+mockup base, into an `ads.webp` nothing references. Delete it or exclude the
+base from the walk.
+
 ---
 
 ## 05 — Known gaps
@@ -415,7 +521,9 @@ that photograph. Re-shooting the envelope means re-measuring them.
 - **The collection card is a build artefact and nothing detects staleness.**
   `card.webp` is composed from a design's stills, one of which is captured off
   the live template. A design change means recomposing; nothing warns that the
-  picture no longer matches.
+  picture no longer matches. Jardin's was stale for most of a session — showing
+  a flat mauve stand-in that predated its artwork entirely — with everything
+  green and no test failing.
 - **The image cache is at `.next/dev/cache/images`**, not `.next/cache/images`.
   Clearing the wrong path silently succeeds and the browser keeps serving a
   stale derivative — which reads as "the fix did not work" and cost most of a
@@ -432,5 +540,16 @@ that photograph. Re-shooting the envelope means re-measuring them.
   is white textured card. The Lin still is the dark full-bleed hero, so it
   covers the paper entirely. The cutout is correct either way; matching the
   reference means feeding that panel a still from a lighter part of the design.
+  Jardin does not have this problem — its hero is a pale painted arch — so the
+  gap is Lin-specific rather than structural.
 - `/i/[slug]` full-screen has not been verified in a browser this session; only
   the `contained` storefront demo has. The two branches differ.
+- **Jardin's remaining dead space.** The Grounds sits at 28% slack: the venue
+  plate renders 342px because the wrapper's `px-6` binds before `max-w-xl`
+  does, so the section's whole subject is shown small. With thanks is at 37%
+  after the density fix and is still a single sentence — the strongest
+  candidate for a small painted sprig.
+- **`dentelle` is an envelope without an invitation.** Its registry entry
+  borrows Jardin's component and card wholesale and says so in its copy. That
+  is honest while the envelope is what is being reviewed; shipping it means a
+  real template and its own `mockup:compose`.

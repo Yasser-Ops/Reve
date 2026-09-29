@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Jardin } from '@/components/invitation/templates/jardin';
 import { Lin } from '@/components/invitation/templates/lin';
 import type {
   Entitlements,
@@ -65,6 +66,13 @@ export type TemplateEntry = {
    */
   preview: string;
   component: TemplateComponent;
+  /**
+   * A design mid-build (see `docs/design-roadmap.md`). Its page prerenders and
+   * opens by URL so it can be reviewed, but no shelf, sitemap or "other
+   * designs" row offers it, and the page itself is `noindex`. Delete the flag
+   * as the roadmap's last step, once the design's own artwork and card ship.
+   */
+  draft?: true;
 };
 
 /**
@@ -88,12 +96,67 @@ const REGISTRY = {
     preview: '/collection/lin/card.webp',
     component: Lin,
   },
+  jardin: {
+    slug: 'jardin',
+    name: 'Jardin',
+    summary:
+      'A painted garden that separates as you scroll, so opening the invitation reads as walking in through the arch.',
+    story:
+      'A colonnade, a fountain and roses painted by hand, laid in three planes that draw apart as you scroll: the sky holds, the arches drift, the near vines leave the frame. Your names are set into the scene rather than laid over it, and the evening runs down a vine with a bloom at every hour.',
+    character: ['Painted scene', 'Walks in as you scroll', 'Blush and deep rose'],
+    occasion: OCCASIONS.WEDDING,
+    /* Composed from the design's own stills by `pnpm mockup:compose jardin`.
+       The paper half is a capture of THIS template running, taken at the
+       647x1395 the base photograph's paper canvas measures, so the card shows
+       the invitation a buyer actually receives rather than a drawing of it.
+
+       RECOMPOSE WHEN THE DESIGN CHANGES. Nothing here can detect that the
+       picture has gone stale — it is a build artefact, and an edit to the
+       hero or the type leaves the card showing the previous design. */
+    preview: '/collection/jardin/card.webp',
+    component: Jardin,
+  },
+  /*
+   * STANDING IN FOR ITS OWN ARTWORK. This entry exists so the Dentelle
+   * ENVELOPE — ivory damask with a lace trim, `lib/envelopes.ts` — has a page
+   * to open on; the invitation behind it is Jardin's, borrowed whole.
+   *
+   * The envelope is chosen by SLUG: `LiveInvitationDemo` passes `entry.slug`
+   * through to `getEnvelope`, so a design named `dentelle` opens the envelope
+   * named `dentelle` with nothing wiring the two together explicitly. That is
+   * what makes this entry enough to see the opening.
+   *
+   * The copy already describes Dentelle's OWN invitation (the trousseau brief
+   * in `docs/design-roadmap.md`), while the component and card are still
+   * Jardin's. `draft` is what keeps that mismatch off the shelves until a
+   * real component and `pnpm mockup:compose dentelle` replace them.
+   */
+  dentelle: {
+    slug: 'dentelle',
+    name: 'Dentelle',
+    summary:
+      "A bride's keepsake box laid out on ivory silk: your names on a letterpress card, the evening on luggage tags tied with ribbon.",
+    story:
+      'Under a lace-trimmed envelope and a rose-gold seal, the invitation is a trousseau photographed from above on ivory silk. Your names sit on a blank letterpress card beside a strand of pearls, the countdown is engraved inside a pocket watch, the venue is written on the back of an old postcard, and each part of the evening hangs from the ribbon on a tag you turn over to read.',
+    character: ['Photographed heirlooms', 'Lace and rose-gold wax', 'Tags you turn over'],
+    occasion: OCCASIONS.WEDDING,
+    /* Jardin's card, borrowed with its invitation. */
+    preview: '/collection/jardin/card.webp',
+    component: Jardin,
+    draft: true,
+  },
 } as const satisfies Record<string, TemplateEntry>;
 
 export type TemplateSlug = keyof typeof REGISTRY;
 
 export const TEMPLATES: readonly TemplateEntry[] = Object.values(REGISTRY);
 
+/** Every design a visitor may be offered: the registry less its drafts. */
+export const LISTED_TEMPLATES: readonly TemplateEntry[] = TEMPLATES.filter(
+  (entry) => !entry.draft,
+);
+
+/** Every slug with a page, drafts included, so a draft opens for review. */
 export const TEMPLATE_SLUGS: readonly string[] = Object.keys(REGISTRY);
 
 export function getTemplate(slug: string): TemplateComponent | null {
@@ -214,5 +277,32 @@ export function getCatalogue(
 export function templatesForOccasion(
   occasion: Occasion,
 ): readonly TemplateEntry[] {
-  return TEMPLATES.filter((entry) => entry.occasion === occasion);
+  return LISTED_TEMPLATES.filter((entry) => entry.occasion === occasion);
+}
+
+/**
+ * Where "back" goes from a design: the catalogue that shelves its occasion,
+ * and the label that names it — "Weddings", not the generic "The collection"
+ * a page carrying two catalogues can no longer claim to be.
+ *
+ * `href` is bare (`/weddings`) when that catalogue has only the one section —
+ * a fragment to the only thing on the page would scroll past its own heading,
+ * the same reasoning CataloguePage's picker already follows — and fragmented
+ * (`/weddings#engagement`) once it holds more than one, so a visitor who
+ * opened Lin from the engagement section lands back on it rather than at the
+ * top of the wedding one.
+ */
+export function backToCatalogue(
+  occasion: Occasion,
+): { href: string; label: string } {
+  const entry = CATALOGUE_ENTRIES.find((catalogue) =>
+    catalogue.sections.some((section) => section.occasion === occasion),
+  );
+
+  if (!entry) return { href: '/', label: 'Rêve' };
+
+  return {
+    href: entry.sections.length > 1 ? `${entry.href}#${occasion}` : entry.href,
+    label: entry.title,
+  };
 }

@@ -51,8 +51,14 @@ export function TemplateCard({ entry }: { entry: TemplateEntry }) {
       </Link>
 
       <h2 className="reve-display mt-4 text-[1.35rem]">
+        {/* `reve-underline`, the same standing-underline treatment the nav and
+            the hero's pricing link use, but drawn by the CARD's hover
+            (`group-hover`) rather than only its own: the photo above is the
+            bigger, more natural target, and it already answers hover with its
+            own motion (`scale-[1.02]`). Without this the name sat inert while
+            the image moved under the same pointer. */}
         <Link
-          className="focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
+          className="reve-underline reve-underline--group focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
           href={`/weddings/${entry.slug}`}
         >
           {entry.name}

@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { CATALOGUE_ENTRIES, TEMPLATES } from '@/components/invitation/registry';
+import { CATALOGUE_ENTRIES, LISTED_TEMPLATES } from '@/components/invitation/registry';
 import { SITE_URL } from '@/lib/site';
 
 /**
@@ -13,7 +13,8 @@ import { SITE_URL } from '@/lib/site';
  *
  * /i/[slug] (live invitations) is deliberately absent: those are guests'
  * private pages, not Rêve's marketing surface, and belong to whoever bought
- * them rather than to a public index Rêve controls.
+ * them rather than to a public index Rêve controls. Draft designs are absent
+ * too: their pages exist for review, not to be found.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -28,7 +29,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
   ];
 
-  const designRoutes: MetadataRoute.Sitemap = TEMPLATES.map((template) => {
+  const designRoutes: MetadataRoute.Sitemap = LISTED_TEMPLATES.map((template) => {
     const catalogue = CATALOGUE_ENTRIES.find((entry) =>
       entry.sections.some((section) => section.occasion === template.occasion),
     );

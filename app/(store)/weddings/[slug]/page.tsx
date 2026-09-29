@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
+  backToCatalogue,
   getTemplateEntry,
-  TEMPLATES,
+  LISTED_TEMPLATES,
   TEMPLATE_SLUGS,
 } from '@/components/invitation/registry';
 import { LiveInvitationDemo } from '@/components/store/LiveInvitationDemo';
@@ -38,6 +39,9 @@ export async function generateMetadata({
     title: entry.name,
     description: entry.story,
     alternates: { canonical: `/weddings/${slug}` },
+    /* A draft opens by URL for review and must not be indexed before it
+       carries its own artwork. */
+    ...(entry.draft ? { robots: { index: false, follow: false } } : {}),
     openGraph: {
       title: `${entry.name} · Rêve`,
       description: entry.story,
@@ -69,12 +73,13 @@ export default async function DesignPage({
   if (!entry) notFound();
 
   const Template = entry.component;
-  const others = TEMPLATES.filter((other) => other.slug !== slug);
+  const others = LISTED_TEMPLATES.filter((other) => other.slug !== slug);
   const jsonLd = designJsonLd({
     name: entry.name,
     story: entry.story,
     href: `/weddings/${entry.slug}`,
   });
+  const back = backToCatalogue(entry.occasion);
 
   /* Built once: the page asks for the order in two places, and the two must
      open the same conversation. */
@@ -92,11 +97,19 @@ export default async function DesignPage({
 
       <section className="px-6 pb-14 pt-10 md:pt-14">
         <div className="mx-auto max-w-3xl">
+          {/* WHERE "BACK" GOES IS COMPUTED, NOT HARDCODED. Lin is shelved
+              under weddings today, but backToCatalogue reads that off the
+              registry rather than assuming /weddings — so a visitor who opened
+              a design from the engagement section lands back on that section,
+              not at the top of the wedding one, once a design lives in more
+              than one place. Flashes to ink on hover: a deliberate flip
+              rather than a fade, since this is the one exit off the page and
+              wants to read as immediate. */}
           <Link
-            className="reve-crisp text-[11px] uppercase tracking-[0.14em] text-cocoa underline-offset-4 hover:underline"
-            href="/weddings"
+            className="reve-crisp text-[11px] uppercase tracking-[0.14em] text-cocoa transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
+            href={back.href}
           >
-            ← The collection
+            ← {back.label}
           </Link>
 
           <div className="mt-10 text-center">
@@ -138,7 +151,11 @@ export default async function DesignPage({
       <section className="px-6 pb-6">
         <Reveal>
           <div className="mx-auto max-w-3xl">
-            <LiveInvitationDemo initials={SAMPLE_CONTENT.initials}>
+            {/* The design's OWN envelope, not the house default. Every design
+                is paired with the envelope it was rendered against, so a demo
+                that let this fall through showed Jardin's blush watercolour
+                page arriving inside Lin's cream linen. */}
+            <LiveInvitationDemo envelope={entry.slug}>
               <Template
                 content={SAMPLE_CONTENT}
                 entitlements={SAMPLE_ENTITLEMENTS}

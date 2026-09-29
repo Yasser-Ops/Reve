@@ -38,8 +38,10 @@ export default async function InvitationPage({ params }: PageProps) {
 
   if (!getTemplate(invitation.templateSlug)) notFound();
 
+  /* The design's own envelope, so a guest opens the one the invitation was
+     drawn against rather than the house default. */
   return (
-    <EnvelopeGate initials={invitation.content.initials}>
+    <EnvelopeGate envelope={invitation.templateSlug}>
       <TemplateRenderer
         content={invitation.content}
         entitlements={invitation.entitlements}

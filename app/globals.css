@@ -167,6 +167,13 @@ body {
   transform: scaleX(1);
 }
 
+/* `--group`: draws from the enclosing `.group`'s hover instead of its own.
+   For a link whose real target — a photo above it, say — is the more natural
+   thing to hover, so the two answer the same pointer together. */
+.group:hover .reve-underline--group::after {
+  transform: scaleX(1);
+}
+
 /* The line is the affordance, so a reader who has asked for less motion still
    gets it — it simply arrives rather than travels. */
 @media (prefers-reduced-motion: reduce) {

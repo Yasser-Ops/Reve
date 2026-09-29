@@ -19,11 +19,9 @@ import { frameAspect, getEnvelope } from '@/lib/envelopes';
  * screen will be.
  */
 export function LiveInvitationDemo({
-  initials,
   envelope,
   children,
 }: {
-  initials: string;
   /** Which envelope opens over the invitation. Defaults to the house design. */
   envelope?: string;
   children: ReactNode;
@@ -35,9 +33,53 @@ export function LiveInvitationDemo({
   const scroller = (
     <div
       className="reve-no-scrollbar h-full w-full overscroll-contain"
-      style={{ overflowX: 'hidden', overflowY: 'auto' }}
+      style={{
+        overflowX: 'hidden',
+        overflowY: 'auto',
+        /*
+         * THE CONTAINER IS THIS BOX, NOT THE PHONE SHELL.
+         *
+         * `100cqw` below resolves against the nearest ancestor that declares
+         * a container, and it used to be `.envelope-scope` — two levels up,
+         * outside the gate and the card, both of which the ceremony
+         * re-positions as it hands over. A zoom factor measured against a box
+         * whose geometry changes mid-animation is a zoom factor that changes
+         * mid-animation: the invitation was scaled by one number while the
+         * envelope covered it and a different one once the gate went static,
+         * which is the jump that showed on first scroll and the mismatch that
+         * left the page short of the bezel as the paper left.
+         *
+         * Declared here, the container is the scroller itself — the same box
+         * the content has to fill, with a width that is settled before the
+         * ceremony starts and unaffected by anything the gate does to its
+         * ancestors.
+         */
+        containerType: 'inline-size',
+      }}
     >
-      <div style={{ width: `${RENDER_WIDTH}px`, zoom: `calc((100cqw / 1px) / ${RENDER_WIDTH})` }}>
+      {/*
+       * Rendered at real phone width and scaled to fit, never reflowed, so
+       * every proportion is the one a guest sees.
+       *
+       * `zoom` rather than a transform because a transform does not change
+       * the layout box: the unscaled child would still reserve its full
+       * RENDER_WIDTH and the frame would drag sideways to the difference.
+       *
+       * THE HALF PIXEL IS DELIBERATE. `100cqw / RENDER_WIDTH` is a fraction
+       * that almost never lands on a whole device pixel, and a zoomed box
+       * that rounds DOWN comes up a hair narrow — which showed as a pale
+       * stripe of the shell's ground down the right edge of the screen, the
+       * full height of the phone. Asking for half a pixel more than the
+       * container makes the content round up instead: it overshoots into the
+       * scroller's own `overflow: hidden` where nothing can see it, and the
+       * artwork reaches the bezel on both sides at every width.
+       */}
+      <div
+        style={{
+          width: `${RENDER_WIDTH}px`,
+          zoom: `calc((100cqw + 0.5px) / 1px / ${RENDER_WIDTH})`,
+        }}
+      >
         {children}
       </div>
     </div>
@@ -89,7 +131,7 @@ export function LiveInvitationDemo({
               does not change the layout box — the unscaled child would still
               reserve its full width and the frame would drag sideways to 152px
               of nothing. */}
-          <EnvelopeGate contained envelope={spec.slug} initials={initials}>
+          <EnvelopeGate contained envelope={spec.slug}>
             {scroller}
           </EnvelopeGate>
         </div>

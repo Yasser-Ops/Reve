@@ -53,3 +53,8 @@ playwright-report/
 
 # Session scratch, per the staging protocol.
 STAGING_CHANGES.md
+
+# Frame-conversion reports from scripts/envelope-frames.mjs. Build metadata:
+# useful for mapping a Blender frame index onto the shipped numbering, never
+# read at runtime, and regenerated on every conversion.
+/.frames/

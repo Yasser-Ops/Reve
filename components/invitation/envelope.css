@@ -196,6 +196,12 @@
  * start, visible through the mouth as the flap peels, and the paper slides off
  * it. Nothing fades into anything.
  *
+ * A white beat was tried again later, built the other way round: a layer of
+ * plain paper inside the pocket, with the invitation uncovered from behind it
+ * rather than faded into it, to avoid animating a fall that could not be
+ * slowed without stepping. It went back to the rendered fall. Both attempts
+ * agree on the same point — this opening uncovers, it does not cut.
+ *
  * Dropping the veil also collapses the gate to a single state. The veil only
  * ever existed to carry a white background across the moment the gate
  * unmounted; with the card ending on the identity transform and the paper
@@ -220,28 +226,35 @@
  */
 .envelope-card {
   position: absolute;
-  inset: 0;
   z-index: 1;
   overflow: hidden;
   background: var(--envelope-card, #f4efe6);
   /*
-   * Held a touch LARGER than the frame, never smaller.
+   * EXACTLY THE FRAME. No transform, no overhang, at any point.
    *
-   * It used to start at scale(0.965) and grow into place, which left the card
-   * a few pixels short of the gate on every side — measured at 277.1 against
-   * the frame's 278 — so the gate's own background showed as a pale border
-   * around the invitation for most of the reveal. Anything under 1 uncovers
-   * the ground behind it. Starting over-size and settling back to identity
-   * keeps the frame covered the whole way and still lands exactly where an
-   * untransformed page sits, which is what makes the handover free.
+   * Two things used to move this box and both were visible. It sat at
+   * scale(1.02) and settled to identity as the paper left, which dragged the
+   * invitation's type and artwork 2% while the guest watched; replacing that
+   * with `inset: -1%` only changed the units, and made it worse — the card
+   * was then 1% oversize on every side during the opening and snapped back to
+   * `inset: 0` at handover, so the content jumped by 2% of the frame at the
+   * exact moment the envelope cleared it.
+   *
+   * The scale's original justification does not survive either. It came from
+   * a version that started UNDER 1 and grew, which uncovered the gate's
+   * ground as a pale border; the answer to that is to never go under 1, and
+   * `inset: 0` never does. It is the frame, precisely, for the whole
+   * ceremony and after it — so the handover to `[data-state='open']` changes
+   * no geometry at all, which is the contract the unmount depends on.
    */
-  transform: scale(1.02);
+  inset: 0;
   opacity: 0;
   /* Nothing here is tappable until the ceremony ends. Belt and braces with the
      z-index above: an invisible full-screen layer over the seal is exactly the
      kind of thing that works in every test and fails on a real thumb. */
   pointer-events: none;
-  will-change: transform, opacity;
+  /* Opacity only: nothing here transforms any more. */
+  will-change: opacity;
 }
 
 .envelope-gate[data-state='opening'] .envelope-card {
@@ -253,34 +266,39 @@
 }
 
 /*
- * The invitation is uncovered, not faded in.
+ * The invitation is UNCOVERED, not faded in, and NOT ZOOMED.
  *
- * It is already there, at full size, well before the flap has finished — so
- * what the guest sees through the widening mouth is the real invitation, and
- * the paper sliding away afterwards merely stops hiding it. The settle back to
- * identity is held until the envelope actually starts leaving, so the two
- * movements belong to the same beat instead of the card drifting for six
- * seconds underneath a stationary envelope.
+ * It is already there, at full size, from the first frame of the opening: what
+ * the guest sees through the widening mouth is the real invitation, and the
+ * paper sliding away merely stops hiding it.
+ *
+ * IT DOES NOT FADE UP. An opacity ramp here was authored against a 1.2s hold,
+ * where the ~100ms of transparency at the start went unnoticed. Against a
+ * fully rendered opening — Jardin's is 113 frames, 3.77s — that same 8% is
+ * 300ms of the flap peeling back to reveal `--envelope-card`'s flat cream
+ * ground, with the invitation not fully present until a second in. The pocket
+ * appeared to open onto an empty sheet, because it did.
+ *
+ * IT DOES NOT SCALE EITHER, ANY MORE. The card used to settle from 1.02 to
+ * identity as the paper left, on the reasoning that anything under 1 uncovers
+ * the gate's ground behind it. True, but the fix for that is to never go
+ * under 1 — not to animate. A 2% zoom on the invitation is 2% of motion
+ * nobody asked for, applied to type and artwork that are already at their
+ * resting size, and it is visible as a drift the moment the paper stops
+ * covering it. The card now HOLDS at 1.02 for the whole opening and the
+ * element's own `transform: scale(1.02)` never changes; the handover to the
+ * open state is what returns it to identity, in a single step, at a moment
+ * when the invitation is the only thing on screen.
+ *
+ * What remains here is only the opacity contract, which the animation exists
+ * to hold against the `0` the element rests at.
  */
 @keyframes envelope-card-arrive {
-  0%,
-  8% {
-    transform: scale(1.02);
-    opacity: 0;
-  }
-  /* Up to full opacity while the flap is still peeling: it is being revealed
-     THROUGH the opening, so it must already be there to reveal. */
-  26% {
-    transform: scale(1.02);
-    opacity: 1;
-  }
-  /* The paper begins to leave here, and the settle goes with it. */
-  57% {
-    transform: scale(1.02);
+  /* Present and opaque IMMEDIATELY. There is nothing to reveal otherwise. */
+  0% {
     opacity: 1;
   }
   100% {
-    transform: scale(1);
     opacity: 1;
   }
 }
@@ -300,8 +318,8 @@
 /*
  * The seal.
  *
- * Sits over the wax already in the photograph, carrying the couple's initials.
- * It is the button: the whole ceremony is one tap on this.
+ * Sits over the wax already in the render and draws nothing of its own. It is
+ * the button: the whole ceremony is one tap on this.
  */
 .envelope-seal {
   position: absolute;
@@ -315,27 +333,13 @@
   place-items: center;
   border: 0;
   border-radius: 50%;
-  /* NO BACKGROUND IMAGE. The wax is in the render — lit, pressed and broken
-     in Blender — so this element paints nothing at all. It is a transparent
-     hit target sized and placed over the rendered wax, and the initials it
-     carries are the only thing it draws. */
+  /* PAINTS NOTHING. The wax is in the render — lit, pressed, engraved and
+     broken in Blender — so this is a transparent hit target sized and placed
+     over the rendered wax, and nothing more. It drew the couple's initials
+     until the monogram was pressed into the wax itself; keeping both put flat
+     letters on top of engraved ones. */
   background: none;
-  background-position: center;
-  filter: drop-shadow(0 3px 6px rgb(43 33 24 / 0.28));
   cursor: pointer;
-  /* `cqw`, not `vw`: the storefront demo plays inside a phone silhouette that
-     is a fraction of the viewport, so `vw` sized the initials against the
-     browser window and they drifted off the wax as the page got wider.
-     `.envelope-scope` is the query container; a full-screen invitation has no
-     container ancestor, where `cqw` falls back to the viewport and so keeps
-     the behaviour the fixed gate always had. */
-  font-size: clamp(0.7rem, 5cqw, 1.4rem);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--envelope-seal-ink, #8a7658);
-  text-shadow: 0 1px 0 rgb(255 255 255 / 0.5);
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
   transition: scale 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -353,34 +357,18 @@
   outline-offset: 6px;
 }
 
-/* The wax lifts and breaks with the flap rather than fading on the spot. */
-.envelope-gate[data-state='opening'] .envelope-seal {
-  animation: envelope-seal-fade 380ms cubic-bezier(0.36, 0, 0.28, 1) forwards;
-  pointer-events: none;
-}
-
 /*
- * The INITIALS leave; the wax is not here to animate.
+ * Once the opening starts the seal stops taking taps, and that is all it has
+ * to do.
  *
- * The seal giving, breaking and going with the fold is all rendered. What has
- * to clear in CSS is the lettering drawn over it, and it has to clear FAST —
- * within the first few frames, while the wax is still whole. Initials that
- * lingered would float over broken wax, or over the gap where it had been.
+ * It used to fade out over the same beats, because it was drawing the couple's
+ * initials over the wax and they had to clear before the render broke it.
+ * There is nothing drawn here now, so fading an empty box would animate
+ * nothing: the wax gives, breaks and leaves with the flap entirely in the
+ * render.
  */
-@keyframes envelope-seal-fade {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  /* Presses in under the thumb before it goes, so the tap is answered. */
-  30% {
-    transform: scale(0.97);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(0.97);
-    opacity: 0;
-  }
+.envelope-gate[data-state='opening'] .envelope-seal {
+  pointer-events: none;
 }
 
 /*

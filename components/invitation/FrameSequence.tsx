@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import {
+  frameAt,
   frameSources,
   frameSrc,
   type EnvelopeFrames,
@@ -28,8 +29,9 @@ type FrameSequenceProps = {
  * envelope rather than an empty rectangle while the rest arrives.
  *
  * Frames advance on rAF against a wall clock rather than one-per-tick, so a
- * dropped frame skips ahead instead of stretching the opening. The render's
- * `fps` is the authored timing and is not adjusted here.
+ * dropped frame skips ahead instead of stretching the opening. The authored
+ * timing comes from the spec and is not adjusted here — including a `tail`
+ * rate, where the closing phase plays slower than the opening one.
  *
  * A single <img> whose src is swapped, not a stack of stacked images: every
  * frame is already decoded, so the swap is a paint with no fetch behind it.
@@ -84,7 +86,10 @@ export function FrameSequence({
 
     const tick = (now: number) => {
       const elapsed = now - started;
-      const frame = Math.floor((elapsed / 1000) * frames.fps) + 1;
+      /* `frameAt` rather than elapsed x fps: a sequence may play its tail at a
+         slower rate than its head, and that arithmetic belongs with the spec
+         that declares it. */
+      const frame = frameAt(frames, elapsed);
 
       if (frame >= frames.count) {
         setIndex(frames.count);

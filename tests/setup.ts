@@ -20,8 +20,10 @@ vi.mock('next/font/google', () => {
   return {
     Caveat: face,
     Cormorant_Garamond: face,
+    EB_Garamond: face,
     Geist: face,
     Marcellus: face,
+    Pinyon_Script: face,
   };
 });
 
