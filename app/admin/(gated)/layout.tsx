@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { AppSurface } from '@/components/admin/AppSurface';
 import { Button } from '@/components/ui/button';
 import { signOut } from '@/lib/auth/actions';
 import { requireAdmin } from '@/lib/auth/guards';
@@ -11,7 +12,7 @@ export default async function GatedAdminLayout({ children }: { children: ReactNo
   const admin = await requireAdmin();
 
   return (
-    <>
+    <AppSurface>
       <header className="flex items-center justify-between border-b px-6 py-3">
         <Link className="font-medium" href={ROUTES.ADMIN}>
           Rêve admin
@@ -26,6 +27,6 @@ export default async function GatedAdminLayout({ children }: { children: ReactNo
         </div>
       </header>
       {children}
-    </>
+    </AppSurface>
   );
 }

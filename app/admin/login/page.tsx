@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { LoginForm } from './LoginForm';
+import { AppSurface } from '@/components/admin/AppSurface';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SIGN_IN_MESSAGES } from '@/lib/auth/messages';
 import { LOGIN_NOTICE, LOGIN_NOTICE_PARAM } from '@/lib/routes';
@@ -21,15 +22,17 @@ export default async function AdminLoginPage({
   const notice = typeof raw === 'string' ? (NOTICES[raw] ?? null) : null;
 
   return (
-    <main className="grid min-h-dvh place-items-center px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Rêve admin</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <LoginForm notice={notice} />
-        </CardContent>
-      </Card>
-    </main>
+    <AppSurface>
+      <main className="grid min-h-dvh place-items-center px-4">
+        <Card className="w-full max-w-sm">
+          <CardHeader>
+            <CardTitle>Rêve admin</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LoginForm notice={notice} />
+          </CardContent>
+        </Card>
+      </main>
+    </AppSurface>
   );
 }
