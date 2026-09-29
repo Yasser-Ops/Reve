@@ -2,6 +2,15 @@
 export const ROUTES = {
   ADMIN: '/admin',
   ADMIN_LOGIN: '/admin/login',
+  ADMIN_NEW_CLIENT: '/admin/clients/new',
+} as const;
+
+/** Admin pages addressed by id. */
+export const adminRoutes = {
+  client: (id: string) => `/admin/clients/${id}`,
+  invitation: (id: string) => `/admin/invitations/${id}`,
+  /** The bare draft render, outside the admin surface's styles. */
+  preview: (id: string) => `/admin/preview/${id}`,
 } as const;
 
 /**
