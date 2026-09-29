@@ -341,9 +341,13 @@ publish, against a local Supabase.
 3. **Custom SMTP (Resend or similar) in Supabase Auth.** The built-in sender
    is rate-limited to a handful of emails an hour and is not meant for
    production; invites and password resets depend on it.
-4. **Edit the Invite and Reset Password email templates** to link to
+4. **Turn off "Allow new users to sign up"** (Authentication → Sign In /
+   Providers) and set the minimum password length to 8. Invite-only is only
+   real if the public anon key cannot call `signUp`; admin invites still work
+   with sign-ups off.
+5. **Edit the Invite and Reset Password email templates** to link to
    `/auth/confirm?token_hash={{ .TokenHash }}&type=...`.
-5. Later: Cloudflare Turnstile keys, for sign-in and RSVP.
+6. Later: Cloudflare Turnstile keys, for sign-in and RSVP.
 
 ---
 
