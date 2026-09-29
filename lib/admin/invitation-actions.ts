@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { UNEXPECTED, type ActionResult } from '@/lib/admin/action-result';
 import { requireAdmin } from '@/lib/auth/guards';
-import { checkContent } from '@/lib/invitations/content';
+import { checkContent, toJson } from '@/lib/invitations/content';
 import { canPublish } from '@/lib/invitations/publish-guard';
 import { slugSchema } from '@/lib/invitations/slug';
 import { ORDER_STATUS } from '@/lib/orders/status';
@@ -138,8 +138,11 @@ export async function publishInvitation(
     .maybeSingle();
   if (error || !invitation) return { ok: false, message: UNEXPECTED };
 
+  /* REVIEW for a first publish; DELIVERED to put a freshly approved edit of
+     a live invitation up in place of the old one. */
   const order = invitation.orders;
-  if (!order || order.status !== ORDER_STATUS.REVIEW) {
+  const publishable = order?.status === ORDER_STATUS.REVIEW || order?.status === ORDER_STATUS.DELIVERED;
+  if (!order || !publishable) {
     return { ok: false, message: 'Send the order for review before publishing.' };
   }
 
@@ -148,12 +151,20 @@ export async function publishInvitation(
     invitation.content,
     latest ? { decision: latest.decision, contentSnapshot: latest.content_snapshot } : null,
   );
-  if (!verdict.ok) return { ok: false, message: verdict.reason };
+  if (!verdict.ok || !latest) {
+    return { ok: false, message: verdict.ok ? UNEXPECTED : verdict.reason };
+  }
 
   const now = new Date().toISOString();
   const { error: publishError } = await supabase
     .from('invitations')
-    .update({ status: 'published', published_at: invitation.published_at ?? now })
+    /* The APPROVED snapshot goes live, not the working content: an edit that
+       lands after this read cannot slip onto the guest page unapproved. */
+    .update({
+      status: 'published',
+      published_content: toJson(latest.content_snapshot),
+      published_at: invitation.published_at ?? now,
+    })
     .eq('id', invitation.id);
   if (publishError) return { ok: false, message: UNEXPECTED };
 

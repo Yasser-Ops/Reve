@@ -22,11 +22,11 @@ function form(fields: Record<string, string>) {
   return data;
 }
 
-function invitation(reviews: unknown[], orderStatus = 'review') {
+function invitation(reviews: unknown[], orderStatus = 'review', stored: unknown = content) {
   return {
     data: {
       id: INV,
-      content,
+      content: stored,
       published_at: null,
       orders: { id: 'order-1', status: orderStatus, client_id: 'c' },
       invitation_reviews: reviews,
@@ -90,6 +90,31 @@ describe('publishInvitation', () => {
       status: 'published',
     });
     expect(state.fake.find('orders', 'update')?.args[0]).toMatchObject({ status: 'delivered' });
+  });
+});
+
+/* Review fix: the live page serves the APPROVED snapshot, never the working
+   content. An edit made after approval (or racing the publish) stays a draft. */
+describe('what goes live', () => {
+  it('publishes the approved snapshot into the live column', async () => {
+    const snapshot = { coupleFirstName: 'Maya', initials: 'MK' };
+    state.fake = fakeSupabase({
+      invitations: [invitation([approved(snapshot)], 'review', { initials: 'MK', coupleFirstName: 'Maya' }), { data: null }],
+      orders: [{ data: null }],
+    });
+
+    await expect(publishInvitation(null, form({ invitationId: INV }))).resolves.toEqual({ ok: true });
+    const update = state.fake.find('invitations', 'update');
+    expect(update?.args[0]).toMatchObject({ status: 'published', published_content: snapshot });
+  });
+
+  it('re-publishes a delivered invitation after a fresh approval', async () => {
+    state.fake = fakeSupabase({
+      invitations: [invitation([approved(content)], 'delivered'), { data: null }],
+      orders: [{ data: null }],
+    });
+
+    await expect(publishInvitation(null, form({ invitationId: INV }))).resolves.toEqual({ ok: true });
   });
 });
 

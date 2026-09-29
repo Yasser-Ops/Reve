@@ -186,6 +186,7 @@ export type Database = {
           id: string
           order_id: string
           published_at: string | null
+          published_content: Json | null
           slug: string
           status: Database["public"]["Enums"]["invitation_status"]
           template_slug: string
@@ -199,6 +200,7 @@ export type Database = {
           id?: string
           order_id: string
           published_at?: string | null
+          published_content?: Json | null
           slug: string
           status?: Database["public"]["Enums"]["invitation_status"]
           template_slug: string
@@ -212,6 +214,7 @@ export type Database = {
           id?: string
           order_id?: string
           published_at?: string | null
+          published_content?: Json | null
           slug?: string
           status?: Database["public"]["Enums"]["invitation_status"]
           template_slug?: string

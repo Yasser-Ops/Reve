@@ -86,7 +86,14 @@ export async function createClientWithOrder(
   /* Two inserts, no transaction over PostgREST: undo the first rather than
      leave a client with no order, which the client list could not show. */
   if (ordered.error) {
-    await supabase.from('clients').delete().eq('id', clientId);
+    const undone = await supabase.from('clients').delete().eq('id', clientId);
+    /* If even the undo fails, fail loudly: a client with no order is hidden
+       from the list and would block its email from being used again. */
+    if (undone.error) {
+      throw new Error(
+        `Client ${clientId} was created without its order and could not be removed`,
+      );
+    }
     return { ok: false, message: UNEXPECTED };
   }
 

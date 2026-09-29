@@ -128,6 +128,20 @@ describe('applyUpgrade', () => {
     });
   });
 
+  /* Review fix: switching the features on comes first, so a failure leaves the
+     tier unchanged and the same upgrade can simply be retried. */
+  it('does not raise the tier when the entitlements cannot be switched on', async () => {
+    state.fake = fakeSupabase({
+      orders: [{ data: { id: ORDER_ID, tier: 'basic', client_id: 'c' } }],
+      invitations: [{ error: { code: '500' } }],
+    });
+
+    await expect(
+      applyUpgrade(null, form({ orderId: ORDER_ID, tier: 'managed', amount: '100' })),
+    ).resolves.toMatchObject({ ok: false });
+    expect(state.fake.find('orders', 'update')).toBeUndefined();
+  });
+
   it('refuses a downgrade', async () => {
     state.fake = fakeSupabase({
       orders: [{ data: { id: ORDER_ID, tier: 'managed', client_id: 'c' } }],

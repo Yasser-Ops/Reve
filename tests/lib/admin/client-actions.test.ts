@@ -84,6 +84,17 @@ describe('createClientWithOrder', () => {
     expect(state.fake.find('clients', 'delete')).toBeDefined();
   });
 
+  /* Review fix: a client with no order is invisible in the list, so a failed
+     undo must be loud rather than leave one behind. */
+  it('fails loudly when the client cannot be removed again', async () => {
+    state.fake = fakeSupabase({
+      clients: [{ data: { id: 'client-1' } }, { error: { code: '500', message: 'down' } }],
+      orders: [{ error: { code: '23514' } }],
+    });
+
+    await expect(createClientWithOrder(null, form(newClient))).rejects.toThrow();
+  });
+
   it('refuses a tier that does not exist', async () => {
     state.fake = fakeSupabase();
     await expect(

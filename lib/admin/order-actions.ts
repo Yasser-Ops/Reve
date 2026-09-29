@@ -107,17 +107,21 @@ export async function applyUpgrade(
   const plan = planUpgrade(order.tier, input.data.tier);
   if (!plan) return { ok: false, message: 'An upgrade must be to a higher tier.' };
 
-  const { error: orderError } = await supabase
-    .from('orders')
-    .update({ tier: plan.tier, amount: input.data.amount })
-    .eq('id', order.id);
-  if (orderError) return { ok: false, message: UNEXPECTED };
-
+  /* Features first, tier second: if the second write fails the order still
+     reads as the old tier, so the same upgrade can simply be retried. The
+     other way round, a retry would be refused as "not a higher tier" while the
+     client lacked what they paid for. */
   const { error: invitationError } = await supabase
     .from('invitations')
     .update({ entitlements: plan.entitlements })
     .eq('order_id', order.id);
   if (invitationError) return { ok: false, message: UNEXPECTED };
+
+  const { error: orderError } = await supabase
+    .from('orders')
+    .update({ tier: plan.tier, amount: input.data.amount })
+    .eq('id', order.id);
+  if (orderError) return { ok: false, message: UNEXPECTED };
 
   revalidatePath(adminRoutes.client(order.client_id));
   return { ok: true };
