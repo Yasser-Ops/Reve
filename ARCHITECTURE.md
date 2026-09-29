@@ -1,7 +1,10 @@
 # Rêve — Architecture
 
 Digital invitations for weddings, engagements, and other occasions. Public
-storefront plus a per-invitation guest-facing page at its own link.
+storefront, a per-invitation guest-facing page at its own link, and a private
+admin where the operator runs clients, orders, content, approval and publishing.
+The client portal (Phase 3), RSVP (4) and Custom extras (5) are specced in
+`docs/superpowers/specs/2026-09-29-client-portal-design.md` and not built.
 
 ---
 
@@ -23,7 +26,23 @@ app/
 
   i/[slug]/page.tsx             The live invitation. NO storefront chrome:
   i/[slug]/error.tsx            a guest must never see Rêve's nav over the
-  i/[slug]/not-found.tsx        couple's page.
+  i/[slug]/not-found.tsx        couple's page. error.tsx calls retry().
+
+  admin/                        PRIVATE. proxy.ts refreshes the session here;
+    layout.tsx                  metadata only (noindex). NO surface here.
+    login/page.tsx, LoginForm   [CLIENT] outside (gated): no redirect loop
+    error.tsx, not-found.tsx    wrap AppSurface; error calls retry()
+    (gated)/layout.tsx          requireAdmin + header, wraps AppSurface
+    (gated)/page.tsx            client list: q/status/tier GET form
+    (gated)/clients/new         client + first order
+    (gated)/clients/[id]        details, orders, OrderPanel per order
+    (gated)/invitations/[id]    checklist, link, ContentEditor, Media, Review
+    preview/[id]/page.tsx       BARE draft render (iframe target), no surface
+
+proxy.ts                        Next 16 name for middleware. Matcher = private
+                                routes only; updateSession, redirects no one.
+                                next.config.ts sends X-Robots-Tag noindex on
+                                the same PRIVATE_ROUTE_PATTERNS (tested).
 
 components/
   store/                        Marketing surface.
@@ -45,27 +64,48 @@ components/
     FaqList.tsx                 [CLIENT] disclosure
 
   invitation/                   The product itself.
-    registry.ts                 slug -> {component, catalogue copy}
+    registry.tsx                slug -> defineTemplate({schema, load, copy})
     TemplateRenderer.tsx
     EnvelopeGate.tsx            [CLIENT] fixed inset:0 — IS the guest's screen
     FrameSequence.tsx           [CLIENT] plays the rendered opening
     envelope.css                Stage, card and seal; the paper is a render
     motifs/                     SHARED VISUALS ONLY. Petals.
-    templates/lin/              Film hero, sage/cream bands, falling petals
+    templates/<slug>/           index.tsx + schema.ts (its own content schema)
+
+  admin/                        Private surface. AppSurface (data-surface),
+                                ActionForm [CLIENT, the one form island],
+                                OrderPanel, ContentEditor [CLIENT],
+                                CopyChecklist [CLIENT], MediaUploader [CLIENT],
+                                MediaSection, ReviewPanel, StatusBadge,
+                                fields.tsx (ids from useId)
+  ui/                           shadcn base-nova, via `shadcn add` ONLY
 
 lib/
   events.ts                     Occasion registry (see 03)
   sample-invitation.ts          ONE wedding, shared by every marketing preview
   constants.ts, entitlements.ts, contact.ts, countdown.ts
-  schemas/invitation.ts         zod: content, theme, entitlements
-  invitations/get-published.ts  Anon PostgREST read
+  schemas/invitation.ts         zod: theme, entitlements
+  schemas/content/              core, BLOCKS, checklist (see 03)
+  invitations/                  get-published (anon read), slug, content
+                                (checkContent, toJson), publish-guard
+  orders/status.ts, upgrade.ts  stages per tier, moves, labels, upgrades
+  admin/                        reads (clients, invitations, media) and
+                                'use server' actions (client-, order-,
+                                invitation-, media-actions); ActionResult
+  auth/                         guards (requireAdmin), actions, messages,
+                                admin-membership
+  supabase/                     server.ts, client.ts (uploads only),
+                                proxy.ts, database.types.ts (generated)
+  routes.ts                     ROUTES, adminRoutes, PRIVATE_ROUTE_PATTERNS
   hooks/useCountdown.ts         Ticking clock; every dial is drawn per design
   mockup.ts                     ads.jpg geometry (shared with the composer)
   rest.ts, env.ts, envelopes.ts
 
 scripts/
   compose-mockup.mjs            Cuts stills into ads.jpg -> collection card
-  optimize-images.mjs
+  optimize-images.mjs           public/, or `<folder>` for client photos
+
+supabase/migrations/            append-only; 0005 admin pipeline, 0006 view seal
 ```
 
 **Client islands are deliberately shallow.** `InvitationDemo`, `RsvpPanel`,
@@ -89,11 +129,11 @@ WhatsApp link  ->  GET /i/[slug]
   page.tsx (server)
     getPublishedInvitation(slug)      lib/invitations/get-published.ts
       restGet()                       raw fetch, anon key, no supabase-js
-      -> published_invitations view   (RLS-sealed projection)
-      zod parse: content/theme/entitlements
-    notFound() when unpublished
-    getTemplate(template_slug)        components/invitation/registry.ts
-    <Template content theme entitlements />
+      -> published_invitations view   SELECT-only; serves published_content
+      design = getTemplateEntry(template_slug)   null -> 404
+      design.schema.parse(content)     the DESIGN's schema, loud on mismatch
+    notFound() when unpublished or design unknown
+    TemplateRenderer -> loadTemplate  lazy import, memoised, parses again
   EnvelopeGate [CLIENT] fixed inset:0
     getEnvelope(slug)                lib/envelopes.ts -> frames + seal geometry
     FrameSequence preloads EVERY frame; seal disabled, hint "One moment"
@@ -114,6 +154,47 @@ WhatsApp link  ->  GET /i/[slug]
       invitation arrives after 400ms. A render cannot be partially stilled.
     The envelope replays on every visit. A returning guest is usually
     showing it to someone; Skip is always one tap away.
+```
+
+**Operator signs in**
+
+```
+/admin -> proxy.ts updateSession (getClaims refreshes the cookie)
+  (gated)/layout requireAdmin()       getClaims + admin_users membership
+    no claims | error      -> 307 /admin/login
+    not on admin_users     -> /admin/login?notice=not-admin (whitelisted)
+LoginForm [CLIENT] useActionState -> signInAdmin (zod)
+  signInWithPassword -> isAdmin (RLS: admin_users self read)
+    admin -> redirect /admin | else signOut({scope:'local'}) + NOT_ADMIN
+```
+
+Every admin PAGE and ACTION calls `requireAdmin()` itself: a layout does not
+re-run on client navigation. Every admin read and write runs as the admin's
+own session, so RLS (`private.is_admin()`) is the second wall. No service key.
+
+**Operator builds and delivers an invitation**
+
+```
+client page -> OrderPanel
+  moveOrder(paid)              canMove(tier); due_at = now + DELIVERY.hours
+                               unless already set, or Custom
+  provisionInvitation(design)  paid or later; no invitation yet; design in
+                               registry; slug = proposeSlug(client name) +
+                               withSuffix(taken); entitlements snapshotted
+-> /admin/invitations/[id]
+  saveContent(JSON)            checkContent: JSON.parse + design.schema
+                               -> issues by field, or content stored PARSED
+  iframe /admin/preview/[id]   reloads after each save (bare, no surface)
+  MediaUploader -> createUploadUrl (signed, per file) -> browser
+                   uploadToSignedUrl -> invitation-media/<id>/<kind>/<name>
+  moveOrder(review)            refused unless content satisfies its design
+  approveOnBehalf(note)        invitation_reviews: snapshot = current content
+  publishInvitation            order REVIEW or DELIVERED; latest review
+                               approved AND snapshot == content (key-order
+                               blind) -> published_content = SNAPSHOT,
+                               status published, order delivered
+  edit after publish           changes the draft only; guests keep the
+                               snapshot until re-approval + Publish again
 ```
 
 **Visitor compares two designs**
@@ -187,16 +268,31 @@ What is shared is narrow and deliberate:
   the first. Any template may opt in; none inherits a silhouette by doing so.
 - `lib/hooks/useCountdown.ts` — a clock, not a look. It returns four numbers;
   each design draws its own dial. A hook has nothing to negotiate over.
-- `lib/schemas/invitation.ts` — ONE superset content schema.
+- `lib/schemas/content/` — the core and the ready-made blocks every design
+  composes its own schema from (below).
 
-**Freedom is in rendering, not in storage.** Every field past the core four is
-optional or defaulted, so a template renders what it wants and ignores the
-rest. Per-design schemas would mean per-design forms and per-design migrations
-for what is one row in one table.
+### Content — one core, each design its own schema
 
-DEFERRED: a per-template `uses: [...]` declaration in the registry, so an
-editor form asks only for the fields a chosen design actually renders. Not
-worth guessing at with one template and no form built.
+`coreContentSchema` (names, initials, eventDate, venue) is what exists for
+every design and is read outside any one of them: the envelope's initials,
+link previews, the portal, RSVP. `BLOCKS` (headline, message, schedule,
+gallery, heroMedia, registryMessage) are ready-made fields a design LISTS;
+none inherits one it did not ask for. A design's `templates/<slug>/schema.ts`
+is `coreContentSchema.extend({ ...blocks, ...its own })`, and
+`defineTemplate` binds it to the component: a component reading a field its
+schema lacks, or a schema missing the core, fails typecheck.
+
+- **Every field carries `.meta({ ask })`**, the line sent to a client.
+  `checklistFor` throws on a field without one; `checklistMessage` is the
+  WhatsApp list the editor copies.
+- **Block keys are permanent.** Stored rows are keyed by them. Add optional
+  fields; never rename.
+- **Content is parsed with the design's own schema** wherever it is read:
+  saving, the public read, the rendered wrapper. Still one jsonb column, so a
+  new design needs no migration. There is no form editor: the operator writes
+  JSON, validated on save.
+- A redesign that would change already-approved invitations ships as a NEW
+  entry (`lin-2`), the old one kept rendering.
 
 **Ornament: drawn or painted?** Jardin's countdown ornament went through four
 drawn versions before becoming a plate, and the rule that came out of it is
@@ -351,22 +447,29 @@ honour a 48-hour turnaround.
 
 ### Template registry — `components/invitation/registry.ts`
 
-Carries the component **and** its catalogue copy, so the storefront cannot
-list a design the renderer lacks. Adding a template = a directory + one entry;
-it then appears on `/collection` with no page edit.
+Carries the schema, a lazy `load` and the catalogue copy, so the storefront
+cannot list a design the renderer lacks. Adding a template = a directory + one
+`defineTemplate` entry; it then appears on the shelves with no page edit. It
+is the ONLY list of designs: the `templates` table is gone (0005).
 
-**Drafts.** `draft?: true` marks a design mid-build. It still prerenders (via
-`TEMPLATE_SLUGS`) so it opens by URL for review, and its page is `noindex`.
-`LISTED_TEMPLATES` is the registry less drafts, and it alone feeds the shelves
-(`templatesForOccasion`), `app/sitemap.ts` and a design page's "others" row.
-Dentelle is a draft, borrowing Jardin's component and card. The pipeline from
+- **Lazy:** `load: () => import(...)`, memoised per design, so React sees one
+  stable component type; `loadTemplate(slug)`. Schemas stay static:
+  validating content never loads a component.
+- **`visibility`:** LISTED (shelf, sitemap, product page), DRAFT (product page
+  by URL for review, `noindex`, no shelf), PRIVATE (a Custom design: renders
+  its client's invitation, nothing else). `listedOf`, `pageSlugsOf` and
+  `getDesignPageEntry` enforce it; `/weddings/[slug]` has
+  `dynamicParams = false` and `/preview/[slug]` refuses PRIVATE.
+
+Dentelle is a DRAFT, borrowing Jardin's component and card. The pipeline from
 brief to live card is `docs/design-roadmap.md`.
 
 ### Sample invitation — `lib/sample-invitation.ts`
 
 One wedding behind every marketing preview (comparison, collection, WhatsApp
-thread). Parsed through the **real** `invitationContentSchema`, so a schema
-change breaks the sample rather than letting marketing drift from the product.
+thread). Parsed through `coreContentSchema.extend(BLOCKS)`, and a registry
+test parses it with every design's schema, so a schema change breaks the
+sample rather than letting marketing drift from the product.
 
 > **Its date must stay in the future.** `Countdown` correctly renders nothing
 > once a date has passed, which silently leaves a gap in every preview.
@@ -374,14 +477,20 @@ change breaks the sample rather than letting marketing drift from the product.
 
 ### Tables and RLS
 
+Every admin policy is `for all to authenticated using (private.is_admin())`.
+`private` is not exposed by PostgREST; `authenticated` holds USAGE and
+EXECUTE, anon holds nothing. Clients get their own policies in Phase 3.
+
 | table | policy | notes |
 |---|---|---|
-| `invitations` | `invitations admin all` | public reads go through the sealed view only |
-| `templates` | `templates public read published`, `templates admin all` | |
-| `guests` | `guests admin all` | |
-| `rsvps` | `rsvps admin all` | `name, attending, party_size, dietary_notes, message` |
-| `orders`, `custom_leads` | admin all | |
-| `admin_users` | `admin_users self read` | |
+| `clients` | admin all | email unique, lowercase; `user_id` null until invited (Phase 3), ON DELETE SET NULL |
+| `orders` | admin all | `client_id`, `due_at`, reference default `RV-####` (sequence); status adds `brief`, `concept` |
+| `invitations` | admin all | `order_id` unique; `content` is the working draft, `published_content` the approved snapshot guests see |
+| `invitation_reviews` | admin all | `content_snapshot` IS the approval; `on_behalf`; `created_by` has no delete action |
+| `guests`, `rsvps`, `custom_leads` | admin all | |
+| `admin_users` | `admin_users self read` | membership, not a JWT claim, makes an admin |
+| view `published_invitations` | SELECT to anon, authenticated ONLY | runs as its owner; projects `published_content as content` |
+| bucket `invitation-media` | public read; admin select, insert, update, delete | WebP and MP4 only, 50 MB; `<invitation>/<kind>/<name>` |
 
 Public/anon reads use **raw `fetch()` to PostgREST**, never `supabase-js`,
 which avoids stalling on a stale session. Entitlements are resolved from the
@@ -414,6 +523,26 @@ drift.
 No dark mode. An invitation is a fixed artifact, like printed stationery.
 
 ### Invariants
+
+- **A helper used inside RLS must be executable by the role the policy runs
+  as.** 0003 revoked EXECUTE on `public.is_admin()` to quiet the advisor and
+  silently broke every admin policy ("permission denied for function"). Policy
+  helpers live in the non-exposed `private` schema with EXECUTE granted to
+  `authenticated`.
+- **Every migration that creates or recreates a view or table in `public`
+  ends with `revoke all ... from public, anon, authenticated` and an explicit
+  grant.** Supabase's default privileges grant ALL on new objects; 0004's
+  recreated view was writable by the public anon key past RLS until 0006.
+  Verify with an anon write attempt inside a rolled-back transaction.
+- **Guests see only an approved snapshot.** `published_content` is written by
+  publish alone, from the latest approval; `content` is a draft.
+- **shadcn is scoped to `[data-surface="app"]`.** Its tokens and base layer
+  are defined only there (`AppSurface`); the storefront's `--background`,
+  `--foreground`, `--font-sans` and radius scale are untouched. NEVER run
+  `shadcn init` again: it rewrites `app/globals.css` and `app/layout.tsx`.
+  The draft preview stays outside the surface or the design gets repainted.
+- **Form field ids come from `useId`**, never from the field name: one admin
+  page holds several forms with the same field names.
 
 - **An envelope is a rendered sequence, never cut layers.** The reverse of
   what stood here. Four hinged layers could not show paper bending or wax
@@ -509,10 +638,21 @@ base from the walk.
 - `/i/[slug]` renders dynamically; SSG via `generateStaticParams` is possible
   once the published set is known at build time.
 - Testimonials are marked placeholders. Rêve is pre-launch.
-- RSVP submission, the guest-list dashboard, and payment are not built. The
-  storefront illustrates them; the tables exist; the routes do not. The write
-  path is specced but NOT implemented:
-  `docs/superpowers/specs/2026-09-05-guest-rsvp-design.md`.
+- **Portal Phases 3 to 5 are not built:** client invite and portal (the
+  invite email links to `/auth/confirm`, Phase 3), RSVP and the guest list
+  (Phase 4, write path in `2026-09-05-guest-rsvp-design.md`), private designs
+  and per-client envelopes (Phase 5). Payment stays manual (Whish).
+- **Operator setup still open:** custom SMTP for auth emails (the built-in
+  sender allows a few an hour), the Invite and Reset email templates pointing
+  at `/auth/confirm`, Supabase password minimum 10, leaked-password
+  protection. Sign-ups are OFF.
+- **Deferred Phase 2 minors** (from the final review): search over 80
+  characters lists every client; `moveOrder` does not re-check the status it
+  read, so a stale button can move an order back; provisioning races map to a
+  generic error, and a 59-60 character base slug plus suffix exceeds the slug
+  limit; uploads differing only in case or punctuation overwrite each other;
+  an empty upgrade amount records $0; the fake Supabase in tests ignores query
+  filters.
 - **Lin's envelope has ONE frame.** `frames.count === 1`: the sealed render
   exists and the sequence does not. Tapping the seal holds that frame for
   `HOLD_MS` and hands over. The count is what makes this visible rather than
