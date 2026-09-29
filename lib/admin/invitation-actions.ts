@@ -5,7 +5,9 @@ import { z } from 'zod';
 import { UNEXPECTED, type ActionResult } from '@/lib/admin/action-result';
 import { requireAdmin } from '@/lib/auth/guards';
 import { checkContent } from '@/lib/invitations/content';
+import { canPublish } from '@/lib/invitations/publish-guard';
 import { slugSchema } from '@/lib/invitations/slug';
+import { ORDER_STATUS } from '@/lib/orders/status';
 import { adminRoutes } from '@/lib/routes';
 import { createClient } from '@/lib/supabase/server';
 
@@ -82,5 +84,93 @@ export async function updateSlug(
   }
 
   revalidatePath(adminRoutes.invitation(invitation.id));
+  return { ok: true };
+}
+
+export async function approveOnBehalf(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireAdmin();
+  const id = z.uuid().safeParse(formData.get('invitationId'));
+  const note = z.string().trim().max(500).safeParse(formData.get('note') ?? '');
+  if (!id.success || !note.success) return { ok: false, message: UNEXPECTED };
+
+  const supabase = await createClient();
+  const { data: invitation, error } = await supabase
+    .from('invitations')
+    .select('id, content')
+    .eq('id', id.data)
+    .maybeSingle();
+  if (error || !invitation) return { ok: false, message: UNEXPECTED };
+
+  /* The snapshot IS the approval: it records exactly what was agreed. */
+  const { error: insertError } = await supabase.from('invitation_reviews').insert({
+    invitation_id: invitation.id,
+    decision: 'approved',
+    content_snapshot: invitation.content,
+    on_behalf: true,
+    note: note.data,
+  });
+  if (insertError) return { ok: false, message: UNEXPECTED };
+
+  revalidatePath(adminRoutes.invitation(invitation.id));
+  return { ok: true };
+}
+
+export async function publishInvitation(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireAdmin();
+  const id = z.uuid().safeParse(formData.get('invitationId'));
+  if (!id.success) return { ok: false, message: UNEXPECTED };
+
+  const supabase = await createClient();
+  const { data: invitation, error } = await supabase
+    .from('invitations')
+    .select(
+      'id, content, published_at, orders(id, status, client_id), invitation_reviews(decision, content_snapshot, created_at)',
+    )
+    .eq('id', id.data)
+    .order('created_at', { referencedTable: 'invitation_reviews', ascending: false })
+    .limit(1, { referencedTable: 'invitation_reviews' })
+    .maybeSingle();
+  if (error || !invitation) return { ok: false, message: UNEXPECTED };
+
+  const order = invitation.orders;
+  if (!order || order.status !== ORDER_STATUS.REVIEW) {
+    return { ok: false, message: 'Send the order for review before publishing.' };
+  }
+
+  const latest = invitation.invitation_reviews[0];
+  const verdict = canPublish(
+    invitation.content,
+    latest ? { decision: latest.decision, contentSnapshot: latest.content_snapshot } : null,
+  );
+  if (!verdict.ok) return { ok: false, message: verdict.reason };
+
+  const now = new Date().toISOString();
+  const { error: publishError } = await supabase
+    .from('invitations')
+    .update({ status: 'published', published_at: invitation.published_at ?? now })
+    .eq('id', invitation.id);
+  if (publishError) return { ok: false, message: UNEXPECTED };
+
+  /* Re-running after a failure here is safe: the content still matches its
+     approval, so publishing again changes nothing and delivers the order. */
+  const { error: deliverError } = await supabase
+    .from('orders')
+    .update({ status: ORDER_STATUS.DELIVERED, updated_at: now })
+    .eq('id', order.id);
+  if (deliverError) {
+    return {
+      ok: false,
+      message: 'Published, but the order was not marked delivered. Publish again.',
+    };
+  }
+
+  revalidatePath(adminRoutes.invitation(invitation.id));
+  revalidatePath(adminRoutes.client(order.client_id));
   return { ok: true };
 }

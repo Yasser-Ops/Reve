@@ -7,6 +7,7 @@ import { ContentEditor } from '@/components/admin/ContentEditor';
 import { CopyChecklist } from '@/components/admin/CopyChecklist';
 import { Field } from '@/components/admin/fields';
 import { MediaSection } from '@/components/admin/MediaSection';
+import { ReviewPanel } from '@/components/admin/ReviewPanel';
 import { getTemplateEntry } from '@/components/invitation/registry';
 import { updateSlug } from '@/lib/admin/invitation-actions';
 import { getInvitationForEditor } from '@/lib/admin/invitations';
@@ -88,6 +89,8 @@ export default async function InvitationEditorPage({
       />
 
       <MediaSection invitationId={invitation.id} />
+
+      <ReviewPanel invitation={invitation} />
     </main>
   );
 }
