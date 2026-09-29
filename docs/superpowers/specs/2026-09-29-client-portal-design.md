@@ -311,8 +311,8 @@ Turnstile stays deferred until Cloudflare keys exist, as that spec records.
   wall. The service-role client is used only for auth admin calls and
   storage uploads.
 - `getSession()` is never used for authorization.
-- **Passwords: two layers.** Supabase's minimum length (dashboard, 8) is the
-  real floor: a signed-in user can call `updateUser` from the browser with the
+- **Passwords: two layers.** Supabase's minimum length (dashboard) is the
+  real floor (set it to 10, matching the app rule, so the two never disagree): a signed-in user can call `updateUser` from the browser with the
   anon key and bypass every app form. On top of it, ONE `passwordSchema` in
   `lib/auth/` (min 10, max 72 since bcrypt ignores the rest, not equal to the
   email) is used by every action that SETS a password: the Phase 3 welcome
@@ -348,7 +348,7 @@ publish, against a local Supabase.
    is rate-limited to a handful of emails an hour and is not meant for
    production; invites and password resets depend on it.
 4. **Turn off "Allow new users to sign up"** (Authentication → Sign In /
-   Providers) and set the minimum password length to 8. Invite-only is only
+   Providers) and set the minimum password length to 10. Invite-only is only
    real if the public anon key cannot call `signUp`; admin invites still work
    with sign-ups off.
 5. **Edit the Invite and Reset Password email templates** to link to
