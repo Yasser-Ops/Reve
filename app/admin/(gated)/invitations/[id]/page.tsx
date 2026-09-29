@@ -6,6 +6,7 @@ import { ActionForm } from '@/components/admin/ActionForm';
 import { ContentEditor } from '@/components/admin/ContentEditor';
 import { CopyChecklist } from '@/components/admin/CopyChecklist';
 import { Field } from '@/components/admin/fields';
+import { MediaSection } from '@/components/admin/MediaSection';
 import { getTemplateEntry } from '@/components/invitation/registry';
 import { updateSlug } from '@/lib/admin/invitation-actions';
 import { getInvitationForEditor } from '@/lib/admin/invitations';
@@ -85,6 +86,8 @@ export default async function InvitationEditorPage({
         invitationId={invitation.id}
         previewUrl={adminRoutes.preview(invitation.id)}
       />
+
+      <MediaSection invitationId={invitation.id} />
     </main>
   );
 }

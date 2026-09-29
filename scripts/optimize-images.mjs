@@ -1,7 +1,11 @@
 /**
  * Converts raster imagery in public/ to WebP, capped at 1600px wide.
  *
- * Run with `pnpm optimize:images`. Idempotent: a source whose .webp is already
+ * Run with `pnpm optimize:images`, or `pnpm optimize:images <folder>` to convert
+ * that folder instead, e.g. photos saved from a client's WhatsApp before they
+ * are uploaded to an invitation (the media bucket accepts only WebP and MP4).
+ *
+ * Idempotent: a source whose .webp is already
  * newer than it is skipped, so re-running after adding one photograph does not
  * reprocess the whole directory.
  *
@@ -14,6 +18,7 @@ import { extname, join, resolve } from 'node:path';
 import sharp from 'sharp';
 
 const PUBLIC_DIR = resolve(import.meta.dirname, '..', 'public');
+const ROOT = process.argv[2] ? resolve(process.argv[2]) : PUBLIC_DIR;
 const MAX_WIDTH = 1600;
 const QUALITY = 82;
 const SOURCES = new Set(['.png', '.jpg', '.jpeg']);
@@ -29,7 +34,7 @@ async function* walk(dir) {
 let converted = 0;
 let skipped = 0;
 
-for await (const source of walk(PUBLIC_DIR)) {
+for await (const source of walk(ROOT)) {
   if (!SOURCES.has(extname(source).toLowerCase())) continue;
 
   const target = source.replace(/\.[^.]+$/, '.webp');
