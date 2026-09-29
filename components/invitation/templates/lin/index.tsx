@@ -3,14 +3,11 @@ import { Petals } from '@/components/invitation/motifs/Petals';
 import { CountdownDial } from './CountdownDial';
 import { EveningTimeline } from './EveningTimeline';
 import { linBody, linScript } from './fonts';
-import type {
-  Entitlements,
-  InvitationContent,
-  Theme,
-} from '@/lib/schemas/invitation';
+import type { Entitlements, Theme } from '@/lib/schemas/invitation';
+import type { LinContent } from './schema';
 
 type LinProps = {
-  content: InvitationContent;
+  content: LinContent;
   theme: Theme;
   entitlements: Entitlements;
 };
@@ -142,7 +139,7 @@ function LinGallery({
   content,
   entitlements,
 }: {
-  content: InvitationContent;
+  content: LinContent;
   entitlements: Entitlements;
 }) {
   if (!entitlements.gallery) return null;
@@ -177,7 +174,7 @@ function Band({ bg, children }: { bg: string; children: React.ReactNode }) {
   );
 }
 
-function HeroSection({ content }: { content: InvitationContent }) {
+function HeroSection({ content }: { content: LinContent }) {
   const media = content.heroMedia;
 
   return (

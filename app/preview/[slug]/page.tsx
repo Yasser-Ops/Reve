@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getTemplate } from '@/components/invitation/registry';
+import { loadTemplate } from '@/components/invitation/registry';
 import {
   SAMPLE_CONTENT,
   SAMPLE_ENTITLEMENTS,
@@ -21,15 +21,11 @@ export default async function PreviewPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const Template = getTemplate(slug);
+  const Template = await loadTemplate(slug);
 
   if (!Template) notFound();
 
   return (
-    /* Same reasoning as TemplateRenderer: the registry is a module-level
-       constant map, so this is a stable reference, not a component built
-       during render. */
-    // eslint-disable-next-line react-hooks/static-components
     <Template
       content={SAMPLE_CONTENT}
       entitlements={SAMPLE_ENTITLEMENTS}

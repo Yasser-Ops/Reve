@@ -1,8 +1,10 @@
-import {
-  entitlementsSchema,
-  invitationContentSchema,
-  themeSchema,
-} from '@/lib/schemas/invitation';
+import { BLOCKS } from '@/lib/schemas/content/blocks';
+import { coreContentSchema } from '@/lib/schemas/content/core';
+import { entitlementsSchema, themeSchema } from '@/lib/schemas/invitation';
+
+/* Core plus every shared block: the sample must carry whatever any design
+   draws, and each design's own schema then takes only its part. */
+const sampleContentSchema = coreContentSchema.extend(BLOCKS);
 
 /**
  * One wedding, used to demonstrate every template.
@@ -16,7 +18,7 @@ import {
  * The couple matches the live example the storefront links to, so a visitor
  * comparing designs and then opening the real invitation sees the same names.
  */
-export const SAMPLE_CONTENT = invitationContentSchema.parse({
+export const SAMPLE_CONTENT = sampleContentSchema.parse({
   coupleFirstName: 'Malik',
   couplePartnerName: 'Sara',
   initials: 'MS',

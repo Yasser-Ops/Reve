@@ -2,12 +2,10 @@
 
 import Image from 'next/image';
 import { useEffect, useRef } from 'react';
-import type { InvitationContent } from '@/lib/schemas/invitation';
+import type { ScheduleItem } from '@/lib/schemas/content/blocks';
 
 const INK = '#3a2f22';
 const GOLD = '#8a6d3a';
-
-type ScheduleItem = InvitationContent['schedule'][number];
 
 /**
  * Two-column zigzag timeline: illustration and text swap sides by row index,

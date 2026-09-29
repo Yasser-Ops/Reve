@@ -3,14 +3,11 @@ import { FountainCount } from './FountainCount';
 import { GardenParallax } from './GardenParallax';
 import { GardenPath } from './GardenPath';
 import { jardinBody, jardinScript } from './fonts';
-import type {
-  Entitlements,
-  InvitationContent,
-  Theme,
-} from '@/lib/schemas/invitation';
+import type { Entitlements, Theme } from '@/lib/schemas/invitation';
+import type { JardinContent } from './schema';
 
 type JardinProps = {
-  content: InvitationContent;
+  content: JardinContent;
   theme: Theme;
   entitlements: Entitlements;
 };
@@ -297,7 +294,7 @@ function HeroSection({
   content,
   motion,
 }: {
-  content: InvitationContent;
+  content: JardinContent;
   motion: Theme['motion'];
 }) {
   return (
@@ -368,7 +365,7 @@ function JardinGallery({
   content,
   entitlements,
 }: {
-  content: InvitationContent;
+  content: JardinContent;
   entitlements: Entitlements;
 }) {
   if (!entitlements.gallery) return null;

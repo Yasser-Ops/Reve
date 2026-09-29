@@ -1,33 +1,29 @@
-import { getTemplate, type TemplateProps } from '@/components/invitation/registry';
+import { loadTemplate, type TemplateProps } from '@/components/invitation/registry';
 
 type TemplateRendererProps = TemplateProps & {
   templateSlug: string;
+  content: unknown;
 };
 
 /**
  * Renders the template registered under `templateSlug`.
  *
- * react-hooks/static-components fires on any component resolved during render,
- * because a freshly created component type would remount its subtree on every
- * render. That cannot happen here: the registry is a module-level constant map,
- * so `getTemplate` returns the same reference for a given slug for the lifetime
- * of the process. Selecting a template by slug is the seam that makes templates
- * pluggable, so the lookup stays and the rule is suppressed at the usage site.
+ * The component is awaited, not built, during render: `defineTemplate`
+ * memoises each design, so `loadTemplate` resolves to the same reference for a
+ * given slug for the life of the process and React never sees a new type that
+ * would remount the invitation.
  *
  * Returns null for an unregistered slug; callers decide whether that is a 404.
  */
-export function TemplateRenderer({
+export async function TemplateRenderer({
   templateSlug,
   content,
   theme,
   entitlements,
 }: TemplateRendererProps) {
-  const Template = getTemplate(templateSlug);
+  const Template = await loadTemplate(templateSlug);
 
   if (!Template) return null;
 
-  return (
-    // eslint-disable-next-line react-hooks/static-components
-    <Template content={content} entitlements={entitlements} theme={theme} />
-  );
+  return <Template content={content} entitlements={entitlements} theme={theme} />;
 }

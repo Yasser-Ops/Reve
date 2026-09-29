@@ -1,19 +1,29 @@
 import type { ReactNode } from 'react';
+import type { z } from 'zod';
 import { Jardin } from '@/components/invitation/templates/jardin';
+import { jardinContentSchema } from '@/components/invitation/templates/jardin/schema';
 import { Lin } from '@/components/invitation/templates/lin';
-import type {
-  Entitlements,
-  InvitationContent,
-  Theme,
-} from '@/lib/schemas/invitation';
+import { linContentSchema } from '@/components/invitation/templates/lin/schema';
+import type { DesignSchema } from '@/lib/schemas/content/core';
+import type { Entitlements, Theme } from '@/lib/schemas/invitation';
 
+/** What every design receives besides its content. */
 export type TemplateProps = {
-  content: InvitationContent;
   theme: Theme;
   entitlements: Entitlements;
 };
 
-export type TemplateComponent = (props: TemplateProps) => ReactNode;
+/** A design's own component, typed against its own content. */
+export type DesignComponent<C> = (props: TemplateProps & { content: C }) => ReactNode;
+
+/**
+ * A design as the rest of the app sees it: content arrives unknown and is
+ * parsed with the design's own schema on the way in, so no caller can hand a
+ * design content it was not built for.
+ */
+export type RenderedDesign = (
+  props: TemplateProps & { content: unknown },
+) => ReactNode;
 
 /**
  * Which section of the collection a design is shelved under.
@@ -65,7 +75,10 @@ export type TemplateEntry = {
    * detect that the picture has gone stale.
    */
   preview: string;
-  component: TemplateComponent;
+  /** What this design draws. Validates stored content and yields the checklist. */
+  schema: DesignSchema;
+  /** Resolves the design, parsing content with `schema` on every render. */
+  load: () => Promise<RenderedDesign>;
   /**
    * A design mid-build (see `docs/design-roadmap.md`). Its page prerenders and
    * opens by URL so it can be reviewed, but no shelf, sitemap or "other
@@ -74,6 +87,40 @@ export type TemplateEntry = {
    */
   draft?: true;
 };
+
+type TemplateDefinition<S extends DesignSchema> = Omit<
+  TemplateEntry,
+  'schema' | 'load'
+> & {
+  schema: S;
+  load: () => Promise<DesignComponent<z.output<S>>>;
+};
+
+/**
+ * Binds a design's component to its schema. A component that reads a field
+ * its schema lacks, or a schema missing the core, fails typecheck here.
+ *
+ * The wrapper is built once per design and memoised, so `load()` returns the
+ * same component reference for the life of the process: React sees one
+ * stable type, never a fresh one that would remount the invitation.
+ */
+export function defineTemplate<S extends DesignSchema>(
+  def: TemplateDefinition<S>,
+): TemplateEntry {
+  let rendered: Promise<RenderedDesign> | undefined;
+
+  return {
+    ...def,
+    load: () =>
+      (rendered ??= def.load().then((Design) => {
+        function Rendered({ content, ...props }: TemplateProps & { content: unknown }) {
+          return <Design {...props} content={def.schema.parse(content)} />;
+        }
+
+        return Rendered;
+      })),
+  };
+}
 
 /**
  * The seam that makes templates pluggable: adding one means adding a directory
@@ -84,7 +131,7 @@ export type TemplateEntry = {
  * describe one differently from how it actually presents.
  */
 const REGISTRY = {
-  lin: {
+  lin: defineTemplate({
     slug: 'lin',
     name: 'Lin',
     summary:
@@ -94,9 +141,10 @@ const REGISTRY = {
     character: ['Film behind the names', 'Drawn illustration', 'Falling petals'],
     occasion: OCCASIONS.WEDDING,
     preview: '/collection/lin/card.webp',
-    component: Lin,
-  },
-  jardin: {
+    schema: linContentSchema,
+    load: async () => Lin,
+  }),
+  jardin: defineTemplate({
     slug: 'jardin',
     name: 'Jardin',
     summary:
@@ -114,8 +162,9 @@ const REGISTRY = {
        picture has gone stale — it is a build artefact, and an edit to the
        hero or the type leaves the card showing the previous design. */
     preview: '/collection/jardin/card.webp',
-    component: Jardin,
-  },
+    schema: jardinContentSchema,
+    load: async () => Jardin,
+  }),
   /*
    * STANDING IN FOR ITS OWN ARTWORK. This entry exists so the Dentelle
    * ENVELOPE — ivory damask with a lace trim, `lib/envelopes.ts` — has a page
@@ -131,7 +180,7 @@ const REGISTRY = {
    * Jardin's. `draft` is what keeps that mismatch off the shelves until a
    * real component and `pnpm mockup:compose dentelle` replace them.
    */
-  dentelle: {
+  dentelle: defineTemplate({
     slug: 'dentelle',
     name: 'Dentelle',
     summary:
@@ -142,12 +191,11 @@ const REGISTRY = {
     occasion: OCCASIONS.WEDDING,
     /* Jardin's card, borrowed with its invitation. */
     preview: '/collection/jardin/card.webp',
-    component: Jardin,
+    schema: jardinContentSchema,
+    load: async () => Jardin,
     draft: true,
-  },
-} as const satisfies Record<string, TemplateEntry>;
-
-export type TemplateSlug = keyof typeof REGISTRY;
+  }),
+} satisfies Record<string, TemplateEntry>;
 
 export const TEMPLATES: readonly TemplateEntry[] = Object.values(REGISTRY);
 
@@ -159,12 +207,16 @@ export const LISTED_TEMPLATES: readonly TemplateEntry[] = TEMPLATES.filter(
 /** Every slug with a page, drafts included, so a draft opens for review. */
 export const TEMPLATE_SLUGS: readonly string[] = Object.keys(REGISTRY);
 
-export function getTemplate(slug: string): TemplateComponent | null {
-  return REGISTRY[slug as TemplateSlug]?.component ?? null;
+export function getTemplateEntry(slug: string): TemplateEntry | undefined {
+  return Object.hasOwn(REGISTRY, slug)
+    ? REGISTRY[slug as keyof typeof REGISTRY]
+    : undefined;
 }
 
-export function getTemplateEntry(slug: string): TemplateEntry | undefined {
-  return REGISTRY[slug as TemplateSlug];
+/** The design registered under `slug`, ready to render, or null. */
+export async function loadTemplate(slug: string): Promise<RenderedDesign | null> {
+  const entry = getTemplateEntry(slug);
+  return entry ? entry.load() : null;
 }
 
 /**

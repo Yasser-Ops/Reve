@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { EnvelopeGate } from '@/components/invitation/EnvelopeGate';
 import { TemplateRenderer } from '@/components/invitation/TemplateRenderer';
-import { getTemplate } from '@/components/invitation/registry';
+import { getTemplateEntry } from '@/components/invitation/registry';
 import { getPublishedInvitation } from '@/lib/invitations/get-published';
 
 type PageProps = {
@@ -36,7 +36,7 @@ export default async function InvitationPage({ params }: PageProps) {
 
   if (!invitation) notFound();
 
-  if (!getTemplate(invitation.templateSlug)) notFound();
+  if (!getTemplateEntry(invitation.templateSlug)) notFound();
 
   /* The design's own envelope, so a guest opens the one the invitation was
      drawn against rather than the house default. */

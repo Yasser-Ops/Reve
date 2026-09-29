@@ -2,27 +2,48 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  getTemplate,
+  loadTemplate,
   TEMPLATES,
   TEMPLATE_SLUGS,
 } from '@/components/invitation/registry';
+import { checklistFor } from '@/lib/schemas/content/checklist';
+import { SAMPLE_CONTENT } from '@/lib/sample-invitation';
 
 describe('template registry', () => {
-  it('resolves a registered template to a component', () => {
-    expect(typeof getTemplate('lin')).toBe('function');
+  /* The sample wedding stands in for a real couple on every storefront
+     preview. A design whose schema rejects it would render a preview that
+     cannot exist for a customer. */
+  it('parses the sample wedding with every design schema', () => {
+    for (const entry of TEMPLATES) {
+      expect(
+        entry.schema.safeParse(SAMPLE_CONTENT).success,
+        `${entry.slug} rejects the sample`,
+      ).toBe(true);
+    }
   });
 
-  it('returns null for an unknown slug', () => {
-    expect(getTemplate('does-not-exist')).toBeNull();
+  it('gives every field of every design an ask', () => {
+    for (const entry of TEMPLATES) {
+      expect(() => checklistFor(entry.schema), entry.slug).not.toThrow();
+    }
+  });
+
+  it('loads a registered design', async () => {
+    expect(typeof (await loadTemplate('lin'))).toBe('function');
+  });
+
+  it('loads nothing for an unknown slug', async () => {
+    expect(await loadTemplate('does-not-exist')).toBeNull();
+    expect(await loadTemplate('toString')).toBeNull();
   });
 
   it('lists lin among the registered slugs', () => {
     expect(TEMPLATE_SLUGS).toContain('lin');
   });
 
-  it('resolves every advertised slug to a component', () => {
+  it('resolves every advertised slug to a design', async () => {
     for (const slug of TEMPLATE_SLUGS) {
-      expect(getTemplate(slug), `slug ${slug} is unresolvable`).not.toBeNull();
+      expect(await loadTemplate(slug), `slug ${slug} is unresolvable`).not.toBeNull();
     }
   });
 

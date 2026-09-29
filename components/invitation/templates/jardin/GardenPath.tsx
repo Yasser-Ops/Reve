@@ -1,6 +1,4 @@
-import type { InvitationContent } from '@/lib/schemas/invitation';
-
-type ScheduleItem = InvitationContent['schedule'][number];
+import type { ScheduleItem } from '@/lib/schemas/content/blocks';
 
 /**
  * The evening as a path through the garden: one winding line down the page

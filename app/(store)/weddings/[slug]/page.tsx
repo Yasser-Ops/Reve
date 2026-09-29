@@ -72,8 +72,12 @@ export default async function DesignPage({
 
   if (!entry) notFound();
 
-  const Template = entry.component;
-  const others = LISTED_TEMPLATES.filter((other) => other.slug !== slug);
+  const Template = await entry.load();
+  const others = await Promise.all(
+    LISTED_TEMPLATES.filter((other) => other.slug !== slug).map(
+      async (other) => ({ entry: other, Design: await other.load() }),
+    ),
+  );
   const jsonLd = designJsonLd({
     name: entry.name,
     story: entry.story,
@@ -295,9 +299,7 @@ export default async function DesignPage({
             <h2 className="reve-display text-3xl">Other designs</h2>
 
             <ul className="mt-8 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-              {others.map((other) => {
-                const Other = other.component;
-
+              {others.map(({ entry: other, Design: Other }) => {
                 return (
                   <li key={other.slug}>
                     <Link className="group block" href={`/weddings/${other.slug}`}>
