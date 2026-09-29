@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { loadTemplate } from '@/components/invitation/registry';
+import { getDesignPageEntry, loadTemplate } from '@/components/invitation/registry';
 import {
   SAMPLE_CONTENT,
   SAMPLE_ENTITLEMENTS,
@@ -21,6 +21,10 @@ export default async function PreviewPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  /* A private design belongs to one client and renders only their
+     invitation: it gets no preview, exactly as it gets no product page. */
+  if (!getDesignPageEntry(slug)) notFound();
+
   const Template = await loadTemplate(slug);
 
   if (!Template) notFound();

@@ -35,7 +35,9 @@ export async function signInAdmin(
   }
 
   if (!(await isAdmin(supabase, data.user.id))) {
-    await supabase.auth.signOut();
+    /* Local only. Clients share auth.users, and a client who types their
+       portal password here must not be signed out on every other device. */
+    await supabase.auth.signOut({ scope: 'local' });
     return { ok: false, message: SIGN_IN_MESSAGES.NOT_ADMIN };
   }
 

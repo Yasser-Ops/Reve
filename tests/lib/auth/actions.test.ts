@@ -67,7 +67,9 @@ describe('signInAdmin', () => {
     );
 
     expect(result).toEqual({ ok: false, message: SIGN_IN_MESSAGES.NOT_ADMIN });
-    expect(signOutSpy).toHaveBeenCalled();
+    /* Local only: a client who typed their portal password here must not be
+       signed out of the portal on every other device. */
+    expect(signOutSpy).toHaveBeenCalledWith({ scope: 'local' });
   });
 
   it('takes an admin to the admin home', async () => {
