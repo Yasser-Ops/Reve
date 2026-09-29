@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { EnvelopeGate } from '@/components/invitation/EnvelopeGate';
 import { TemplateRenderer } from '@/components/invitation/TemplateRenderer';
-import { getTemplateEntry } from '@/components/invitation/registry';
 import { getPublishedInvitation } from '@/lib/invitations/get-published';
 
 type PageProps = {
@@ -19,7 +18,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `${coupleFirstName} & ${couplePartnerName}`,
-    description: invitation.content.headline ?? 'You are invited.',
+    description: `You are invited to celebrate with ${coupleFirstName} and ${couplePartnerName}.`,
   };
 }
 
@@ -35,8 +34,6 @@ export default async function InvitationPage({ params }: PageProps) {
   const invitation = await getPublishedInvitation(slug);
 
   if (!invitation) notFound();
-
-  if (!getTemplateEntry(invitation.templateSlug)) notFound();
 
   /* The design's own envelope, so a guest opens the one the invitation was
      drawn against rather than the house default. */

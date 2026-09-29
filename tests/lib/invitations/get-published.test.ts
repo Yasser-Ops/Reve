@@ -12,7 +12,7 @@ import { getPublishedInvitation } from '@/lib/invitations/get-published';
 
 const row = {
   slug: 'sarah-and-amine',
-  template_slug: 'cap-blanc',
+  template_slug: 'lin',
   content: {
     coupleFirstName: 'Sarah',
     couplePartnerName: 'Amine',
@@ -47,7 +47,7 @@ describe('getPublishedInvitation', () => {
     const result = await getPublishedInvitation('sarah-and-amine');
 
     expect(result).not.toBeNull();
-    expect(result?.templateSlug).toBe('cap-blanc');
+    expect(result?.templateSlug).toBe('lin');
     expect(result?.content.coupleFirstName).toBe('Sarah');
     expect(result?.entitlements.rsvp).toBe(true);
   });
@@ -69,6 +69,20 @@ describe('getPublishedInvitation', () => {
 
   it('throws when PostgREST returns an error status', async () => {
     mockFetchOnce({ message: 'boom' }, false);
+    await expect(getPublishedInvitation('sarah-and-amine')).rejects.toThrow();
+  });
+
+  /* The live seed row names `cap-blanc`, a design deleted from the code. A
+     guest holding that link gets a 404, never a crash. */
+  it('returns null for a design the registry does not have', async () => {
+    mockFetchOnce([{ ...row, template_slug: 'cap-blanc' }]);
+    expect(await getPublishedInvitation('sarah-and-amine')).toBeNull();
+  });
+
+  it('throws when the content breaks the design schema, not just the core', async () => {
+    mockFetchOnce([
+      { ...row, content: { ...row.content, schedule: [{ time: '17:00' }] } },
+    ]);
     await expect(getPublishedInvitation('sarah-and-amine')).rejects.toThrow();
   });
 
