@@ -6,6 +6,11 @@ import {
   OCCASIONS,
   TEMPLATES,
   TEMPLATE_SLUGS,
+  VISIBILITY,
+  getDesignPageEntry,
+  listedOf,
+  pageSlugsOf,
+  type TemplateEntry,
   backToCatalogue,
   getCatalogue,
   templatesForOccasion,
@@ -36,7 +41,9 @@ describe('the catalogues', () => {
   /* A draft is a design mid-build: its page must open by URL for review, but
      no shelf, sitemap or "other designs" row may offer it to a visitor. */
   it('keeps drafts off the shelves but reachable by slug', () => {
-    const drafts = TEMPLATES.filter((entry) => entry.draft);
+    const drafts = TEMPLATES.filter(
+      (entry) => entry.visibility === VISIBILITY.DRAFT,
+    );
     const shelved = ALL_SECTIONS.flatMap((section) =>
       templatesForOccasion(section.occasion).map((entry) => entry.slug),
     );
@@ -53,7 +60,9 @@ describe('the catalogues', () => {
 
     for (const entry of TEMPLATES) {
       const listed = urls.some((url) => url.endsWith(`/${entry.slug}`));
-      expect(listed, `${entry.slug} sitemap presence`).toBe(!entry.draft);
+      expect(listed, `${entry.slug} sitemap presence`).toBe(
+        entry.visibility === VISIBILITY.LISTED,
+      );
     }
   });
 
@@ -121,5 +130,34 @@ describe('backToCatalogue', () => {
         expect(backToCatalogue(section.occasion).label).toBe(entry.title);
       }
     }
+  });
+});
+
+describe('private designs', () => {
+  /* The registry holds no private design yet, so the rules are pinned on
+     fixtures: the first Custom client's design must not be the test of them. */
+  const base = TEMPLATES[0];
+  const fixture = (slug: string, visibility: TemplateEntry['visibility']) => ({
+    ...base,
+    slug,
+    visibility,
+  });
+  const entries = [
+    fixture('shown', VISIBILITY.LISTED),
+    fixture('in-progress', VISIBILITY.DRAFT),
+    fixture('maya-karim', VISIBILITY.PRIVATE),
+  ];
+
+  it('never shelves a private design', () => {
+    expect(listedOf(entries).map((entry) => entry.slug)).toEqual(['shown']);
+  });
+
+  it('never gives a private design a product page', () => {
+    expect(pageSlugsOf(entries)).toEqual(['shown', 'in-progress']);
+  });
+
+  it('refuses unknown slugs at the product page', () => {
+    expect(getDesignPageEntry('does-not-exist')).toBeUndefined();
+    expect(getDesignPageEntry('lin')?.slug).toBe('lin');
   });
 });

@@ -3,9 +3,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   backToCatalogue,
-  getTemplateEntry,
+  getDesignPageEntry,
   LISTED_TEMPLATES,
   TEMPLATE_SLUGS,
+  VISIBILITY,
 } from '@/components/invitation/registry';
 import { LiveInvitationDemo } from '@/components/store/LiveInvitationDemo';
 import { OfferTabs } from '@/components/store/OfferTabs';
@@ -25,13 +26,17 @@ export function generateStaticParams() {
   return TEMPLATE_SLUGS.map((slug) => ({ slug }));
 }
 
+/* Only prerendered slugs exist here. A private design's slug must 404, never
+   render on demand. */
+export const dynamicParams = false;
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const entry = getTemplateEntry(slug);
+  const entry = getDesignPageEntry(slug);
 
   if (!entry) return {};
 
@@ -41,7 +46,7 @@ export async function generateMetadata({
     alternates: { canonical: `/weddings/${slug}` },
     /* A draft opens by URL for review and must not be indexed before it
        carries its own artwork. */
-    ...(entry.draft ? { robots: { index: false, follow: false } } : {}),
+    ...(entry.visibility === VISIBILITY.DRAFT ? { robots: { index: false, follow: false } } : {}),
     openGraph: {
       title: `${entry.name} · Rêve`,
       description: entry.story,
@@ -68,7 +73,7 @@ export default async function DesignPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const entry = getTemplateEntry(slug);
+  const entry = getDesignPageEntry(slug);
 
   if (!entry) notFound();
 

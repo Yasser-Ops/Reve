@@ -1,8 +1,6 @@
 import type { ReactNode } from 'react';
 import type { z } from 'zod';
-import { Jardin } from '@/components/invitation/templates/jardin';
 import { jardinContentSchema } from '@/components/invitation/templates/jardin/schema';
-import { Lin } from '@/components/invitation/templates/lin';
 import { linContentSchema } from '@/components/invitation/templates/lin/schema';
 import type { DesignSchema } from '@/lib/schemas/content/core';
 import type { Entitlements, Theme } from '@/lib/schemas/invitation';
@@ -39,6 +37,18 @@ export const OCCASIONS = {
 } as const;
 
 export type Occasion = (typeof OCCASIONS)[keyof typeof OCCASIONS];
+
+/** Where a design may appear. */
+export const VISIBILITY = {
+  /** On a shelf, in the sitemap, with a product page. */
+  LISTED: 'listed',
+  /** Mid-build: a product page opens by URL for review, noindex, no shelf. */
+  DRAFT: 'draft',
+  /** Built for one Custom client: renders their invitation, nothing else. */
+  PRIVATE: 'private',
+} as const;
+
+export type Visibility = (typeof VISIBILITY)[keyof typeof VISIBILITY];
 
 export type TemplateEntry = {
   /** URL segment, and the key stored on an invitation row. */
@@ -80,12 +90,18 @@ export type TemplateEntry = {
   /** Resolves the design, parsing content with `schema` on every render. */
   load: () => Promise<RenderedDesign>;
   /**
-   * A design mid-build (see `docs/design-roadmap.md`). Its page prerenders and
-   * opens by URL so it can be reviewed, but no shelf, sitemap or "other
-   * designs" row offers it, and the page itself is `noindex`. Delete the flag
-   * as the roadmap's last step, once the design's own artwork and card ship.
+   * Where the design may appear.
+   *
+   * DRAFT is a design mid-build (see `docs/design-roadmap.md`). Its page
+   * prerenders and opens by URL so it can be reviewed, but no shelf, sitemap
+   * or "other designs" row offers it, and the page itself is `noindex`. Move
+   * it to LISTED as the roadmap's last step, once its own artwork and card ship.
+   *
+   * PRIVATE is a Custom design drawn for one client. It never has a shelf, a
+   * sitemap entry or a product page, but it renders for any invitation that
+   * names it.
    */
-  draft?: true;
+  visibility: Visibility;
 };
 
 type TemplateDefinition<S extends DesignSchema> = Omit<
@@ -141,8 +157,10 @@ const REGISTRY = {
     character: ['Film behind the names', 'Drawn illustration', 'Falling petals'],
     occasion: OCCASIONS.WEDDING,
     preview: '/collection/lin/card.webp',
+    visibility: VISIBILITY.LISTED,
     schema: linContentSchema,
-    load: async () => Lin,
+    load: () =>
+      import('@/components/invitation/templates/lin').then((module) => module.Lin),
   }),
   jardin: defineTemplate({
     slug: 'jardin',
@@ -162,8 +180,12 @@ const REGISTRY = {
        picture has gone stale — it is a build artefact, and an edit to the
        hero or the type leaves the card showing the previous design. */
     preview: '/collection/jardin/card.webp',
+    visibility: VISIBILITY.LISTED,
     schema: jardinContentSchema,
-    load: async () => Jardin,
+    load: () =>
+      import('@/components/invitation/templates/jardin').then(
+        (module) => module.Jardin,
+      ),
   }),
   /*
    * STANDING IN FOR ITS OWN ARTWORK. This entry exists so the Dentelle
@@ -177,7 +199,7 @@ const REGISTRY = {
    *
    * The copy already describes Dentelle's OWN invitation (the trousseau brief
    * in `docs/design-roadmap.md`), while the component and card are still
-   * Jardin's. `draft` is what keeps that mismatch off the shelves until a
+   * Jardin's. DRAFT visibility is what keeps that mismatch off the shelves until a
    * real component and `pnpm mockup:compose dentelle` replace them.
    */
   dentelle: defineTemplate({
@@ -191,26 +213,41 @@ const REGISTRY = {
     occasion: OCCASIONS.WEDDING,
     /* Jardin's card, borrowed with its invitation. */
     preview: '/collection/jardin/card.webp',
+    visibility: VISIBILITY.DRAFT,
     schema: jardinContentSchema,
-    load: async () => Jardin,
-    draft: true,
+    load: () =>
+      import('@/components/invitation/templates/jardin').then(
+        (module) => module.Jardin,
+      ),
   }),
 } satisfies Record<string, TemplateEntry>;
 
+/** Every design a visitor may be offered on a shelf. */
+export function listedOf(entries: readonly TemplateEntry[]): TemplateEntry[] {
+  return entries.filter((entry) => entry.visibility === VISIBILITY.LISTED);
+}
+
+/** Designs with a product page: listed and drafts, never private. */
+export function pageSlugsOf(entries: readonly TemplateEntry[]): string[] {
+  return entries
+    .filter((entry) => entry.visibility !== VISIBILITY.PRIVATE)
+    .map((entry) => entry.slug);
+}
+
 export const TEMPLATES: readonly TemplateEntry[] = Object.values(REGISTRY);
-
-/** Every design a visitor may be offered: the registry less its drafts. */
-export const LISTED_TEMPLATES: readonly TemplateEntry[] = TEMPLATES.filter(
-  (entry) => !entry.draft,
-);
-
-/** Every slug with a page, drafts included, so a draft opens for review. */
-export const TEMPLATE_SLUGS: readonly string[] = Object.keys(REGISTRY);
+export const LISTED_TEMPLATES: readonly TemplateEntry[] = listedOf(TEMPLATES);
+export const TEMPLATE_SLUGS: readonly string[] = pageSlugsOf(TEMPLATES);
 
 export function getTemplateEntry(slug: string): TemplateEntry | undefined {
   return Object.hasOwn(REGISTRY, slug)
     ? REGISTRY[slug as keyof typeof REGISTRY]
     : undefined;
+}
+
+/** The design a product page may show: any but a private one. */
+export function getDesignPageEntry(slug: string): TemplateEntry | undefined {
+  const entry = getTemplateEntry(slug);
+  return entry?.visibility === VISIBILITY.PRIVATE ? undefined : entry;
 }
 
 /** The design registered under `slug`, ready to render, or null. */
