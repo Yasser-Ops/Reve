@@ -3,17 +3,18 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { ActionForm } from '@/components/admin/ActionForm';
-import { Field, OrderFields } from '@/components/admin/fields';
+import { Field, OrderFields, TextareaField } from '@/components/admin/fields';
+import { OrderPanel } from '@/components/admin/OrderPanel';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { addOrder, updateClient } from '@/lib/admin/client-actions';
 import { getClient } from '@/lib/admin/clients';
 import { requireAdmin } from '@/lib/auth/guards';
 import { adminRoutes } from '@/lib/routes';
 
 export const metadata: Metadata = { title: 'Client' };
+
+const when = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
 
 export default async function ClientPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
@@ -41,10 +42,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
           <input name="clientId" type="hidden" value={client.id} />
           <Field defaultValue={client.full_name} label="Full name" name="fullName" required />
           <Field defaultValue={client.phone} label="Phone" name="phone" required />
-          <div className="grid gap-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea defaultValue={client.notes} id="notes" name="notes" />
-          </div>
+          <TextareaField defaultValue={client.notes} label="Notes" name="notes" />
         </ActionForm>
       </section>
 
@@ -58,11 +56,15 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3">
+              {order.due_at ? (
+                <p className="text-muted-foreground">Due {when.format(new Date(order.due_at))}</p>
+              ) : null}
               {order.invitations ? (
                 <Link className="underline" href={adminRoutes.invitation(order.invitations.id)}>
                   Invitation /i/{order.invitations.slug} ({order.invitations.status})
                 </Link>
               ) : null}
+              <OrderPanel order={order} />
             </CardContent>
           </Card>
         ))}
