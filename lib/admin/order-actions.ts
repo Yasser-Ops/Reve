@@ -1,15 +1,20 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { getTemplateEntry } from '@/components/invitation/registry';
 import { UNEXPECTED, type ActionResult } from '@/lib/admin/action-result';
 import { requireAdmin } from '@/lib/auth/guards';
 import { TIERS } from '@/lib/constants';
+import { entitlementsForTier } from '@/lib/entitlements';
 import { checkContent } from '@/lib/invitations/content';
+import { proposeSlug, withSuffix } from '@/lib/invitations/slug';
 import { DELIVERY } from '@/lib/offer';
-import { ORDER_STATUS, canMove } from '@/lib/orders/status';
+import { ORDER_STATUS, canMove, hasReached } from '@/lib/orders/status';
 import { planUpgrade } from '@/lib/orders/upgrade';
 import { adminRoutes } from '@/lib/routes';
+import { themeSchema } from '@/lib/schemas/invitation';
 import { createClient } from '@/lib/supabase/server';
 
 const HOUR_MS = 3_600_000;
@@ -116,4 +121,60 @@ export async function applyUpgrade(
 
   revalidatePath(adminRoutes.client(order.client_id));
   return { ok: true };
+}
+
+const provisionSchema = z.object({ orderId: z.uuid(), templateSlug: z.string().min(1) });
+
+export async function provisionInvitation(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireAdmin();
+  const input = provisionSchema.safeParse({
+    orderId: formData.get('orderId'),
+    templateSlug: formData.get('templateSlug'),
+  });
+  if (!input.success) return { ok: false, message: 'Choose a design.' };
+
+  const supabase = await createClient();
+  const { data: order, error } = await supabase
+    .from('orders')
+    .select('id, tier, status, client_id, clients(full_name), invitations(id)')
+    .eq('id', input.data.orderId)
+    .maybeSingle();
+  if (error || !order) return { ok: false, message: UNEXPECTED };
+
+  if (!hasReached(order.tier, order.status, ORDER_STATUS.PAID)) {
+    return { ok: false, message: 'Mark the order paid before creating its invitation.' };
+  }
+  if (order.invitations) return { ok: false, message: 'This order already has an invitation.' };
+  if (!getTemplateEntry(input.data.templateSlug)) {
+    return { ok: false, message: 'That design does not exist.' };
+  }
+
+  /* Proposed from the client's name; renamed in the editor until the first
+     publish. Taken slugs are read up front so the insert does not collide. */
+  const base = proposeSlug(order.clients?.full_name ?? '');
+  const { data: taken, error: takenError } = await supabase
+    .from('invitations')
+    .select('slug')
+    .like('slug', `${base}%`);
+  if (takenError) return { ok: false, message: UNEXPECTED };
+
+  const { data: created, error: insertError } = await supabase
+    .from('invitations')
+    .insert({
+      order_id: order.id,
+      slug: withSuffix(base, new Set((taken ?? []).map((row) => row.slug))),
+      template_slug: input.data.templateSlug,
+      status: 'draft',
+      content: {},
+      theme: themeSchema.parse({}),
+      entitlements: entitlementsForTier(order.tier),
+    })
+    .select('id')
+    .single();
+  if (insertError) return { ok: false, message: UNEXPECTED };
+
+  redirect(adminRoutes.invitation(created.id));
 }

@@ -1,9 +1,10 @@
 import { ActionForm } from '@/components/admin/ActionForm';
 import { Field } from '@/components/admin/fields';
+import { TEMPLATES, VISIBILITY } from '@/components/invitation/registry';
 import { NativeSelect } from '@/components/ui/native-select';
 import type { ClientDetail } from '@/lib/admin/clients';
-import { applyUpgrade, moveOrder } from '@/lib/admin/order-actions';
-import { STATUS_LABELS, allowedMoves } from '@/lib/orders/status';
+import { applyUpgrade, moveOrder, provisionInvitation } from '@/lib/admin/order-actions';
+import { ORDER_STATUS, STATUS_LABELS, allowedMoves, hasReached } from '@/lib/orders/status';
 import { upgradeTargets } from '@/lib/orders/upgrade';
 
 type Order = ClientDetail['orders'][number];
@@ -12,9 +13,29 @@ type Order = ClientDetail['orders'][number];
 export function OrderPanel({ order }: { order: Order }) {
   const moves = allowedMoves(order.tier, order.status);
   const targets = upgradeTargets(order.tier);
+  const canProvision =
+    !order.invitations && hasReached(order.tier, order.status, ORDER_STATUS.PAID);
 
   return (
     <div className="grid gap-4">
+      {canProvision ? (
+        <ActionForm
+          action={provisionInvitation}
+          className="flex flex-wrap items-end gap-2"
+          submitLabel="Create invitation"
+        >
+          <input name="orderId" type="hidden" value={order.id} />
+          <NativeSelect aria-label="Design" name="templateSlug">
+            {TEMPLATES.map((design) => (
+              <option key={design.slug} value={design.slug}>
+                {design.name}
+                {design.visibility === VISIBILITY.LISTED ? '' : ` (${design.visibility})`}
+              </option>
+            ))}
+          </NativeSelect>
+        </ActionForm>
+      ) : null}
+
       {moves.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {moves.map((to) => (
