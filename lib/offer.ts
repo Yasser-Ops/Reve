@@ -122,6 +122,8 @@ export const DELIVERY = {
   headline: 'Ready in 48 hours',
   detail:
     'The artwork is already drawn, so there is no design wait. Send your details and your invitation is live within two days.',
+  /** The promise in hours; an order marked paid is due this long after. */
+  hours: 48,
   /** Custom is a design made from scratch and cannot honour the same promise. */
   excludesTier: TIERS.CUSTOM,
 } as const;
