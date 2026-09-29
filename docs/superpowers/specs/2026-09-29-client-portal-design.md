@@ -311,6 +311,12 @@ Turnstile stays deferred until Cloudflare keys exist, as that spec records.
   wall. The service-role client is used only for auth admin calls and
   storage uploads.
 - `getSession()` is never used for authorization.
+- **Passwords: two layers.** Supabase's minimum length (dashboard, 8) is the
+  real floor: a signed-in user can call `updateUser` from the browser with the
+  anon key and bypass every app form. On top of it, ONE `passwordSchema` in
+  `lib/auth/` (min 10, max 72 since bcrypt ignores the rest, not equal to the
+  email) is used by every action that SETS a password: the Phase 3 welcome
+  step and password reset. Sign-in only checks a password and does not use it.
 - Stored content is parsed with the design's schema on every read, admin and
   public alike.
 
