@@ -42,8 +42,8 @@ ships working on its own.
 | Phase | Delivers | Depends on |
 |---|---|---|
 | 1 — Foundation | Supabase clients, session refresh in `proxy.ts`, admin sign-in and gate, per-design content schemas, lazy registry | Prerequisites in 11 |
-| 2 — Admin | Clients, orders, status pipeline, client invite, invitation JSON editor with preview and uploads, publish | 1 |
-| 3 — Client portal | Accept invite, set password, terms; dashboard; review and approval; live link; upsell cards | 2 |
+| 2 — Admin | Admin RLS repair, clients, orders, status pipeline, invitation JSON editor with preview and uploads, approval on behalf, publish, upgrade | 1 |
+| 3 — Client portal | Client invite and accept, set password, terms; dashboard; review and approval; live link; upsell cards | 2 |
 | 4 — RSVP | Guest write path, guest list in portal and admin, CSV export | 3 |
 | 5 — Custom extras | Private designs, per-client envelope frames from storage | 2 |
 
@@ -56,13 +56,18 @@ RLS enabled.
 
 ### `clients` (new)
 
-`id · user_id (auth.users, unique) · full_name · email (unique) · phone ·
-notes · terms_accepted_at · created_at`
+`id · user_id (auth.users, unique, nullable) · full_name · email (unique,
+lowercase) · phone · notes · terms_accepted_at · created_at`
 
-A client row is created by the admin at the moment of invite, together with the
-auth user, so `user_id` is never null. `terms_accepted_at` is null until the
-client completes the welcome step; the portal refuses everything else until it
-is set.
+A client row is created by the admin when someone orders, before payment and
+before any account exists. `user_id` is set when the admin invites them
+(Phase 3); a client with no `user_id` is "not invited". `terms_accepted_at` is
+null until the client completes the welcome step; the portal refuses
+everything else until it is set.
+
+Amended 2026-09-29: the invite moved to Phase 3, because its email links to
+`/auth/confirm`, which Phase 3 builds. It is also the truer model: a client
+whose order awaits payment should not hold an account yet.
 
 ### `orders` (changed)
 
@@ -117,6 +122,24 @@ One bucket, `invitation-media`, public read, admin write. Paths are
 `<invitation_id>/<kind>/<file>` with `kind` in `photos`, `hero`, `envelope`.
 Public read is correct because every file ends up on a public invitation; the
 uuid prefix keeps drafts unguessable.
+
+### Admin RLS repair (found 2026-09-29)
+
+Two earlier hardening migrations left every admin policy unusable by a
+signed-in admin, verified by running a query as the admin user:
+
+- `0003` revoked EXECUTE on `public.is_admin()` from `authenticated`, and a
+  policy expression runs with the caller's privileges: every `is_admin()`
+  policy fails with `permission denied for function is_admin`.
+- `0004` revoked ALL on `invitations` from `authenticated`, so no policy is
+  ever consulted.
+
+Fix (Phase 2 migration): the helper moves to `private.is_admin()`, in a schema
+PostgREST does not expose, with EXECUTE granted to `authenticated`. It stays
+uncallable over the API, which is what `0003` wanted. Every admin policy is
+recreated on it, `public.is_admin()` is dropped, and `authenticated` gets table
+privileges on `invitations` back. RLS alone decides what it sees; anon stays
+at zero.
 
 ### RLS
 
