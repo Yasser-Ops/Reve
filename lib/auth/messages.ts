@@ -13,7 +13,7 @@ export const SIGN_IN_MESSAGES = {
 export type SignInResult = { ok: false; message: string };
 
 /** Bounds for a new password. 72 is where bcrypt stops reading. */
-export const PASSWORD_RULES = { MIN: 10, MAX: 72 } as const;
+export const PASSWORD_RULES = { MIN: 8, MAX: 72 } as const;
 
 export const PASSWORD_MESSAGES = {
   TOO_SHORT: `Use at least ${PASSWORD_RULES.MIN} characters.`,

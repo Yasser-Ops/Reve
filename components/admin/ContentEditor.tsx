@@ -14,6 +14,7 @@ import {
   type MediaOptions,
 } from '@/lib/admin/content-form';
 import { saveContent } from '@/lib/admin/invitation-actions';
+import { useUnsavedChangesWarning } from '@/lib/hooks/useUnsavedChangesWarning';
 
 type ContentEditorProps = {
   invitationId: string;
@@ -43,14 +44,21 @@ export function ContentEditor({
   const [text, setText] = useState('');
   const [parseError, setParseError] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
+  /* Edited since the last successful save. Drives "Unsaved changes", hides a
+     stale "Saved.", and guards leaving the page. */
+  const [dirty, setDirty] = useState(false);
   const [result, run, pending] = useActionState<ActionResult | null, FormData>(
     async (previous, formData) => {
       const next = await saveContent(previous, formData);
-      if (next.ok) setVersion((current) => current + 1);
+      if (next.ok) {
+        setVersion((current) => current + 1);
+        setDirty(false);
+      }
       return next;
     },
     null,
   );
+  useUnsavedChangesWarning(dirty);
 
   const issues = new Map(
     (result && !result.ok ? (result.issues ?? []) : []).map((issue) => [issue.path, issue.message]),
@@ -96,7 +104,10 @@ export function ContentEditor({
                 issues={issues}
                 key={field.key}
                 media={media}
-                onChange={(next) => setValue((current) => ({ ...current, [field.key]: next }))}
+                onChange={(next) => {
+                  setDirty(true);
+                  setValue((current) => ({ ...current, [field.key]: next }));
+                }}
                 path={field.key}
                 value={value[field.key]}
               />
@@ -106,7 +117,10 @@ export function ContentEditor({
           <Textarea
             aria-label="Invitation content (JSON)"
             className="min-h-[560px] font-mono text-[13px]"
-            onChange={(event) => setText(event.target.value)}
+            onChange={(event) => {
+              setDirty(true);
+              setText(event.target.value);
+            }}
             spellCheck={false}
             value={text}
           />
@@ -133,11 +147,16 @@ export function ContentEditor({
             </AlertDescription>
           </Alert>
         ) : null}
-        {result?.ok ? <p className="text-muted-foreground">Saved.</p> : null}
-
-        <Button className="justify-self-start" disabled={pending} size="lg" type="submit">
-          {pending ? 'Saving' : 'Save content'}
-        </Button>
+        <div className="flex flex-wrap items-center gap-4">
+          <Button disabled={pending} size="lg" type="submit">
+            {pending ? 'Saving' : 'Save content'}
+          </Button>
+          {dirty ? (
+            <p className="text-wine">Unsaved changes</p>
+          ) : result?.ok ? (
+            <p className="text-muted-foreground">Saved.</p>
+          ) : null}
+        </div>
       </form>
 
       <div className="lg:sticky lg:top-6 lg:self-start">

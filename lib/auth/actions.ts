@@ -12,6 +12,7 @@ import {
   type SignInResult,
 } from '@/lib/auth/messages';
 import { ROUTES } from '@/lib/routes';
+import { verifyPassword } from '@/lib/supabase/password-check';
 import { createClient } from '@/lib/supabase/server';
 
 const signInSchema = z.object({
@@ -92,13 +93,11 @@ export async function changePassword(
   });
   if (!input.success) return { ok: false, message: input.error.issues[0].message };
 
-  const supabase = await createClient();
-  const { error: authError } = await supabase.auth.signInWithPassword({
-    email: admin.email,
-    password: input.data.current,
-  });
-  if (authError) return { ok: false, message: PASSWORD_MESSAGES.WRONG_CURRENT };
+  if (!(await verifyPassword(admin.email, input.data.current))) {
+    return { ok: false, message: PASSWORD_MESSAGES.WRONG_CURRENT };
+  }
 
+  const supabase = await createClient();
   const { error: updateError } = await supabase.auth.updateUser({
     password: input.data.next,
   });

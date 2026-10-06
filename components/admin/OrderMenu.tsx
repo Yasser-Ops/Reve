@@ -35,6 +35,8 @@ type OrderMenuProps = {
   upgrades: readonly Tier[];
   /** Moves the order; the card shows the new stage at once (OrderLive). */
   onMove: (to: OrderStatus) => void;
+  /** Locked while a move is in flight: its stage is not confirmed yet. */
+  disabled?: boolean;
 };
 
 /** The order's secondary moves, each behind a dialog so none is one stray click. */
@@ -46,6 +48,7 @@ export function OrderMenu({
   canCancel,
   upgrades,
   onMove,
+  disabled,
 }: OrderMenuProps) {
   const [open, setOpen] = useState<Pending>(null);
   const close = () => setOpen(null);
@@ -57,7 +60,12 @@ export function OrderMenu({
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button aria-label={`More actions for ${reference}`} size="icon-sm" variant="ghost" />
+            <Button
+              aria-label={`More actions for ${reference}`}
+              disabled={disabled}
+              size="icon-sm"
+              variant="ghost"
+            />
           }
         >
           <MoreHorizontal />

@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useOptimistic, useState, useTransition, type ReactNode } from 'react';
 import { Eyebrow } from '@/components/admin/Eyebrow';
 import { OrderMenu } from '@/components/admin/OrderMenu';
@@ -50,6 +51,7 @@ export function OrderLive({
   const [status, showStatus] = useOptimistic(savedStatus);
   const [moving, startMove] = useTransition();
   const [refusal, setRefusal] = useState<string | null>(null);
+  const router = useRouter();
 
   function move(to: OrderStatus) {
     /* Outside the transition: inside it, clearing waits for the save. */
@@ -60,7 +62,11 @@ export function OrderLive({
       formData.set('orderId', orderId);
       formData.set('to', to);
       const result = await moveOrder(null, formData);
-      if (!result.ok) setRefusal(result.message);
+      if (!result.ok) {
+        setRefusal(result.message);
+        /* A refusal often means the card is stale (moved in another tab). */
+        router.refresh();
+      }
     });
   }
 
@@ -81,6 +87,7 @@ export function OrderLive({
           amount={amount}
           back={previousMove(tier, status)}
           canCancel={allowedMoves(tier, status).includes(ORDER_STATUS.CANCELLED)}
+          disabled={moving}
           onMove={move}
           orderId={orderId}
           reference={reference}

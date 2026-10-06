@@ -4,9 +4,11 @@ import type { ActionResult } from '@/lib/admin/action-result';
 
 /* moveOrder answers only when the test says so, so the test can look at the
    screen while the save is still in flight. */
-const { pending } = vi.hoisted(() => ({
+const { pending, refresh } = vi.hoisted(() => ({
   pending: { resolve: null as ((result: ActionResult) => void) | null },
+  refresh: vi.fn(),
 }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh }) }));
 vi.mock('@/lib/admin/order-actions', () => ({
   moveOrder: () =>
     new Promise<ActionResult>((resolve) => {
@@ -71,6 +73,29 @@ describe('OrderLive', () => {
     await waitFor(() => expect(stage()).toHaveAttribute('data-status', 'in_design'));
     expect(screen.queryByText('Refused once.')).toBeNull();
     pending.resolve?.({ ok: true });
+  });
+
+  /* Review minor: the menu worked from an unconfirmed stage mid-move. */
+  it('locks the menu while a move is in flight', async () => {
+    renderOrder();
+    const menu = screen.getByRole('button', { name: 'More actions for RV-0009' });
+    expect(menu).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Move to In design' }));
+    await waitFor(() => expect(menu).toBeDisabled());
+    pending.resolve?.({ ok: true });
+    await waitFor(() => expect(menu).toBeEnabled());
+  });
+
+  /* Review minor: a refusal from stale data left a stale card. */
+  it('refreshes the card from the server after a refusal', async () => {
+    refresh.mockClear();
+    renderOrder();
+    fireEvent.click(screen.getByRole('button', { name: 'Move to In design' }));
+    await waitFor(() => expect(stage()).toHaveAttribute('data-status', 'in_design'));
+    pending.resolve?.({ ok: false, message: 'That order no longer exists.' });
+
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
   });
 
   it('keeps the server-rendered parts of the card', () => {

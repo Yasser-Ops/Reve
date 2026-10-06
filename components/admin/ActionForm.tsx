@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, type ReactNode } from 'react';
+import { startTransition, useActionState, useRef, type ReactNode } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import type { ActionResult, FormAction } from '@/lib/admin/action-result';
@@ -34,17 +34,33 @@ export function ActionForm({
   disabled,
   children,
 }: ActionFormProps) {
+  const formRef = useRef<HTMLFormElement>(null);
   const [result, run, pending] = useActionState<ActionResult | null, FormData>(
     async (previous, formData) => {
       const next = await action(previous, formData);
-      if (next.ok) onSuccess?.();
+      if (next.ok) {
+        formRef.current?.reset();
+        onSuccess?.();
+      }
       return next;
     },
     null,
   );
 
+  /* Submitted by hand rather than through `action`: React resets a form
+     after every action, which wiped what was typed when the server refused.
+     Now fields clear only on success. `action` stays for no-JS submits. */
   return (
-    <form action={run} className={className ?? 'grid gap-3'}>
+    <form
+      action={run}
+      className={className ?? 'grid gap-3'}
+      onSubmit={(event) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        startTransition(() => run(formData));
+      }}
+      ref={formRef}
+    >
       {children}
       {result && !result.ok ? (
         <Alert variant="destructive">

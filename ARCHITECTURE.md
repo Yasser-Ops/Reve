@@ -235,8 +235,9 @@ client page -> OrderCard -> OrderLive [CLIENT]: primary = nextMove(tier,
 
 ```
 /admin/settings -> ActionForm -> changePassword
-  requireAdmin; zod (10..72 chars, copies match, differs from current)
-  signInWithPassword(admin.email, current)   wrong -> "not right", no change
+  requireAdmin; zod (8..72 chars, copies match, differs from current)
+  verifyPassword(admin.email, current)       throwaway client, session revoked
+                                             at once; wrong -> "not right"
   auth.updateUser({ password })              weak_password | same_password worded
   auth.signOut({ scope: 'others' })          this device stays signed in
 ```
@@ -719,7 +720,7 @@ base from the walk.
   and per-client envelopes (Phase 5). Payment stays manual (Whish).
 - **Operator setup still open:** custom SMTP for auth emails (the built-in
   sender allows a few an hour), the Invite and Reset email templates pointing
-  at `/auth/confirm`, Supabase password minimum 10, leaked-password
+  at `/auth/confirm`, Supabase password minimum 8, leaked-password
   protection. Sign-ups are OFF.
 - **Deleting a client does not touch `auth.users`.** Clients have no accounts
   before Phase 3; Phase 3 must extend `deleteClient` to remove the client's
