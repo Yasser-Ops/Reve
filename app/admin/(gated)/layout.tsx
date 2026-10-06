@@ -19,12 +19,18 @@ export default async function GatedAdminLayout({ children }: { children: ReactNo
             <Link className="font-heading text-[22px] tracking-wide" href={ROUTES.ADMIN}>
               Rêve
             </Link>
-            <nav aria-label="Admin">
+            <nav aria-label="Admin" className="flex gap-4">
               <Link
                 className="text-[13px] text-muted-foreground hover:text-foreground"
                 href={ROUTES.ADMIN}
               >
                 Clients
+              </Link>
+              <Link
+                className="text-[13px] text-muted-foreground hover:text-foreground"
+                href={ROUTES.ADMIN_SETTINGS}
+              >
+                Settings
               </Link>
             </nav>
           </div>

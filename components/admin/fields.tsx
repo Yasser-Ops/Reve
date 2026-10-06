@@ -17,19 +17,28 @@ export function Field({
   type = 'text',
   required,
   defaultValue,
+  autoComplete,
 }: {
   label: string;
   name: string;
   type?: string;
   required?: boolean;
   defaultValue?: string;
+  autoComplete?: string;
 }) {
   const id = useId();
 
   return (
     <div className="grid gap-2">
       <Label htmlFor={id}>{label}</Label>
-      <Input defaultValue={defaultValue} id={id} name={name} required={required} type={type} />
+      <Input
+        autoComplete={autoComplete}
+        defaultValue={defaultValue}
+        id={id}
+        name={name}
+        required={required}
+        type={type}
+      />
     </div>
   );
 }

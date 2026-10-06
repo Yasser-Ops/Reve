@@ -3,6 +3,7 @@ export const ROUTES = {
   ADMIN: '/admin',
   ADMIN_LOGIN: '/admin/login',
   ADMIN_NEW_CLIENT: '/admin/clients/new',
+  ADMIN_SETTINGS: '/admin/settings',
 } as const;
 
 /** Admin pages addressed by id. */
