@@ -2,10 +2,16 @@ import { ActionForm } from '@/components/admin/ActionForm';
 import { TextareaField } from '@/components/admin/fields';
 import { approveOnBehalf, publishInvitation } from '@/lib/admin/invitation-actions';
 import type { EditorInvitation } from '@/lib/admin/invitations';
+import { STUDIO_TIME_ZONE } from '@/lib/constants';
 import { publishReadiness } from '@/lib/invitations/publish-guard';
 import { cn } from '@/lib/utils';
 
-const when = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+/* Studio time, not the server's. */
+const when = new Intl.DateTimeFormat('en-GB', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: STUDIO_TIME_ZONE,
+});
 
 /** The approval history, and Publish held shut (with the reason) until it can succeed. */
 export function ReviewPanel({ invitation }: { invitation: EditorInvitation }) {

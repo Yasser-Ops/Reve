@@ -2,13 +2,18 @@ import Link from 'next/link';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import type { ClientListRow } from '@/lib/admin/clients';
 import { isOverdue } from '@/lib/admin/summary';
-import { TIER_LABELS } from '@/lib/constants';
+import { STUDIO_TIME_ZONE, TIER_LABELS } from '@/lib/constants';
 import { adminRoutes } from '@/lib/routes';
 import { cn } from '@/lib/utils';
 
 type ListOrder = ClientListRow['orders'][number];
 
-const dateFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' });
+/* Studio time, not the server's: a due date ends at Beirut midnight. */
+const dateFormat = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'short',
+  timeZone: STUDIO_TIME_ZONE,
+});
 
 function latestOrder(client: ClientListRow): ListOrder {
   return [...client.orders].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];

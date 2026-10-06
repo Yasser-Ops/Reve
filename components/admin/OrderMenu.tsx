@@ -9,6 +9,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -19,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { NativeSelect } from '@/components/ui/native-select';
-import { applyUpgrade, moveOrder } from '@/lib/admin/order-actions';
+import { applyUpgrade } from '@/lib/admin/order-actions';
 import { TIER_LABELS, type Tier } from '@/lib/constants';
 import { ORDER_STATUS, STATUS_LABELS, type OrderStatus } from '@/lib/orders/status';
 
@@ -32,6 +33,8 @@ type OrderMenuProps = {
   back: OrderStatus | null;
   canCancel: boolean;
   upgrades: readonly Tier[];
+  /** Moves the order; the card shows the new stage at once (OrderLive). */
+  onMove: (to: OrderStatus) => void;
 };
 
 /** The order's secondary moves, each behind a dialog so none is one stray click. */
@@ -42,6 +45,7 @@ export function OrderMenu({
   back,
   canCancel,
   upgrades,
+  onMove,
 }: OrderMenuProps) {
   const [open, setOpen] = useState<Pending>(null);
   const close = () => setOpen(null);
@@ -83,14 +87,17 @@ export function OrderMenu({
                 <DialogTitle>Move {reference} back?</DialogTitle>
                 <DialogDescription>It returns to {STATUS_LABELS[back].admin}.</DialogDescription>
               </DialogHeader>
-              <ActionForm
-                action={moveOrder}
-                onSuccess={close}
-                submitLabel={`Move back to ${STATUS_LABELS[back].admin}`}
-              >
-                <input name="orderId" type="hidden" value={orderId} />
-                <input name="to" type="hidden" value={back} />
-              </ActionForm>
+              <DialogFooter>
+                <Button
+                  onClick={() => {
+                    close();
+                    onMove(back);
+                  }}
+                  type="button"
+                >
+                  Move back to {STATUS_LABELS[back].admin}
+                </Button>
+              </DialogFooter>
             </>
           ) : null}
 
@@ -132,15 +139,18 @@ export function OrderMenu({
                 <DialogTitle>Cancel {reference}?</DialogTitle>
                 <DialogDescription>A cancelled order cannot be moved again.</DialogDescription>
               </DialogHeader>
-              <ActionForm
-                action={moveOrder}
-                onSuccess={close}
-                submitLabel="Cancel order"
-                variant="destructive"
-              >
-                <input name="orderId" type="hidden" value={orderId} />
-                <input name="to" type="hidden" value={ORDER_STATUS.CANCELLED} />
-              </ActionForm>
+              <DialogFooter>
+                <Button
+                  onClick={() => {
+                    close();
+                    onMove(ORDER_STATUS.CANCELLED);
+                  }}
+                  type="button"
+                  variant="destructive"
+                >
+                  Cancel order
+                </Button>
+              </DialogFooter>
             </>
           ) : null}
         </DialogContent>
