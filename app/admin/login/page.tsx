@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { LoginForm } from './LoginForm';
 import { AppSurface } from '@/components/admin/AppSurface';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { SIGN_IN_MESSAGES } from '@/lib/auth/messages';
 import { LOGIN_NOTICE, LOGIN_NOTICE_PARAM } from '@/lib/routes';
 
@@ -26,7 +26,10 @@ export default async function AdminLoginPage({
       <main className="grid min-h-dvh place-items-center px-4">
         <Card className="w-full max-w-sm">
           <CardHeader>
-            <CardTitle>Rêve admin</CardTitle>
+            <p className="font-heading text-[26px] tracking-wide">Rêve</p>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              Studio sign in
+            </p>
           </CardHeader>
           <CardContent>
             <LoginForm notice={notice} />
