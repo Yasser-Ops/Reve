@@ -22,3 +22,12 @@ export const CONTACT = {
 export function whatsappLink(message: string): string {
   return `https://wa.me/${CONTACT.whatsappE164}?text=${encodeURIComponent(message)}`;
 }
+
+/**
+ * A wa.me chat with a client, from the number as it was typed. A leading 00
+ * is the international prefix; wa.me wants the digits alone.
+ */
+export function whatsappChat(phone: string): string | null {
+  const digits = phone.replace(/\D/g, '').replace(/^00/, '');
+  return digits.length >= 8 ? `https://wa.me/${digits}` : null;
+}

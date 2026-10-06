@@ -25,4 +25,19 @@ describe('ActionForm', () => {
 
     await waitFor(() => expect(screen.getByText('Saved.')).toBeInTheDocument());
   });
+
+  it('tells its owner when the action succeeded', async () => {
+    const accept = async (): Promise<ActionResult> => ({ ok: true });
+    let succeeded = false;
+
+    render(<ActionForm action={accept} onSuccess={() => (succeeded = true)} submitLabel="Go" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Go' }));
+
+    await waitFor(() => expect(succeeded).toBe(true));
+  });
+
+  it('can be held shut', () => {
+    render(<ActionForm action={async () => ({ ok: true })} disabled submitLabel="Publish" />);
+    expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
+  });
 });

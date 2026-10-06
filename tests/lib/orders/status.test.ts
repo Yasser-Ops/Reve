@@ -7,6 +7,8 @@ import {
   canMove,
   flowFor,
   hasReached,
+  nextMove,
+  previousMove,
 } from '@/lib/orders/status';
 
 describe('order stages', () => {
@@ -69,5 +71,28 @@ describe('order stages', () => {
       expect(STATUS_LABELS[status].admin.length).toBeGreaterThan(0);
       expect(STATUS_LABELS[status].client).not.toContain('—');
     }
+  });
+});
+
+describe('the primary and back moves', () => {
+  it('offers the next stage forward as the primary move', () => {
+    expect(nextMove(TIERS.MANAGED, ORDER_STATUS.PAID)).toBe(ORDER_STATUS.IN_DESIGN);
+    expect(nextMove(TIERS.CUSTOM, ORDER_STATUS.PAID)).toBe(ORDER_STATUS.BRIEF);
+  });
+
+  it('offers no primary move in review: publishing delivers', () => {
+    expect(nextMove(TIERS.MANAGED, ORDER_STATUS.REVIEW)).toBeNull();
+  });
+
+  it('offers nothing once delivered or cancelled', () => {
+    for (const status of [ORDER_STATUS.DELIVERED, ORDER_STATUS.CANCELLED]) {
+      expect(nextMove(TIERS.BASIC, status)).toBeNull();
+      expect(previousMove(TIERS.BASIC, status)).toBeNull();
+    }
+  });
+
+  it('steps back one stage, and not before the first', () => {
+    expect(previousMove(TIERS.MANAGED, ORDER_STATUS.IN_DESIGN)).toBe(ORDER_STATUS.PAID);
+    expect(previousMove(TIERS.MANAGED, ORDER_STATUS.PENDING_PAYMENT)).toBeNull();
   });
 });

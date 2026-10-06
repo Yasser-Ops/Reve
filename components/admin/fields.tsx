@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
-import { TIERS } from '@/lib/constants';
+import { TIERS, TIER_LABELS } from '@/lib/constants';
 
 /*
  * Ids come from useId, never from the field's name: one admin page holds the
@@ -66,7 +66,7 @@ export function OrderFields() {
         <NativeSelect defaultValue={TIERS.MANAGED} id={tierId} name="tier">
           {Object.values(TIERS).map((tier) => (
             <option key={tier} value={tier}>
-              {tier}
+              {TIER_LABELS[tier]}
             </option>
           ))}
         </NativeSelect>

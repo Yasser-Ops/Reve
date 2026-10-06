@@ -67,6 +67,22 @@ export function allowedMoves(tier: Tier, from: OrderStatus): OrderStatus[] {
   return moves;
 }
 
+/** The forward move an order's primary button offers, or null. */
+export function nextMove(tier: Tier, from: OrderStatus): OrderStatus | null {
+  const flow = FLOWS[tier];
+  const at = flow.indexOf(from);
+  const next = at === -1 ? undefined : flow[at + 1];
+  return next && allowedMoves(tier, from).includes(next) ? next : null;
+}
+
+/** The one step back an order may take, or null. */
+export function previousMove(tier: Tier, from: OrderStatus): OrderStatus | null {
+  const flow = FLOWS[tier];
+  const at = flow.indexOf(from);
+  const previous = at > 0 ? flow[at - 1] : undefined;
+  return previous && allowedMoves(tier, from).includes(previous) ? previous : null;
+}
+
 export function canMove(tier: Tier, from: OrderStatus, to: OrderStatus): boolean {
   return allowedMoves(tier, from).includes(to);
 }

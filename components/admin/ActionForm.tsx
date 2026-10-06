@@ -12,6 +12,10 @@ type ActionFormProps = {
   successMessage?: string;
   variant?: 'default' | 'outline' | 'destructive' | 'secondary';
   className?: string;
+  /** Called after the action reports success, e.g. to close a dialog. */
+  onSuccess?: () => void;
+  /** Holds the submit button shut, e.g. while publishing would be refused. */
+  disabled?: boolean;
   children?: ReactNode;
 };
 
@@ -26,9 +30,18 @@ export function ActionForm({
   successMessage,
   variant,
   className,
+  onSuccess,
+  disabled,
   children,
 }: ActionFormProps) {
-  const [result, run, pending] = useActionState<ActionResult | null, FormData>(action, null);
+  const [result, run, pending] = useActionState<ActionResult | null, FormData>(
+    async (previous, formData) => {
+      const next = await action(previous, formData);
+      if (next.ok) onSuccess?.();
+      return next;
+    },
+    null,
+  );
 
   return (
     <form action={run} className={className ?? 'grid gap-3'}>
@@ -41,7 +54,7 @@ export function ActionForm({
       {result?.ok && successMessage ? (
         <p className="text-muted-foreground">{successMessage}</p>
       ) : null}
-      <Button disabled={pending} type="submit" variant={variant}>
+      <Button disabled={pending || disabled} type="submit" variant={variant}>
         {pending ? (pendingLabel ?? submitLabel) : submitLabel}
       </Button>
     </form>

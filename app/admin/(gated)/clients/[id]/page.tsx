@@ -1,20 +1,21 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { ActionForm } from '@/components/admin/ActionForm';
+import { Breadcrumbs } from '@/components/admin/Breadcrumbs';
+import { Eyebrow } from '@/components/admin/Eyebrow';
 import { Field, OrderFields, TextareaField } from '@/components/admin/fields';
-import { OrderPanel } from '@/components/admin/OrderPanel';
-import { StatusBadge } from '@/components/admin/StatusBadge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { OrderCard } from '@/components/admin/OrderCard';
 import { addOrder, updateClient } from '@/lib/admin/client-actions';
 import { getClient } from '@/lib/admin/clients';
 import { requireAdmin } from '@/lib/auth/guards';
-import { adminRoutes } from '@/lib/routes';
+import { whatsappChat } from '@/lib/contact';
+import { ROUTES } from '@/lib/routes';
 
 export const metadata: Metadata = { title: 'Client' };
 
-const when = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+const PANEL = 'rounded-2xl border bg-card p-5 sm:p-6';
+const SUMMARY = 'cursor-pointer select-none font-medium marker:text-muted-foreground';
 
 export default async function ClientPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
@@ -24,18 +25,35 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
   const client = await getClient(id.data);
   if (!client) notFound();
 
-  return (
-    <main className="mx-auto grid max-w-5xl gap-8 px-6 py-10 md:grid-cols-[1fr_2fr]">
-      <section>
-        <h1 className="text-xl font-medium">{client.full_name}</h1>
-        <p className="text-muted-foreground">{client.email}</p>
-        <p className="mt-1 text-muted-foreground">
-          {client.user_id ? 'Has an account' : 'Not invited yet'}
-        </p>
+  const chat = whatsappChat(client.phone);
 
+  return (
+    <main className="mx-auto grid max-w-4xl gap-8 px-4 py-10 sm:px-6">
+      <Breadcrumbs items={[{ label: 'Clients', href: ROUTES.ADMIN }, { label: client.full_name }]} />
+
+      <header>
+        <Eyebrow>Client</Eyebrow>
+        <h1 className="mt-2 font-heading text-[34px] leading-tight">{client.full_name}</h1>
+        <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
+          <span>{client.email}</span>
+          {chat ? (
+            <a className="text-wine hover:underline" href={chat} rel="noreferrer" target="_blank">
+              {client.phone} · WhatsApp
+            </a>
+          ) : (
+            <span>{client.phone}</span>
+          )}
+          <span>{client.user_id ? 'Has an account' : 'Not invited yet'}</span>
+        </p>
+        {client.notes ? <p className="mt-3 max-w-prose">{client.notes}</p> : null}
+      </header>
+
+      {/* <details>: closed by default, no JavaScript needed. */}
+      <details className={PANEL}>
+        <summary className={SUMMARY}>Edit details</summary>
         <ActionForm
           action={updateClient}
-          className="mt-6 grid gap-4"
+          className="mt-5 grid gap-4"
           submitLabel="Save"
           successMessage="Saved."
         >
@@ -44,47 +62,25 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
           <Field defaultValue={client.phone} label="Phone" name="phone" required />
           <TextareaField defaultValue={client.notes} label="Notes" name="notes" />
         </ActionForm>
-      </section>
+      </details>
 
-      <section className="grid content-start gap-4">
+      <section className="grid gap-4">
+        <h2 className="font-heading text-[24px]">Orders</h2>
         {client.orders.map((order) => (
-          <Card key={order.id}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                {order.reference} · {order.tier} · ${order.amount}
-                <StatusBadge status={order.status} />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-3">
-              {order.due_at ? (
-                <p className="text-muted-foreground">Due {when.format(new Date(order.due_at))}</p>
-              ) : null}
-              {order.invitations ? (
-                <Link className="underline" href={adminRoutes.invitation(order.invitations.id)}>
-                  Invitation /i/{order.invitations.slug} ({order.invitations.status})
-                </Link>
-              ) : null}
-              <OrderPanel order={order} />
-            </CardContent>
-          </Card>
+          <OrderCard key={order.id} order={order} />
         ))}
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Add an order</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ActionForm
-              action={addOrder}
-              className="grid gap-4"
-              submitLabel="Add order"
-              successMessage="Order added."
-            >
-              <input name="clientId" type="hidden" value={client.id} />
-              <OrderFields />
-            </ActionForm>
-          </CardContent>
-        </Card>
+        <details className={PANEL}>
+          <summary className={SUMMARY}>Add an order</summary>
+          <ActionForm
+            action={addOrder}
+            className="mt-5 grid gap-4"
+            submitLabel="Add order"
+            successMessage="Order added."
+          >
+            <input name="clientId" type="hidden" value={client.id} />
+            <OrderFields />
+          </ActionForm>
+        </details>
       </section>
     </main>
   );

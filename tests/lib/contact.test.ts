@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONTACT, whatsappLink } from '@/lib/contact';
+import { CONTACT, whatsappChat, whatsappLink } from '@/lib/contact';
 
 describe('whatsappLink', () => {
   it('builds a wa.me link for the business number', () => {
@@ -20,5 +20,16 @@ describe('whatsappLink', () => {
 
   it('exposes a bare E.164 number with no punctuation', () => {
     expect(CONTACT.whatsappE164).toMatch(/^\d+$/);
+  });
+});
+
+describe('whatsappChat', () => {
+  it('opens a chat with the digits of an international number', () => {
+    expect(whatsappChat('+961 70 123 456')).toBe('https://wa.me/96170123456');
+    expect(whatsappChat('00961 70 123 456')).toBe('https://wa.me/96170123456');
+  });
+
+  it('gives nothing for a number too short to dial', () => {
+    expect(whatsappChat('123')).toBeNull();
   });
 });
