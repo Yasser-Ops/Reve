@@ -4,9 +4,10 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { UNEXPECTED, type ActionResult } from '@/lib/admin/action-result';
+import { removeInvitationMedia } from '@/lib/admin/media';
 import { requireAdmin } from '@/lib/auth/guards';
 import { TIERS } from '@/lib/constants';
-import { adminRoutes } from '@/lib/routes';
+import { ADMIN_NOTICE, NOTICE_PARAM, ROUTES, adminRoutes } from '@/lib/routes';
 import { createClient } from '@/lib/supabase/server';
 
 const UNIQUE_VIOLATION = '23505';
@@ -143,4 +144,48 @@ export async function addOrder(
 
   revalidatePath(adminRoutes.client(id.data));
   return { ok: true };
+}
+
+const deleteSchema = z.object({
+  clientId: z.uuid(),
+  confirmName: z.string().trim().min(1).max(120),
+});
+
+/* Raised by admin_delete_client (migration 0007). */
+const DELETE_REFUSALS: Record<string, string> = {
+  RV001: 'The name does not match.',
+  RV002: 'Unpublish their invitation first.',
+};
+
+export async function deleteClient(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireAdmin();
+  const input = deleteSchema.safeParse(fields(formData, ['clientId', 'confirmName']));
+  if (!input.success) return { ok: false, message: 'Type the client’s full name to confirm.' };
+
+  /* One transaction in the database: the rows go together or not at all. */
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('admin_delete_client', {
+    p_client_id: input.data.clientId,
+    p_confirm_name: input.data.confirmName,
+  });
+  if (error) {
+    return {
+      ok: false,
+      message: Object.hasOwn(DELETE_REFUSALS, error.code) ? DELETE_REFUSALS[error.code] : UNEXPECTED,
+    };
+  }
+
+  /* null means the client was already gone; the list is where to land either
+     way. Files go after the rows: a storage failure leaves harmless orphans,
+     never a client whose files were deleted but rows were not. */
+  const filesRemoved = await removeInvitationMedia(supabase, data ?? []);
+  revalidatePath(ROUTES.ADMIN);
+  redirect(
+    `${ROUTES.ADMIN}?${NOTICE_PARAM}=${
+      filesRemoved ? ADMIN_NOTICE.CLIENT_DELETED : ADMIN_NOTICE.CLIENT_DELETED_FILES_LEFT
+    }`,
+  );
 }

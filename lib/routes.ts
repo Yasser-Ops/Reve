@@ -20,8 +20,14 @@ export const adminRoutes = {
  */
 export const PRIVATE_ROUTE_PATTERNS = ['/admin/:path*', '/portal/:path*'] as const;
 
-/** Why the login page is being shown, carried in `?notice=`. */
-export const LOGIN_NOTICE_PARAM = 'notice';
+/** Why a page is showing a notice, carried in `?notice=`. */
+export const NOTICE_PARAM = 'notice';
+
+/** Notices the clients list shows after an action sent the admin there. */
+export const ADMIN_NOTICE = {
+  CLIENT_DELETED: 'client-deleted',
+  CLIENT_DELETED_FILES_LEFT: 'client-deleted-files-left',
+} as const;
 
 export const LOGIN_NOTICE = {
   NOT_ADMIN: 'not-admin',

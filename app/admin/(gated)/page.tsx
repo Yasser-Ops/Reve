@@ -11,9 +11,17 @@ import { clientFiltersSchema, getOrderSummary, listClients } from '@/lib/admin/c
 import { requireAdmin } from '@/lib/auth/guards';
 import { TIERS, TIER_LABELS } from '@/lib/constants';
 import { ORDER_STATUS, STATUS_LABELS } from '@/lib/orders/status';
-import { ROUTES } from '@/lib/routes';
+import { ADMIN_NOTICE, NOTICE_PARAM, ROUTES } from '@/lib/routes';
 
 export const metadata: Metadata = { title: 'Clients' };
+
+/* Only known notices render, so the query string cannot put arbitrary text
+   on the page. */
+const NOTICES: Record<string, string> = {
+  [ADMIN_NOTICE.CLIENT_DELETED]: 'Client deleted.',
+  [ADMIN_NOTICE.CLIENT_DELETED_FILES_LEFT]:
+    'Client deleted. Some uploaded files could not be removed; they are harmless but take space.',
+};
 
 export default async function ClientsPage({
   searchParams,
@@ -26,6 +34,8 @@ export default async function ClientsPage({
   const now = new Date();
   const [clients, counts] = await Promise.all([listClients(filters, now), getOrderSummary(now)]);
   const filtering = Boolean(filters.q || filters.status || filters.tier || filters.view);
+  const raw = params[NOTICE_PARAM];
+  const notice = typeof raw === 'string' && Object.hasOwn(NOTICES, raw) ? NOTICES[raw] : null;
 
   return (
     <main className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6">
@@ -38,6 +48,12 @@ export default async function ClientsPage({
           New client
         </Link>
       </header>
+
+      {notice ? (
+        <p className="rounded-xl border bg-card px-4 py-3" role="status">
+          {notice}
+        </p>
+      ) : null}
 
       <SummaryTiles counts={counts} current={filters.view} />
 

@@ -3,12 +3,14 @@ import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { ActionForm } from '@/components/admin/ActionForm';
 import { Breadcrumbs } from '@/components/admin/Breadcrumbs';
+import { DeleteClientDialog } from '@/components/admin/DeleteClientDialog';
 import { Eyebrow } from '@/components/admin/Eyebrow';
 import { Field, OrderFields, TextareaField } from '@/components/admin/fields';
 import { OrderCard } from '@/components/admin/OrderCard';
 import { addOrder, updateClient } from '@/lib/admin/client-actions';
 import { getClient } from '@/lib/admin/clients';
 import { requireAdmin } from '@/lib/auth/guards';
+import { INVITATION_STATUS } from '@/lib/constants';
 import { whatsappChat } from '@/lib/contact';
 import { ROUTES } from '@/lib/routes';
 
@@ -26,6 +28,12 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
   if (!client) notFound();
 
   const chat = whatsappChat(client.phone);
+  const invitations = client.orders.flatMap((order) =>
+    order.invitations ? [order.invitations] : [],
+  );
+  const blocked = invitations.some(
+    (invitation) => invitation.status === INVITATION_STATUS.PUBLISHED,
+  );
 
   return (
     <main className="mx-auto grid max-w-4xl gap-8 px-4 py-10 sm:px-6">
@@ -81,6 +89,23 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
             <OrderFields />
           </ActionForm>
         </details>
+      </section>
+
+      <section className="grid gap-3 rounded-2xl border border-wine/30 p-5 sm:p-6">
+        <h2 className="font-heading text-[20px]">Delete client</h2>
+        <p className="text-muted-foreground">
+          Removes the client with their orders, invitations and uploaded files. Use it for test
+          records and clients who never went ahead.
+        </p>
+        <div>
+          <DeleteClientDialog
+            blocked={blocked}
+            clientId={client.id}
+            fullName={client.full_name}
+            invitations={invitations.length}
+            orders={client.orders.length}
+          />
+        </div>
       </section>
     </main>
   );

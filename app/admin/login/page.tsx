@@ -3,7 +3,7 @@ import { LoginForm } from './LoginForm';
 import { AppSurface } from '@/components/admin/AppSurface';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { SIGN_IN_MESSAGES } from '@/lib/auth/messages';
-import { LOGIN_NOTICE, LOGIN_NOTICE_PARAM } from '@/lib/routes';
+import { LOGIN_NOTICE, NOTICE_PARAM } from '@/lib/routes';
 
 export const metadata: Metadata = { title: 'Sign in' };
 
@@ -18,7 +18,7 @@ export default async function AdminLoginPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const raw = (await searchParams)[LOGIN_NOTICE_PARAM];
+  const raw = (await searchParams)[NOTICE_PARAM];
   const notice = typeof raw === 'string' ? (NOTICES[raw] ?? null) : null;
 
   return (

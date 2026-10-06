@@ -1,7 +1,7 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import { isAdmin } from '@/lib/auth/admin-membership';
-import { LOGIN_NOTICE, LOGIN_NOTICE_PARAM, ROUTES } from '@/lib/routes';
+import { LOGIN_NOTICE, NOTICE_PARAM, ROUTES } from '@/lib/routes';
 import { createClient } from '@/lib/supabase/server';
 
 export type AdminIdentity = {
@@ -26,7 +26,7 @@ export async function requireAdmin(): Promise<AdminIdentity> {
 
   if (!(await isAdmin(supabase, claims.sub))) {
     redirect(
-      `${ROUTES.ADMIN_LOGIN}?${LOGIN_NOTICE_PARAM}=${LOGIN_NOTICE.NOT_ADMIN}`,
+      `${ROUTES.ADMIN_LOGIN}?${NOTICE_PARAM}=${LOGIN_NOTICE.NOT_ADMIN}`,
     );
   }
 
