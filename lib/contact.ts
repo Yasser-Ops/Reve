@@ -44,6 +44,8 @@ export function whatsappChat(phone: string): string | null {
   } else if (!international && digits.length <= LOCAL_NUMBER_MAX_DIGITS) {
     digits = LOCAL_COUNTRY_CODE + digits;
   }
+  /* "+961 03 ..." is common, but a Lebanese number drops its trunk 0. */
+  digits = digits.replace(new RegExp(`^${LOCAL_COUNTRY_CODE}0`), LOCAL_COUNTRY_CODE);
 
   return digits.length >= 10 ? `https://wa.me/${digits}` : null;
 }

@@ -56,6 +56,23 @@ describe('OrderLive', () => {
     expect(screen.getByText('That order cannot move to that stage from here.')).toBeInTheDocument();
   });
 
+  /* Second review: the last refusal stayed up while the next move ran. */
+  it('clears the last refusal as soon as the next move starts', async () => {
+    renderOrder();
+    fireEvent.click(screen.getByRole('button', { name: 'Move to In design' }));
+    await waitFor(() => expect(stage()).toHaveAttribute('data-status', 'in_design'));
+    pending.resolve?.({ ok: false, message: 'Refused once.' });
+    await waitFor(() => expect(screen.getByText('Refused once.')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Move to In design' })).toBeEnabled(),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Move to In design' }));
+    await waitFor(() => expect(stage()).toHaveAttribute('data-status', 'in_design'));
+    expect(screen.queryByText('Refused once.')).toBeNull();
+    pending.resolve?.({ ok: true });
+  });
+
   it('keeps the server-rendered parts of the card', () => {
     renderOrder();
     expect(screen.getByText('server children')).toBeInTheDocument();

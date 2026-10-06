@@ -52,8 +52,9 @@ export function OrderLive({
   const [refusal, setRefusal] = useState<string | null>(null);
 
   function move(to: OrderStatus) {
+    /* Outside the transition: inside it, clearing waits for the save. */
+    setRefusal(null);
     startMove(async () => {
-      setRefusal(null);
       showStatus(to);
       const formData = new FormData();
       formData.set('orderId', orderId);

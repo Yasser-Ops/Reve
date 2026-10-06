@@ -36,6 +36,13 @@ describe('whatsappChat', () => {
     expect(whatsappChat('3 123 456')).toBe('https://wa.me/9613123456');
   });
 
+  /* Second review: "+961 03 ..." keeps a trunk 0 Lebanese numbers drop. */
+  it('drops the trunk 0 written after the country code', () => {
+    expect(whatsappChat('+961 03 123 456')).toBe('https://wa.me/9613123456');
+    expect(whatsappChat('00961 03 123 456')).toBe('https://wa.me/9613123456');
+    expect(whatsappChat('961 03 123 456')).toBe('https://wa.me/9613123456');
+  });
+
   it('leaves an international number from another country alone', () => {
     expect(whatsappChat('+33 6 12 34 56 78')).toBe('https://wa.me/33612345678');
   });
