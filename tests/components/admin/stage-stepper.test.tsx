@@ -14,4 +14,11 @@ describe('StageStepper', () => {
     const { container } = render(<StageStepper status="cancelled" tier="managed" />);
     expect(container.querySelectorAll('[data-state="off"]')).toHaveLength(5);
   });
+
+  it('gives every stage an equal column, whatever its label length', () => {
+    render(<StageStepper status="paid" tier="custom" />);
+    expect(screen.getByRole('list', { name: 'Order stages' }).style.gridTemplateColumns).toBe(
+      'repeat(7, minmax(0, 1fr))',
+    );
+  });
 });

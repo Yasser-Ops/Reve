@@ -76,7 +76,7 @@ export function ContentEditor({
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
+    <div className="grid gap-8 lg:grid-cols-[1fr_410px]">
       <form action={run} className="grid content-start gap-5">
         <input name="invitationId" type="hidden" value={invitationId} />
         <input name="content" type="hidden" value={payload} />
@@ -141,7 +141,7 @@ export function ContentEditor({
       </form>
 
       <div className="lg:sticky lg:top-6 lg:self-start">
-        <PhoneFrame maxWidth={340}>
+        <PhoneFrame maxWidth={410}>
           <iframe
             className="block h-[680px] w-full"
             key={version}

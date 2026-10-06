@@ -18,7 +18,11 @@ export function StageStepper({ tier, status }: { tier: Tier; status: OrderStatus
   const cancelled = status === ORDER_STATUS.CANCELLED;
 
   return (
-    <ol aria-label="Order stages" className="grid grid-flow-col gap-1.5">
+    <ol
+      aria-label="Order stages"
+      className="grid gap-1.5"
+      style={{ gridTemplateColumns: `repeat(${flow.length}, minmax(0, 1fr))` }}
+    >
       {flow.map((stage, index) => {
         const state: StepState = cancelled
           ? 'off'

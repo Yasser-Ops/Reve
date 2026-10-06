@@ -273,11 +273,16 @@ html {
  * the brand: bone ground, ink type and buttons, sand rules, wine for what
  * needs attention.
  *
+ * Menus and dialogs portal to <body>, outside the surface's wrapper, so the
+ * tokens also apply to a body that contains a surface: portaled content
+ * inherits them, and the storefront (no surface) is untouched.
+ *
  * Deliberately NOT carried over from shadcn init: its --radius-* overrides in
  * @theme (they would reshape every rounded-* on the storefront) and its .dark
  * palette (nothing sets .dark).
  */
-[data-surface="app"] {
+[data-surface="app"],
+body:has([data-surface="app"]) {
   --background: var(--reve-bone);
   --foreground: var(--reve-ink);
   --card: #fffdf9;
@@ -301,7 +306,8 @@ html {
 
 @layer base {
   [data-surface="app"],
-  [data-surface="app"] * {
+  [data-surface="app"] *,
+  body:has([data-surface="app"]) * {
     @apply border-border outline-ring/50;
   }
   [data-surface="app"] {
