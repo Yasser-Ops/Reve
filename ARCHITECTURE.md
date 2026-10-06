@@ -41,6 +41,7 @@ app/
                                 order, <details> add order, DeleteClientDialog
     (gated)/invitations/[id]    link, ContentEditor (form | JSON + preview),
                                 MediaSection, ReviewPanel
+    (gated)/settings            Password card -> changePassword
                                 Inner pages open with Breadcrumbs.
     preview/[id]/page.tsx       BARE draft render (iframe target), no surface
 
@@ -82,8 +83,10 @@ components/
                                 onSuccess, disabled], Breadcrumbs, Eyebrow,
                                 StatusBadge (tone per stage), SummaryTiles,
                                 ClientRows, AutoSubmitForm [CLIENT],
-                                OrderCard, StageStepper, OrderMenu [CLIENT,
-                                dropdown + back/upgrade/cancel dialogs],
+                                OrderCard (server shell) > OrderLive [CLIENT,
+                                useOptimistic stage: badge, stepper, primary
+                                move] > OrderMenu [CLIENT, back/upgrade/cancel
+                                dialogs], StageStepper,
                                 DeleteClientDialog [CLIENT], ContentEditor
                                 [CLIENT], content-form/FieldControl [CLIENT,
                                 recursive], CopyChecklist [CLIENT],
@@ -194,8 +197,11 @@ own session, so RLS (`private.is_admin()`) is the second wall. No service key.
 **Operator builds and delivers an invitation**
 
 ```
-client page -> OrderCard: primary = nextMove(tier, status); OrderMenu holds
-  previousMove / upgrade / cancel, each behind a dialog
+client page -> OrderCard -> OrderLive [CLIENT]: primary = nextMove(tier,
+  status); OrderMenu holds previousMove / upgrade / cancel behind dialogs.
+  A move: startTransition -> useOptimistic(to) (on screen ~70ms) ->
+  moveOrder -> revalidatePath re-render becomes the truth; a refusal ends
+  the transition, the stage falls back, the reason shows.
   moveOrder(paid)              canMove(tier); due_at = now + DELIVERY.hours
                                unless already set, or Custom
   provisionInvitation(design)  paid or later; no invitation yet; design in
@@ -223,6 +229,16 @@ client page -> OrderCard: primary = nextMove(tier, status); OrderMenu holds
                                status published, order delivered
   edit after publish           changes the draft only; guests keep the
                                snapshot until re-approval + Publish again
+```
+
+**Operator changes the admin password**
+
+```
+/admin/settings -> ActionForm -> changePassword
+  requireAdmin; zod (10..72 chars, copies match, differs from current)
+  signInWithPassword(admin.email, current)   wrong -> "not right", no change
+  auth.updateUser({ password })              weak_password | same_password worded
+  auth.signOut({ scope: 'others' })          this device stays signed in
 ```
 
 **Operator deletes a client**
@@ -593,6 +609,12 @@ No dark mode. An invitation is a fixed artifact, like printed stationery.
   The draft preview stays outside the surface or the design gets repainted.
 - **Form field ids come from `useId`**, never from the field name: one admin
   page holds several forms with the same field names.
+- **Admin dates are studio time.** `STUDIO_TIME_ZONE` (Asia/Beirut): a typed
+  due date is stored as `<date> 23:59:59 Asia/Beirut` (Postgres resolves the
+  zone and DST), and every admin `Intl.DateTimeFormat` passes `timeZone`, so
+  a UTC server shows the same day the operator typed.
+- **`requireAdmin` is React `cache()`d**: one check per request (layout and
+  page share it), never across requests or actions.
 - **Destructive admin actions sit behind a dialog**, and deleting a client
   asks for the name typed out. The check is mirrored: `namesMatch` in the
   dialog, `lower(btrim())` in the function.
