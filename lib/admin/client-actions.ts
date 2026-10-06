@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { UNEXPECTED, type ActionResult } from '@/lib/admin/action-result';
 import { removeInvitationMedia } from '@/lib/admin/media';
 import { requireAdmin } from '@/lib/auth/guards';
-import { TIERS } from '@/lib/constants';
+import { STUDIO_TIME_ZONE, TIERS } from '@/lib/constants';
 import { ADMIN_NOTICE, NOTICE_PARAM, ROUTES, adminRoutes } from '@/lib/routes';
 import { createClient } from '@/lib/supabase/server';
 
@@ -39,13 +39,22 @@ function fields(formData: FormData, names: readonly string[]) {
   return Object.fromEntries(names.map((name) => [name, formData.get(name) ?? '']));
 }
 
+/**
+ * A typed due date is due until the end of that day in the studio's zone.
+ * Stored as midnight UTC it read as overdue from 03:00 on the day it was due.
+ * Postgres resolves the zone name, daylight saving included.
+ */
+function endOfStudioDay(date: string | null): string | null {
+  return date ? `${date} 23:59:59 ${STUDIO_TIME_ZONE}` : null;
+}
+
 function orderRow(order: z.infer<typeof orderFieldsSchema>, clientId: string) {
   return {
     client_id: clientId,
     tier: order.tier,
     amount: order.amount,
     event_date: order.eventDate,
-    due_at: order.dueAt,
+    due_at: endOfStudioDay(order.dueAt),
     notes: order.notes || null,
   };
 }
@@ -154,7 +163,7 @@ const deleteSchema = z.object({
 /* Raised by admin_delete_client (migration 0007). */
 const DELETE_REFUSALS: Record<string, string> = {
   RV001: 'The name does not match.',
-  RV002: 'Unpublish their invitation first.',
+  RV002: 'Their invitation is live for guests, so this client cannot be deleted.',
 };
 
 export async function deleteClient(

@@ -28,7 +28,8 @@ type DeleteClientDialogProps = {
   fullName: string;
   orders: number;
   invitations: number;
-  /** A published invitation: the server refuses, so the dialog does not offer. */
+  /** A published invitation: the server refuses, so the dialog does not offer.
+      There is no unpublish action, so the copy states the fact, not a step. */
   blocked: boolean;
 };
 
@@ -55,7 +56,7 @@ export function DeleteClientDialog({
           <DialogTitle>Delete {fullName}?</DialogTitle>
           <DialogDescription>
             {blocked
-              ? 'One of their invitations is live. Unpublish it first, then delete the client.'
+              ? 'Their invitation is live for guests, so this client cannot be deleted.'
               : `This removes ${count(orders, 'order')}, ${count(invitations, 'invitation')} and every uploaded file. It cannot be undone.`}
           </DialogDescription>
         </DialogHeader>

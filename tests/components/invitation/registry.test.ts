@@ -6,6 +6,7 @@ import {
   TEMPLATES,
   TEMPLATE_SLUGS,
 } from '@/components/invitation/registry';
+import { formModel } from '@/lib/admin/content-form';
 import { checklistFor } from '@/lib/schemas/content/checklist';
 import { SAMPLE_CONTENT } from '@/lib/sample-invitation';
 
@@ -25,6 +26,14 @@ describe('template registry', () => {
   it('gives every field of every design an ask', () => {
     for (const entry of TEMPLATES) {
       expect(() => checklistFor(entry.schema), entry.slug).not.toThrow();
+    }
+  });
+
+  /* Final review: the editor builds its form from the design's schema; one
+     unlabelled field would crash the editor for every invitation of it. */
+  it('gives every field of every design a label the editor can draw', () => {
+    for (const entry of TEMPLATES) {
+      expect(() => formModel(entry.schema), entry.slug).not.toThrow();
     }
   });
 

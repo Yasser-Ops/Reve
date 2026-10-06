@@ -29,6 +29,17 @@ describe('whatsappChat', () => {
     expect(whatsappChat('00961 70 123 456')).toBe('https://wa.me/96170123456');
   });
 
+  /* Final review: the operator types numbers the local way. */
+  it('adds the Lebanese country code to a number typed the local way', () => {
+    expect(whatsappChat('70 123 456')).toBe('https://wa.me/96170123456');
+    expect(whatsappChat('03 123 456')).toBe('https://wa.me/9613123456');
+    expect(whatsappChat('3 123 456')).toBe('https://wa.me/9613123456');
+  });
+
+  it('leaves an international number from another country alone', () => {
+    expect(whatsappChat('+33 6 12 34 56 78')).toBe('https://wa.me/33612345678');
+  });
+
   it('gives nothing for a number too short to dial', () => {
     expect(whatsappChat('123')).toBeNull();
   });

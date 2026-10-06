@@ -68,7 +68,10 @@ describe('deleteClient', () => {
     state.fake = fakeSupabase({ 'rpc:admin_delete_client': [{ error: { code: 'RV002' } }] });
     await expect(
       deleteClient(null, form({ clientId: CLIENT, confirmName: 'Maya Haddad' })),
-    ).resolves.toEqual({ ok: false, message: 'Unpublish their invitation first.' });
+    ).resolves.toEqual({
+      ok: false,
+      message: 'Their invitation is live for guests, so this client cannot be deleted.',
+    });
     expect(state.fake.storageCalls).toHaveLength(0);
   });
 

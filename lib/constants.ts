@@ -6,6 +6,9 @@ export const TIERS = {
 
 export type Tier = (typeof TIERS)[keyof typeof TIERS];
 
+/** The studio's own clock: typed due dates end at midnight here. */
+export const STUDIO_TIME_ZONE = 'Asia/Beirut';
+
 export const TIER_LABELS: Record<Tier, string> = {
   basic: 'Basic',
   managed: 'Managed',

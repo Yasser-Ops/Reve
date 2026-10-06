@@ -95,6 +95,23 @@ describe('createClientWithOrder', () => {
     await expect(createClientWithOrder(null, form(newClient))).rejects.toThrow();
   });
 
+  /* Final review: a typed due date stored as midnight UTC read as overdue
+     for the whole day it was due. */
+  it('stores a typed due date as the end of that day in Beirut', async () => {
+    state.fake = fakeSupabase({
+      clients: [{ data: { id: 'client-1' } }],
+      orders: [{ data: null }],
+    });
+
+    await expect(
+      createClientWithOrder(null, form({ ...newClient, dueAt: '2026-10-07' })),
+    ).rejects.toThrow('REDIRECT');
+    expect(state.fake.find('orders', 'insert')?.args[0]).toMatchObject({
+      due_at: '2026-10-07 23:59:59 Asia/Beirut',
+      event_date: '2027-06-12',
+    });
+  });
+
   it('refuses a tier that does not exist', async () => {
     state.fake = fakeSupabase();
     await expect(
