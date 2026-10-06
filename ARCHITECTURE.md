@@ -32,11 +32,16 @@ app/
     layout.tsx                  metadata only (noindex). NO surface here.
     login/page.tsx, LoginForm   [CLIENT] outside (gated): no redirect loop
     error.tsx, not-found.tsx    wrap AppSurface; error calls retry()
-    (gated)/layout.tsx          requireAdmin + header, wraps AppSurface
-    (gated)/page.tsx            client list: q/status/tier GET form
+    (gated)/layout.tsx          requireAdmin + branded top bar, wraps AppSurface
+    (gated)/page.tsx            SummaryTiles (?view=) + AutoSubmitForm
+                                [CLIENT] (q/status/tier GET) + ClientRows
+                                (table md+, cards below); ?notice= whitelist
     (gated)/clients/new         client + first order
-    (gated)/clients/[id]        details, orders, OrderPanel per order
-    (gated)/invitations/[id]    checklist, link, ContentEditor, Media, Review
+    (gated)/clients/[id]        header (wa.me), <details> edit, OrderCard per
+                                order, <details> add order, DeleteClientDialog
+    (gated)/invitations/[id]    link, ContentEditor (form | JSON + preview),
+                                MediaSection, ReviewPanel
+                                Inner pages open with Breadcrumbs.
     preview/[id]/page.tsx       BARE draft render (iframe target), no surface
 
 proxy.ts                        Next 16 name for middleware. Matcher = private
@@ -73,10 +78,17 @@ components/
     templates/<slug>/           index.tsx + schema.ts (its own content schema)
 
   admin/                        Private surface. AppSurface (data-surface),
-                                ActionForm [CLIENT, the one form island],
-                                OrderPanel, ContentEditor [CLIENT],
-                                CopyChecklist [CLIENT], MediaUploader [CLIENT],
-                                MediaSection, ReviewPanel, StatusBadge,
+                                ActionForm [CLIENT, the shared form island;
+                                onSuccess, disabled], Breadcrumbs, Eyebrow,
+                                StatusBadge (tone per stage), SummaryTiles,
+                                ClientRows, AutoSubmitForm [CLIENT],
+                                OrderCard, StageStepper, OrderMenu [CLIENT,
+                                dropdown + back/upgrade/cancel dialogs],
+                                DeleteClientDialog [CLIENT], ContentEditor
+                                [CLIENT], content-form/FieldControl [CLIENT,
+                                recursive], CopyChecklist [CLIENT],
+                                MediaUploader [CLIENT, drop zone],
+                                MediaSection, ReviewPanel,
                                 fields.tsx (ids from useId)
   ui/                           shadcn base-nova, via `shadcn add` ONLY
 
@@ -88,15 +100,21 @@ lib/
   schemas/content/              core, BLOCKS, checklist (see 03)
   invitations/                  get-published (anon read), slug, content
                                 (checkContent, toJson), publish-guard
-  orders/status.ts, upgrade.ts  stages per tier, moves, labels, upgrades
-  admin/                        reads (clients, invitations, media) and
-                                'use server' actions (client-, order-,
-                                invitation-, media-actions); ActionResult
+  orders/status.ts, upgrade.ts  stages per tier, moves (nextMove,
+                                previousMove), labels, upgrades
+  admin/                        reads (clients + getOrderSummary,
+                                invitations, media + removeInvitationMedia),
+                                summary (views, due/overdue), content-form
+                                (formModel, pruneContent, date helpers),
+                                names (namesMatch), 'use server' actions
+                                (client-, order-, invitation-, media-
+                                actions); ActionResult
   auth/                         guards (requireAdmin), actions, messages,
                                 admin-membership
   supabase/                     server.ts, client.ts (uploads only),
                                 proxy.ts, database.types.ts (generated)
-  routes.ts                     ROUTES, adminRoutes, PRIVATE_ROUTE_PATTERNS
+  routes.ts                     ROUTES, adminRoutes, PRIVATE_ROUTE_PATTERNS,
+                                NOTICE_PARAM, LOGIN_NOTICE, ADMIN_NOTICE
   hooks/useCountdown.ts         Ticking clock; every dial is drawn per design
   mockup.ts                     ads.jpg geometry (shared with the composer)
   rest.ts, env.ts, envelopes.ts
@@ -105,7 +123,8 @@ scripts/
   compose-mockup.mjs            Cuts stills into ads.jpg -> collection card
   optimize-images.mjs           public/, or `<folder>` for client photos
 
-supabase/migrations/            append-only; 0005 admin pipeline, 0006 view seal
+supabase/migrations/            append-only; 0005 admin pipeline, 0006 view
+                                seal, 0007 admin_delete_client
 ```
 
 **Client islands are deliberately shallow.** `InvitationDemo`, `RsvpPanel`,
@@ -175,26 +194,49 @@ own session, so RLS (`private.is_admin()`) is the second wall. No service key.
 **Operator builds and delivers an invitation**
 
 ```
-client page -> OrderPanel
+client page -> OrderCard: primary = nextMove(tier, status); OrderMenu holds
+  previousMove / upgrade / cancel, each behind a dialog
   moveOrder(paid)              canMove(tier); due_at = now + DELIVERY.hours
                                unless already set, or Custom
   provisionInvitation(design)  paid or later; no invitation yet; design in
                                registry; slug = proposeSlug(client name) +
                                withSuffix(taken); entitlements snapshotted
 -> /admin/invitations/[id]
-  saveContent(JSON)            checkContent: JSON.parse + design.schema
-                               -> issues by field, or content stored PARSED
+  formModel(design.schema)     server: FormField[] (labels from .meta), plain
+                               data handed to ContentEditor [CLIENT]
+  form state -> pruneContent   emptied optional fields dropped, never ""
+  (or Advanced JSON text)      parseContentText before returning to the form
+  saveContent(JSON string)     checkContent: JSON.parse + design.schema
+                               -> issues by path (shown on the field), or
+                               content stored PARSED
   iframe /admin/preview/[id]   reloads after each save (bare, no surface)
   MediaUploader -> createUploadUrl (signed, per file) -> browser
                    uploadToSignedUrl -> invitation-media/<id>/<kind>/<name>
   moveOrder(review)            refused unless content satisfies its design
   approveOnBehalf(note)        invitation_reviews: snapshot = current content
-  publishInvitation            order REVIEW or DELIVERED; latest review
+  ReviewPanel                  publishReadiness (the action's own check)
+                               disables Publish and prints the reason
+  publishInvitation            publishReadiness: order REVIEW or DELIVERED;
+                               latest review
                                approved AND snapshot == content (key-order
                                blind) -> published_content = SNAPSHOT,
                                status published, order delivered
   edit after publish           changes the draft only; guests keep the
                                snapshot until re-approval + Publish again
+```
+
+**Operator deletes a client**
+
+```
+client page -> DeleteClientDialog [CLIENT]
+  blocked (an invitation is published)  -> no form, "unpublish first"
+  typed name: namesMatch (trim, case-blind) enables "Delete for good"
+deleteClient (zod) -> rpc admin_delete_client(id, name)   ONE transaction
+  RV001 name mismatch | RV002 published  -> worded refusal, nothing deleted
+  ok -> deleted invitation ids
+removeInvitationMedia(ids)   list <id>/<kind> per MEDIA_KINDS, remove
+  files go AFTER rows: a storage failure leaves orphans, never half a client
+redirect /admin?notice=client-deleted | client-deleted-files-left
 ```
 
 **Visitor compares two designs**
@@ -285,12 +327,16 @@ schema lacks, or a schema missing the core, fails typecheck.
 - **Every field carries `.meta({ ask })`**, the line sent to a client.
   `checklistFor` throws on a field without one; `checklistMessage` is the
   WhatsApp list the editor copies.
+- **Every field, nested ones included, carries `.meta({ label })`** for the
+  admin form; `multiline: true` makes a text box, `media: <kind>` makes the
+  field offer that kind's uploads. `formModel` throws on a missing label or a
+  zod type it cannot draw, so a new design cannot silently lose a field.
 - **Block keys are permanent.** Stored rows are keyed by them. Add optional
   fields; never rename.
 - **Content is parsed with the design's own schema** wherever it is read:
   saving, the public read, the rendered wrapper. Still one jsonb column, so a
-  new design needs no migration. There is no form editor: the operator writes
-  JSON, validated on save.
+  new design needs no migration. The operator fills a form generated from the
+  design's schema (JSON behind "Advanced"), validated on save.
 - A redesign that would change already-approved invitations ships as a NEW
   entry (`lin-2`), the old one kept rendering.
 
@@ -483,7 +529,7 @@ EXECUTE, anon holds nothing. Clients get their own policies in Phase 3.
 
 | table | policy | notes |
 |---|---|---|
-| `clients` | admin all | email unique, lowercase; `user_id` null until invited (Phase 3), ON DELETE SET NULL |
+| `clients` | admin all | email unique, lowercase; `user_id` null until invited (Phase 3), ON DELETE SET NULL; deleted only through `admin_delete_client` |
 | `orders` | admin all | `client_id`, `due_at`, reference default `RV-####` (sequence); status adds `brief`, `concept` |
 | `invitations` | admin all | `order_id` unique; `content` is the working draft, `published_content` the approved snapshot guests see |
 | `invitation_reviews` | admin all | `content_snapshot` IS the approval; `on_behalf`; `created_by` has no delete action |
@@ -491,6 +537,7 @@ EXECUTE, anon holds nothing. Clients get their own policies in Phase 3.
 | `admin_users` | `admin_users self read` | membership, not a JWT claim, makes an admin |
 | view `published_invitations` | SELECT to anon, authenticated ONLY | runs as its owner; projects `published_content as content` |
 | bucket `invitation-media` | public read; admin select, insert, update, delete | WebP and MP4 only, 50 MB; `<invitation>/<kind>/<name>` |
+| fn `admin_delete_client(uuid, text) -> uuid[]` | EXECUTE to authenticated only | security INVOKER (admin RLS applies) + explicit `is_admin()`; locks the client row; raises `RV001` (name), `RV002` (published); deletes invitations (reviews, guests, rsvps cascade), orders, client; returns the invitation ids for storage cleanup |
 
 Public/anon reads use **raw `fetch()` to PostgREST**, never `supabase-js`,
 which avoids stalling on a stale session. Entitlements are resolved from the
@@ -536,13 +583,19 @@ No dark mode. An invitation is a fixed artifact, like printed stationery.
   Verify with an anon write attempt inside a rolled-back transaction.
 - **Guests see only an approved snapshot.** `published_content` is written by
   publish alone, from the latest approval; `content` is a draft.
-- **shadcn is scoped to `[data-surface="app"]`.** Its tokens and base layer
-  are defined only there (`AppSurface`); the storefront's `--background`,
+- **shadcn is scoped to `[data-surface="app"]`.** Its tokens (mapped to the
+  Rêve palette: bone, ink, sand, wine) and base layer are defined only there
+  (`AppSurface`) and on `body:has([data-surface="app"])`, because base-ui
+  menus and dialogs portal to `<body>`, outside the wrapper, and rendered
+  transparent before that selector existed. The storefront's `--background`,
   `--foreground`, `--font-sans` and radius scale are untouched. NEVER run
   `shadcn init` again: it rewrites `app/globals.css` and `app/layout.tsx`.
   The draft preview stays outside the surface or the design gets repainted.
 - **Form field ids come from `useId`**, never from the field name: one admin
   page holds several forms with the same field names.
+- **Destructive admin actions sit behind a dialog**, and deleting a client
+  asks for the name typed out. The check is mirrored: `namesMatch` in the
+  dialog, `lower(btrim())` in the function.
 
 - **An envelope is a rendered sequence, never cut layers.** The reverse of
   what stood here. Four hinged layers could not show paper bending or wax
@@ -646,6 +699,9 @@ base from the walk.
   sender allows a few an hour), the Invite and Reset email templates pointing
   at `/auth/confirm`, Supabase password minimum 10, leaked-password
   protection. Sign-ups are OFF.
+- **Deleting a client does not touch `auth.users`.** Clients have no accounts
+  before Phase 3; Phase 3 must extend `deleteClient` to remove the client's
+  auth user (service role) once invites exist.
 - **Deferred Phase 2 minors** (from the final review): search over 80
   characters lists every client; `moveOrder` does not re-check the status it
   read, so a stale button can move an order back; provisioning races map to a
