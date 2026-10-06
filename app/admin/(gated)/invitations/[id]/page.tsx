@@ -29,7 +29,12 @@ export default async function InvitationEditorPage({
   const id = z.uuid().safeParse((await params).id);
   if (!id.success) notFound();
 
-  const invitation = await getInvitationForEditor(id.data);
+  /* In parallel: listing an invitation that turns out not to exist costs
+     nothing but returns nothing. */
+  const [invitation, files] = await Promise.all([
+    getInvitationForEditor(id.data),
+    listMedia(id.data),
+  ]);
   if (!invitation) notFound();
 
   const design = getTemplateEntry(invitation.template_slug);
@@ -44,7 +49,6 @@ export default async function InvitationEditorPage({
   const fields = formModel(design.schema);
 
   /* Listed once: the media section shows them, the form's media fields offer them. */
-  const files = await listMedia(invitation.id);
   const media: MediaOptions = { photos: [], hero: [], envelope: [] };
   for (const file of files) media[file.kind].push(file.url);
 

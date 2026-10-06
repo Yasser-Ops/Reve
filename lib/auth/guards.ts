@@ -1,5 +1,6 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
+import { cache } from 'react';
 import { isAdmin } from '@/lib/auth/admin-membership';
 import { LOGIN_NOTICE, NOTICE_PARAM, ROUTES } from '@/lib/routes';
 import { createClient } from '@/lib/supabase/server';
@@ -16,8 +17,12 @@ export type AdminIdentity = {
  * client navigation between its children, so a layout-only check lets a
  * revoked admin keep browsing. `getClaims()` verifies the JWT locally against
  * the project's keys; `getSession()` is never trusted for this.
+ *
+ * Wrapped in React `cache()`: the layout and the page of ONE request share a
+ * single check (the membership read is a round trip to Supabase), while every
+ * new request, navigation or action still checks afresh.
  */
-export async function requireAdmin(): Promise<AdminIdentity> {
+export const requireAdmin = cache(async (): Promise<AdminIdentity> => {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getClaims();
   const claims = error ? null : data?.claims;
@@ -31,4 +36,4 @@ export async function requireAdmin(): Promise<AdminIdentity> {
   }
 
   return { userId: claims.sub, email: claims.email ?? '' };
-}
+});
