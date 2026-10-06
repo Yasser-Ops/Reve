@@ -25,4 +25,49 @@ describe('ActionForm', () => {
 
     await waitFor(() => expect(screen.getByText('Saved.')).toBeInTheDocument());
   });
+
+  it('tells its owner when the action succeeded', async () => {
+    const accept = async (): Promise<ActionResult> => ({ ok: true });
+    let succeeded = false;
+
+    render(<ActionForm action={accept} onSuccess={() => (succeeded = true)} submitLabel="Go" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Go' }));
+
+    await waitFor(() => expect(succeeded).toBe(true));
+  });
+
+  it('can be held shut', () => {
+    render(<ActionForm action={async () => ({ ok: true })} disabled submitLabel="Publish" />);
+    expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
+  });
+
+  /* Review minor: React reset every field after a refusal, so a wrong
+     current password wiped all three password boxes. */
+  it('keeps what was typed when the action refuses', async () => {
+    const refuse = async (): Promise<ActionResult> => ({ ok: false, message: 'Not yet.' });
+    render(
+      <ActionForm action={refuse} submitLabel="Save">
+        <input aria-label="Name" name="name" />
+      </ActionForm>,
+    );
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Maya' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(screen.getByText('Not yet.')).toBeInTheDocument());
+    expect(screen.getByLabelText('Name')).toHaveValue('Maya');
+  });
+
+  it('clears the fields after a success', async () => {
+    const accept = async (): Promise<ActionResult> => ({ ok: true });
+    render(
+      <ActionForm action={accept} submitLabel="Save" successMessage="Saved.">
+        <input aria-label="Name" name="name" />
+      </ActionForm>,
+    );
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Maya' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(screen.getByText('Saved.')).toBeInTheDocument());
+    expect(screen.getByLabelText('Name')).toHaveValue('');
+  });
 });

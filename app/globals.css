@@ -84,9 +84,10 @@
      other italic accents use a real cut rather than a synthesised slant. */
   --font-accent: var(--font-cormorant), Georgia, serif;
 
-  /* shadcn/ui names. They resolve to the neutral values set under
-     [data-surface="app"] below; the storefront never uses them. */
-  --font-heading: var(--font-sans);
+  /* shadcn/ui names. They resolve to the values set under
+     [data-surface="app"] below; the storefront never uses them. Headings in
+     the admin take the display face, like the storefront's. */
+  --font-heading: var(--font-marcellus), Georgia, "Times New Roman", serif;
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -267,42 +268,51 @@ html {
 
 /*
  * PRIVATE SURFACES (admin, portal). shadcn/ui's tokens and base styles, scoped
- * to [data-surface="app"] so the storefront above cannot change. Its
- * --background and --foreground are the storefront's bone and ink; here they
- * are shadcn's neutrals, so the same utilities read differently inside.
+ * to [data-surface="app"] so the storefront above cannot change. The tokens
+ * carry the Rêve palette under shadcn's names, so every primitive reads as
+ * the brand: bone ground, ink type and buttons, sand rules, wine for what
+ * needs attention.
+ *
+ * Menus and dialogs portal to <body>, outside the surface's wrapper, so the
+ * tokens also apply to a body that contains a surface: portaled content
+ * inherits them, and the storefront (no surface) is untouched.
  *
  * Deliberately NOT carried over from shadcn init: its --radius-* overrides in
  * @theme (they would reshape every rounded-* on the storefront) and its .dark
  * palette (nothing sets .dark).
  */
-[data-surface="app"] {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --radius: 0.625rem;
+[data-surface="app"],
+body:has([data-surface="app"]) {
+  --background: var(--reve-bone);
+  --foreground: var(--reve-ink);
+  --card: #fffdf9;
+  --card-foreground: var(--reve-ink);
+  --popover: #fffdf9;
+  --popover-foreground: var(--reve-ink);
+  --primary: var(--reve-ink);
+  --primary-foreground: var(--reve-bone);
+  --secondary: #efe7dc;
+  --secondary-foreground: var(--reve-ink);
+  --muted: #efe7dc;
+  --muted-foreground: var(--reve-cocoa);
+  --accent: #efe7dc;
+  --accent-foreground: var(--reve-ink);
+  --destructive: var(--reve-wine);
+  --border: var(--reve-sand);
+  --input: var(--reve-sand);
+  --ring: var(--reve-taupe);
+  --radius: 0.75rem;
 }
 
 @layer base {
   [data-surface="app"],
-  [data-surface="app"] * {
+  [data-surface="app"] *,
+  body:has([data-surface="app"]) * {
     @apply border-border outline-ring/50;
   }
   [data-surface="app"] {
     @apply bg-background text-foreground font-sans;
+    /* Marcellus has one weight; a synthesised bold looks smeared. */
+    font-synthesis-weight: none;
   }
 }

@@ -7,8 +7,19 @@
 export type QueuedResult = { data?: unknown; error?: unknown; count?: number };
 export type RecordedCall = { table: string; chain: { method: string; args: unknown[] }[] };
 
-export function fakeSupabase(results: Record<string, QueuedResult[]> = {}) {
+export type FakeStorage = {
+  /** Files per folder, as `list(folder)` returns them. */
+  files?: Record<string, { name: string }[]>;
+  listError?: unknown;
+  removeError?: unknown;
+};
+
+export function fakeSupabase(
+  results: Record<string, QueuedResult[]> = {},
+  storage: FakeStorage = {},
+) {
   const calls: RecordedCall[] = [];
+  const storageCalls: { method: string; args: unknown[] }[] = [];
 
   function from(table: string) {
     const call: RecordedCall = { table, chain: [] };
@@ -34,6 +45,28 @@ export function fakeSupabase(results: Record<string, QueuedResult[]> = {}) {
     return builder;
   }
 
+  /** `rpc(name)` resolves the next result queued under `rpc:<name>`. */
+  async function rpc(name: string, args: unknown) {
+    calls.push({ table: `rpc:${name}`, chain: [{ method: 'rpc', args: [args] }] });
+    const next = results[`rpc:${name}`]?.shift() ?? {};
+    return { data: null, error: null, ...next };
+  }
+
+  const storageApi = {
+    from(bucket: string) {
+      return {
+        async list(folder: string) {
+          storageCalls.push({ method: 'list', args: [bucket, folder] });
+          return { data: storage.files?.[folder] ?? [], error: storage.listError ?? null };
+        },
+        async remove(paths: string[]) {
+          storageCalls.push({ method: 'remove', args: [bucket, paths] });
+          return { data: null, error: storage.removeError ?? null };
+        },
+      };
+    },
+  };
+
   /** The first recorded call on `table` that used `method`. */
   function find(table: string, method: string) {
     const call = calls.find(
@@ -43,5 +76,5 @@ export function fakeSupabase(results: Record<string, QueuedResult[]> = {}) {
     return call?.chain.find((step) => step.method === method);
   }
 
-  return { client: { from }, calls, find };
+  return { client: { from, rpc, storage: storageApi }, calls, find, storageCalls };
 }

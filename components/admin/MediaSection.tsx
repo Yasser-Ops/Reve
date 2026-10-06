@@ -1,20 +1,26 @@
 import { MediaUploader } from '@/components/admin/MediaUploader';
-import { listMedia } from '@/lib/admin/media';
+import type { listMedia } from '@/lib/admin/media';
 
-/** Uploaded files with the URL to paste into the content JSON. */
-export async function MediaSection({ invitationId }: { invitationId: string }) {
-  const files = await listMedia(invitationId);
+type MediaFile = Awaited<ReturnType<typeof listMedia>>[number];
 
+/** Uploaded files. Media fields in the content form offer these by kind. */
+export function MediaSection({
+  invitationId,
+  files,
+}: {
+  invitationId: string;
+  files: readonly MediaFile[];
+}) {
   return (
-    <section className="grid gap-4">
-      <h2 className="font-medium">Media</h2>
+    <section className="grid gap-4 rounded-2xl border bg-card p-5 sm:p-6">
+      <h2 className="font-heading text-[22px]">Media</h2>
       <MediaUploader invitationId={invitationId} />
       {files.length ? (
         <ul className="grid gap-1 font-mono text-[12px]">
           {files.map((file) => (
-            <li key={`${file.kind}/${file.name}`}>
+            <li className="truncate" key={`${file.kind}/${file.name}`}>
               <span className="text-muted-foreground">{file.kind}/</span>
-              {file.name} <span className="select-all text-muted-foreground">{file.url}</span>
+              {file.name}
             </li>
           ))}
         </ul>

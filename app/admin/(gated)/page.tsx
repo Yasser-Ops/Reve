@@ -1,26 +1,27 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { StatusBadge } from '@/components/admin/StatusBadge';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { AutoSubmitForm } from '@/components/admin/AutoSubmitForm';
+import { ClientRows } from '@/components/admin/ClientRows';
+import { Eyebrow } from '@/components/admin/Eyebrow';
+import { SummaryTiles } from '@/components/admin/SummaryTiles';
+import { buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { clientFiltersSchema, listClients } from '@/lib/admin/clients';
+import { clientFiltersSchema, getOrderSummary, listClients } from '@/lib/admin/clients';
 import { requireAdmin } from '@/lib/auth/guards';
-import { TIERS } from '@/lib/constants';
+import { TIERS, TIER_LABELS } from '@/lib/constants';
 import { ORDER_STATUS, STATUS_LABELS } from '@/lib/orders/status';
-import { ROUTES, adminRoutes } from '@/lib/routes';
+import { ADMIN_NOTICE, NOTICE_PARAM, ROUTES } from '@/lib/routes';
 
 export const metadata: Metadata = { title: 'Clients' };
 
-const dateFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' });
+/* Only known notices render, so the query string cannot put arbitrary text
+   on the page. */
+const NOTICES: Record<string, string> = {
+  [ADMIN_NOTICE.CLIENT_DELETED]: 'Client deleted.',
+  [ADMIN_NOTICE.CLIENT_DELETED_FILES_LEFT]:
+    'Client deleted. Some uploaded files could not be removed; they are harmless but take space.',
+};
 
 export default async function ClientsPage({
   searchParams,
@@ -28,28 +29,46 @@ export default async function ClientsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   await requireAdmin();
-  const filters = clientFiltersSchema.parse(await searchParams);
-  const clients = await listClients(filters);
+  const params = await searchParams;
+  const filters = clientFiltersSchema.parse(params);
+  const now = new Date();
+  const [clients, counts] = await Promise.all([listClients(filters, now), getOrderSummary(now)]);
+  const filtering = Boolean(filters.q || filters.status || filters.tier || filters.view);
+  const raw = params[NOTICE_PARAM];
+  const notice = typeof raw === 'string' && Object.hasOwn(NOTICES, raw) ? NOTICES[raw] : null;
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-10">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-medium">Clients</h1>
-        <Link className={buttonVariants()} href={ROUTES.ADMIN_NEW_CLIENT}>
+    <main className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <Eyebrow>Studio</Eyebrow>
+          <h1 className="mt-2 font-heading text-[34px] leading-tight">Clients</h1>
+        </div>
+        <Link className={buttonVariants({ size: 'lg' })} href={ROUTES.ADMIN_NEW_CLIENT}>
           New client
         </Link>
-      </div>
+      </header>
 
-      {/* A plain GET form: filtering needs no JavaScript and the URL is
-          shareable. */}
-      <form className="mt-6 flex flex-wrap gap-2" method="get">
+      {notice ? (
+        <p className="rounded-xl border bg-card px-4 py-3" role="status">
+          {notice}
+        </p>
+      ) : null}
+
+      <SummaryTiles counts={counts} current={filters.view} />
+
+      {/* A plain GET form: the URL is shareable and it works without
+          JavaScript; selects apply on change. */}
+      <AutoSubmitForm className="flex flex-wrap gap-2">
+        {filters.view ? <input name="view" type="hidden" value={filters.view} /> : null}
         <Input
-          className="w-64"
+          aria-label="Search clients"
+          className="w-full sm:w-64"
           defaultValue={filters.q ?? ''}
           name="q"
           placeholder="Name, email or phone"
         />
-        <NativeSelect defaultValue={filters.status ?? ''} name="status">
+        <NativeSelect aria-label="Stage" defaultValue={filters.status ?? ''} name="status">
           <option value="">Any stage</option>
           {Object.values(ORDER_STATUS).map((status) => (
             <option key={status} value={status}>
@@ -57,62 +76,35 @@ export default async function ClientsPage({
             </option>
           ))}
         </NativeSelect>
-        <NativeSelect defaultValue={filters.tier ?? ''} name="tier">
+        <NativeSelect aria-label="Tier" defaultValue={filters.tier ?? ''} name="tier">
           <option value="">Any tier</option>
           {Object.values(TIERS).map((tier) => (
             <option key={tier} value={tier}>
-              {tier}
+              {TIER_LABELS[tier]}
             </option>
           ))}
         </NativeSelect>
-        <Button type="submit" variant="outline">
-          Filter
-        </Button>
-      </form>
+        {filtering ? (
+          <Link className={buttonVariants({ variant: 'ghost' })} href={ROUTES.ADMIN}>
+            Clear
+          </Link>
+        ) : null}
+      </AutoSubmitForm>
 
-      {clients.length === 0 ? (
-        <p className="mt-10 text-muted-foreground">No clients match.</p>
+      {clients.length > 0 ? (
+        <ClientRows clients={clients} now={now} />
+      ) : filtering ? (
+        <p className="text-muted-foreground">No clients match.</p>
       ) : (
-        <Table className="mt-6">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Client</TableHead>
-              <TableHead>Latest order</TableHead>
-              <TableHead>Stage</TableHead>
-              <TableHead>Due</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {clients.map((client) => {
-              const latest = [...client.orders].sort((a, b) =>
-                b.created_at.localeCompare(a.created_at),
-              )[0];
-
-              return (
-                <TableRow key={client.id}>
-                  <TableCell>
-                    <Link
-                      className="font-medium hover:underline"
-                      href={adminRoutes.client(client.id)}
-                    >
-                      {client.full_name}
-                    </Link>
-                    <div className="text-muted-foreground">{client.email}</div>
-                  </TableCell>
-                  <TableCell>
-                    {latest.reference} · {latest.tier}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={latest.status} />
-                  </TableCell>
-                  <TableCell>
-                    {latest.due_at ? dateFormat.format(new Date(latest.due_at)) : ''}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <div className="grid justify-items-center gap-4 rounded-2xl border border-dashed bg-card px-6 py-16 text-center">
+          <p className="font-heading text-[24px]">No clients yet</p>
+          <p className="max-w-sm text-muted-foreground">
+            Add the first one when an order comes in on WhatsApp.
+          </p>
+          <Link className={buttonVariants()} href={ROUTES.ADMIN_NEW_CLIENT}>
+            New client
+          </Link>
+        </div>
       )}
     </main>
   );

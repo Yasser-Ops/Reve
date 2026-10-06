@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
-import { TIERS } from '@/lib/constants';
+import { TIERS, TIER_LABELS } from '@/lib/constants';
 
 /*
  * Ids come from useId, never from the field's name: one admin page holds the
@@ -17,19 +17,28 @@ export function Field({
   type = 'text',
   required,
   defaultValue,
+  autoComplete,
 }: {
   label: string;
   name: string;
   type?: string;
   required?: boolean;
   defaultValue?: string;
+  autoComplete?: string;
 }) {
   const id = useId();
 
   return (
     <div className="grid gap-2">
       <Label htmlFor={id}>{label}</Label>
-      <Input defaultValue={defaultValue} id={id} name={name} required={required} type={type} />
+      <Input
+        autoComplete={autoComplete}
+        defaultValue={defaultValue}
+        id={id}
+        name={name}
+        required={required}
+        type={type}
+      />
     </div>
   );
 }
@@ -66,7 +75,7 @@ export function OrderFields() {
         <NativeSelect defaultValue={TIERS.MANAGED} id={tierId} name="tier">
           {Object.values(TIERS).map((tier) => (
             <option key={tier} value={tier}>
-              {tier}
+              {TIER_LABELS[tier]}
             </option>
           ))}
         </NativeSelect>

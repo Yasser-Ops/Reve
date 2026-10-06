@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { UNEXPECTED, type ActionResult } from '@/lib/admin/action-result';
 import { requireAdmin } from '@/lib/auth/guards';
 import { checkContent, toJson } from '@/lib/invitations/content';
-import { canPublish } from '@/lib/invitations/publish-guard';
+import { publishReadiness } from '@/lib/invitations/publish-guard';
 import { slugSchema } from '@/lib/invitations/slug';
 import { ORDER_STATUS } from '@/lib/orders/status';
 import { adminRoutes } from '@/lib/routes';
@@ -141,19 +141,14 @@ export async function publishInvitation(
   /* REVIEW for a first publish; DELIVERED to put a freshly approved edit of
      a live invitation up in place of the old one. */
   const order = invitation.orders;
-  const publishable = order?.status === ORDER_STATUS.REVIEW || order?.status === ORDER_STATUS.DELIVERED;
-  if (!order || !publishable) {
-    return { ok: false, message: 'Send the order for review before publishing.' };
-  }
-
   const latest = invitation.invitation_reviews[0];
-  const verdict = canPublish(
+  const verdict = publishReadiness(
+    order?.status ?? null,
     invitation.content,
     latest ? { decision: latest.decision, contentSnapshot: latest.content_snapshot } : null,
   );
-  if (!verdict.ok || !latest) {
-    return { ok: false, message: verdict.ok ? UNEXPECTED : verdict.reason };
-  }
+  if (!verdict.ok) return { ok: false, message: verdict.reason };
+  if (!order || !latest) return { ok: false, message: UNEXPECTED };
 
   const now = new Date().toISOString();
   const { error: publishError } = await supabase

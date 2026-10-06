@@ -365,7 +365,10 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      admin_delete_client: {
+        Args: { p_client_id: string; p_confirm_name: string }
+        Returns: string[]
+      }
     }
     Enums: {
       invitation_status: "draft" | "published" | "archived"

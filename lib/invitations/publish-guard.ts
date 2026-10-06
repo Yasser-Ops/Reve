@@ -1,4 +1,7 @@
+import { ORDER_STATUS, type OrderStatus } from '@/lib/orders/status';
+
 export const PUBLISH_BLOCK = {
+  NOT_IN_REVIEW: 'Send the order for review before publishing.',
   NO_APPROVAL: 'The client has not approved this invitation yet.',
   CHANGES_REQUESTED: 'The client asked for changes. Send it back for review once they are made.',
   CONTENT_CHANGED:
@@ -25,6 +28,22 @@ export function canPublish(
     return { ok: false, reason: PUBLISH_BLOCK.CONTENT_CHANGED };
   }
   return { ok: true };
+}
+
+/**
+ * Everything publishing checks, in one place, so the Publish button and the
+ * action cannot disagree: the order is in review (or delivered, to put an
+ * approved edit live), and the content is exactly what was approved.
+ */
+export function publishReadiness(
+  orderStatus: OrderStatus | null,
+  content: unknown,
+  latest: LatestReview,
+): { ok: true } | { ok: false; reason: PublishBlock } {
+  if (orderStatus !== ORDER_STATUS.REVIEW && orderStatus !== ORDER_STATUS.DELIVERED) {
+    return { ok: false, reason: PUBLISH_BLOCK.NOT_IN_REVIEW };
+  }
+  return canPublish(content, latest);
 }
 
 /** Deep equality for JSON values, blind to object key order. */
