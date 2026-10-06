@@ -1,5 +1,6 @@
 import 'server-only';
 import { z } from 'zod';
+import { CLIENT_VIEWS, CLOSED_STATUSES, DUE_WINDOW_MS, summarize } from '@/lib/admin/summary';
 import { TIERS } from '@/lib/constants';
 import { ORDER_STATUS } from '@/lib/orders/status';
 import { createClient } from '@/lib/supabase/server';
@@ -8,6 +9,7 @@ export const clientFiltersSchema = z.object({
   q: z.string().trim().max(80).optional().catch(undefined),
   status: z.enum(ORDER_STATUS).optional().catch(undefined),
   tier: z.enum(TIERS).optional().catch(undefined),
+  view: z.enum(CLIENT_VIEWS).optional().catch(undefined),
 });
 
 export type ClientFilters = z.infer<typeof clientFiltersSchema>;
@@ -22,11 +24,14 @@ export function searchPattern(q: string): string | null {
   return cleaned ? `*${cleaned}*` : null;
 }
 
+/* PostgREST's `in` list for the embedded orders filter. */
+const CLOSED_LIST = `(${CLOSED_STATUSES.join(',')})`;
+
 const LIST_SELECT =
   'id, full_name, email, phone, user_id, created_at, orders!inner(id, reference, tier, status, due_at, created_at)';
 
 /** Every client has at least one order: they are created together. */
-export async function listClients(filters: ClientFilters) {
+export async function listClients(filters: ClientFilters, now = new Date()) {
   const supabase = await createClient();
   let query = supabase
     .from('clients')
@@ -39,10 +44,34 @@ export async function listClients(filters: ClientFilters) {
   }
   if (filters.status) query = query.eq('orders.status', filters.status);
   if (filters.tier) query = query.eq('orders.tier', filters.tier);
+  if (filters.view === CLIENT_VIEWS.REVIEW) {
+    query = query.eq('orders.status', ORDER_STATUS.REVIEW);
+  } else if (filters.view) {
+    query = query.not('orders.status', 'in', CLOSED_LIST);
+    if (filters.view === CLIENT_VIEWS.OVERDUE) {
+      query = query.lt('orders.due_at', now.toISOString());
+    }
+    if (filters.view === CLIENT_VIEWS.DUE) {
+      query = query
+        .gte('orders.due_at', now.toISOString())
+        .lte('orders.due_at', new Date(now.getTime() + DUE_WINDOW_MS).toISOString());
+    }
+  }
 
   const { data, error } = await query;
   if (error) throw error;
   return data;
+}
+
+/** Counts for the summary tiles, over every open order. */
+export async function getOrderSummary(now = new Date()) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('orders')
+    .select('status, due_at')
+    .not('status', 'in', CLOSED_LIST);
+  if (error) throw error;
+  return summarize(data, now);
 }
 
 export type ClientListRow = Awaited<ReturnType<typeof listClients>>[number];

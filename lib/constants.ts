@@ -6,6 +6,12 @@ export const TIERS = {
 
 export type Tier = (typeof TIERS)[keyof typeof TIERS];
 
+export const TIER_LABELS: Record<Tier, string> = {
+  basic: 'Basic',
+  managed: 'Managed',
+  custom: 'Custom',
+};
+
 export const INVITATION_STATUS = {
   DRAFT: 'draft',
   PUBLISHED: 'published',
