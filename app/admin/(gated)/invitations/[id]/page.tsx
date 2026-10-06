@@ -1,18 +1,21 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { ActionForm } from '@/components/admin/ActionForm';
+import { Breadcrumbs, type Crumb } from '@/components/admin/Breadcrumbs';
 import { ContentEditor } from '@/components/admin/ContentEditor';
 import { CopyChecklist } from '@/components/admin/CopyChecklist';
+import { Eyebrow } from '@/components/admin/Eyebrow';
 import { Field } from '@/components/admin/fields';
 import { MediaSection } from '@/components/admin/MediaSection';
 import { ReviewPanel } from '@/components/admin/ReviewPanel';
 import { getTemplateEntry } from '@/components/invitation/registry';
+import { formModel, isRecord, type MediaOptions } from '@/lib/admin/content-form';
 import { updateSlug } from '@/lib/admin/invitation-actions';
 import { getInvitationForEditor } from '@/lib/admin/invitations';
+import { listMedia } from '@/lib/admin/media';
 import { requireAdmin } from '@/lib/auth/guards';
-import { adminRoutes } from '@/lib/routes';
+import { ROUTES, adminRoutes } from '@/lib/routes';
 import { checklistFor, checklistMessage } from '@/lib/schemas/content/checklist';
 
 export const metadata: Metadata = { title: 'Invitation' };
@@ -36,46 +39,43 @@ export default async function InvitationEditorPage({
     );
   }
 
-  const checklist = checklistFor(design.schema);
   const order = invitation.orders;
+  const checklist = checklistFor(design.schema);
+  const fields = formModel(design.schema);
+
+  /* Listed once: the media section shows them, the form's media fields offer them. */
+  const files = await listMedia(invitation.id);
+  const media: MediaOptions = { photos: [], hero: [], envelope: [] };
+  for (const file of files) media[file.kind].push(file.url);
+
+  const crumbs: Crumb[] = [{ label: 'Clients', href: ROUTES.ADMIN }];
+  if (order) {
+    crumbs.push(
+      { label: order.clients?.full_name ?? 'Client', href: adminRoutes.client(order.client_id) },
+      { label: order.reference, href: adminRoutes.client(order.client_id) },
+    );
+  }
+  crumbs.push({ label: 'Invitation' });
 
   return (
-    <main className="mx-auto grid max-w-6xl gap-8 px-6 py-10">
-      <header className="flex flex-wrap items-center justify-between gap-4">
+    <main className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6">
+      <Breadcrumbs items={crumbs} />
+
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-xl font-medium">
-            {design.name} · /i/{invitation.slug}
-          </h1>
-          {order ? (
-            <Link
-              className="text-muted-foreground underline"
-              href={adminRoutes.client(order.client_id)}
-            >
-              {order.clients?.full_name} · {order.reference}
-            </Link>
-          ) : null}
+          <Eyebrow>Invitation · {design.name}</Eyebrow>
+          <h1 className="mt-2 font-heading text-[34px] leading-tight">/i/{invitation.slug}</h1>
         </div>
         <CopyChecklist message={checklistMessage(checklist)} />
       </header>
 
-      <section className="grid gap-2">
-        <h2 className="font-medium">Fields this design draws</h2>
-        <ul className="grid gap-1 text-muted-foreground">
-          {checklist.map((item) => (
-            <li key={item.key}>
-              <code className="text-foreground">{item.key}</code>
-              {item.required ? '' : ' (optional)'}: {item.ask}
-            </li>
-          ))}
-        </ul>
-      </section>
-
       {invitation.published_at ? null : (
         <ActionForm
           action={updateSlug}
-          className="flex items-end gap-2"
+          className="flex flex-wrap items-end gap-2"
           submitLabel="Change link"
           successMessage="Link changed."
+          variant="outline"
         >
           <input name="invitationId" type="hidden" value={invitation.id} />
           <Field defaultValue={invitation.slug} label="Link (/i/…)" name="slug" />
@@ -83,12 +83,14 @@ export default async function InvitationEditorPage({
       )}
 
       <ContentEditor
-        initial={JSON.stringify(invitation.content, null, 2)}
+        fields={fields}
+        initial={isRecord(invitation.content) ? invitation.content : {}}
         invitationId={invitation.id}
+        media={media}
         previewUrl={adminRoutes.preview(invitation.id)}
       />
 
-      <MediaSection invitationId={invitation.id} />
+      <MediaSection files={files} invitationId={invitation.id} />
 
       <ReviewPanel invitation={invitation} />
     </main>
