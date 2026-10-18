@@ -1,7 +1,5 @@
 import type { Metadata } from 'next';
 import { OrderPanel } from '@/components/portal/OrderPanel';
-import { ReviewForm } from '@/components/portal/ReviewForm';
-import { contentFingerprint } from '@/lib/invitations/publish-guard';
 import { requireClient } from '@/lib/auth/guards';
 import { getPortalOrders } from '@/lib/portal/orders';
 
@@ -21,21 +19,7 @@ export default async function PortalHomePage() {
       {orders.length === 0 ? (
         <p className="text-muted-foreground">Your order will appear here once we set it up.</p>
       ) : (
-        orders.map((order) => (
-          <OrderPanel
-            key={order.id}
-            order={order}
-            review={
-              order.invitation ? (
-                <ReviewForm
-                  fingerprint={contentFingerprint(order.invitation.content)}
-                  invitationId={order.invitation.id}
-                  latestReview={order.invitation.latestReview}
-                />
-              ) : null
-            }
-          />
-        ))
+        orders.map((order) => <OrderPanel key={order.id} order={order} />)
       )}
     </main>
   );

@@ -1,15 +1,11 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import Link from 'next/link';
+import { useRef, useState, useTransition, type CSSProperties } from 'react';
 import type { ActionResult } from '@/lib/admin/action-result';
-import { STUDIO_TIME_ZONE } from '@/lib/constants';
 import { REVIEW_MESSAGES, REVIEW_RULES } from '@/lib/portal/messages';
-import type { PortalOrder } from '@/lib/portal/orders';
 import { submitReview } from '@/lib/portal/review-actions';
+import { ROUTES } from '@/lib/routes';
 
 type Decision = 'approved' | 'changes_requested';
 
@@ -17,18 +13,60 @@ type ReviewFormProps = {
   invitationId: string;
   /** Which version of the content the client was shown; the action refuses a mismatch. */
   fingerprint: string;
-  latestReview: NonNullable<PortalOrder['invitation']>['latestReview'];
 };
 
-const when = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: STUDIO_TIME_ZONE });
+/* Inline styles on purpose: this bar sits on the draft preview, outside
+   AppSurface, where shadcn's tokens are absent and a stylesheet would leak
+   into the design underneath. */
+const WINE = '#6f2233';
+const bar: CSSProperties = {
+  position: 'fixed',
+  insetInline: 0,
+  bottom: 0,
+  zIndex: 50,
+  display: 'grid',
+  gap: 10,
+  padding: '12px 16px',
+  background: 'rgba(255, 255, 255, 0.96)',
+  borderTop: '1px solid rgba(0, 0, 0, 0.12)',
+  boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.08)',
+  color: '#1c1917',
+  fontFamily: 'system-ui, sans-serif',
+  fontSize: 14,
+  lineHeight: 1.4,
+  WebkitFontSmoothing: 'antialiased',
+  textRendering: 'optimizeLegibility',
+};
+const row: CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: 8,
+  maxWidth: 720,
+  width: '100%',
+  margin: '0 auto',
+};
+const button: CSSProperties = {
+  font: 'inherit',
+  padding: '8px 14px',
+  borderRadius: 8,
+  border: `1px solid ${WINE}`,
+  cursor: 'pointer',
+};
+const primary: CSSProperties = { ...button, background: WINE, color: '#fff' };
+const secondary: CSSProperties = { ...button, background: '#fff', color: WINE };
+
+/** Spacer height so the fixed bar never hides the end of the design. */
+export const REVIEW_BAR_SPACE = 120;
 
 /**
- * Approve the draft or ask for changes. The buttons send the decision
- * themselves rather than submitting the form: React resets a form after an
- * action, which would wipe the note when the server refuses it. The buttons
- * stay after a decision: while the order is in review the latest one wins.
+ * Approve the draft on screen or ask for changes. The buttons send the
+ * decision themselves rather than submitting the form: React resets a form
+ * after an action, which would wipe the note when the server refuses it. The
+ * buttons stay after a decision: while the order is in review the latest one
+ * wins.
  */
-export function ReviewForm({ invitationId, fingerprint, latestReview }: ReviewFormProps) {
+export function ReviewForm({ invitationId, fingerprint }: ReviewFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const [asking, setAsking] = useState(false);
   const [result, setResult] = useState<ActionResult | null>(null);
@@ -49,64 +87,84 @@ export function ReviewForm({ invitationId, fingerprint, latestReview }: ReviewFo
   }
 
   return (
-    <form className="grid gap-3" onSubmit={(event) => event.preventDefault()} ref={formRef}>
+    <form
+      aria-label="Your review"
+      onSubmit={(event) => event.preventDefault()}
+      ref={formRef}
+      style={bar}
+    >
       <input name="invitationId" type="hidden" value={invitationId} />
       <input name="fingerprint" type="hidden" value={fingerprint} />
 
-      {latestReview ? (
-        <p className="text-muted-foreground">
-          {latestReview.decision === 'approved'
-            ? REVIEW_MESSAGES.LAST_APPROVED
-            : REVIEW_MESSAGES.LAST_CHANGES}
-          {` on ${when.format(new Date(latestReview.createdAt))}`}
-          {latestReview.note ? `: ${latestReview.note}` : '.'}
-        </p>
-      ) : null}
-
       {asking ? (
-        <div className="grid gap-2">
-          <Label htmlFor="review-note">What should we change?</Label>
-          <Textarea
+        <div style={{ ...row, display: 'grid', gap: 6 }}>
+          <label htmlFor="review-note">What should we change?</label>
+          <textarea
             id="review-note"
             maxLength={REVIEW_RULES.NOTE_MAX}
             name="note"
             placeholder="The date, a spelling, a photo..."
+            rows={3}
+            style={{ font: 'inherit', padding: 8, borderRadius: 8, border: '1px solid #d6d3d1' }}
           />
         </div>
       ) : null}
 
       {sent ? (
-        <p>
+        <p style={{ ...row, margin: '0 auto' }}>
           {sent === 'approved' ? REVIEW_MESSAGES.THANKS_APPROVED : REVIEW_MESSAGES.THANKS_CHANGES}
         </p>
       ) : null}
 
       {result && !result.ok ? (
-        <Alert variant="destructive">
-          <AlertDescription>{result.message}</AlertDescription>
-        </Alert>
+        <p role="alert" style={{ ...row, margin: '0 auto', color: '#b91c1c' }}>
+          {result.message}
+        </p>
       ) : null}
 
-      <div className="flex flex-wrap gap-3">
+      <div style={row}>
         {asking ? (
-          <Button disabled={pending} onClick={() => send('changes_requested')} type="button">
-            Send my changes
-          </Button>
+          <>
+            <button
+              disabled={pending}
+              onClick={() => send('changes_requested')}
+              style={primary}
+              type="button"
+            >
+              Send my changes
+            </button>
+            <button
+              disabled={pending}
+              onClick={() => setAsking(false)}
+              style={secondary}
+              type="button"
+            >
+              Cancel
+            </button>
+          </>
         ) : (
           <>
-            <Button disabled={pending} onClick={() => send('approved')} type="button">
+            <button
+              disabled={pending}
+              onClick={() => send('approved')}
+              style={primary}
+              type="button"
+            >
               Approve
-            </Button>
-            <Button
+            </button>
+            <button
               disabled={pending}
               onClick={() => setAsking(true)}
+              style={secondary}
               type="button"
-              variant="outline"
             >
               Request changes
-            </Button>
+            </button>
           </>
         )}
+        <Link href={ROUTES.PORTAL} style={{ marginInlineStart: 'auto', color: WINE }}>
+          Back to your orders
+        </Link>
       </div>
     </form>
   );

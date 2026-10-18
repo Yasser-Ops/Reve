@@ -1,13 +1,13 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
 import { Eyebrow } from '@/components/admin/Eyebrow';
 import { getTemplateEntry } from '@/components/invitation/registry';
 import { LiveLink } from '@/components/portal/LiveLink';
 import { LockedCard } from '@/components/portal/LockedCard';
 import { buttonVariants } from '@/components/ui/button';
-import { TIERS } from '@/lib/constants';
+import { STUDIO_TIME_ZONE, TIERS } from '@/lib/constants';
 import { whatsappLink } from '@/lib/contact';
 import { ORDER_STATUS, STATUS_LABELS, hasReached } from '@/lib/orders/status';
+import { REVIEW_MESSAGES } from '@/lib/portal/messages';
 import type { PortalOrder } from '@/lib/portal/orders';
 import { portalRoutes, publicRoutes } from '@/lib/routes';
 import { checklistProgress } from '@/lib/schemas/content/checklist';
@@ -15,15 +15,16 @@ import { SITE_URL } from '@/lib/site';
 
 const CHECKLIST_TITLE = 'What we need from you';
 
-type OrderPanelProps = {
-  order: PortalOrder;
-  /** The approval form; shown only while the order waits on the client. */
-  review?: ReactNode;
-};
+const when = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: STUDIO_TIME_ZONE });
 
-/** One order, told by its stage. Server-rendered: only the live link is interactive. */
-export function OrderPanel({ order, review }: OrderPanelProps) {
+/**
+ * One order, told by its stage. Server-rendered: only the live link is
+ * interactive. Approving happens on the preview, next to the design it
+ * approves; here the client only reads their last decision.
+ */
+export function OrderPanel({ order }: { order: PortalOrder }) {
   const { invitation, reference, status, tier } = order;
+  const latestReview = invitation?.latestReview;
 
   /* A design the registry no longer knows has no checklist to show. */
   const schema = invitation ? getTemplateEntry(invitation.templateSlug)?.schema : undefined;
@@ -61,7 +62,15 @@ export function OrderPanel({ order, review }: OrderPanelProps) {
           >
             See your invitation
           </Link>
-          {review}
+          {latestReview ? (
+            <p className="text-muted-foreground">
+              {latestReview.decision === 'approved'
+                ? REVIEW_MESSAGES.LAST_APPROVED
+                : REVIEW_MESSAGES.LAST_CHANGES}
+              {` on ${when.format(new Date(latestReview.createdAt))}`}
+              {latestReview.note ? `: ${latestReview.note}` : '.'}
+            </p>
+          ) : null}
         </div>
       ) : null}
 

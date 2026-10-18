@@ -37,20 +37,35 @@ describe('OrderPanel by stage', () => {
     expect(screen.getByText('We are working on it.')).toBeInTheDocument();
   });
 
-  it('links to the preview and shows the review slot while in review', () => {
-    render(
-      <OrderPanel order={order({ status: 'review' })} review={<p>review form here</p>} />,
-    );
+  it('links to the preview while in review, with no approval buttons here', () => {
+    render(<OrderPanel order={order({ status: 'review' })} />);
     expect(screen.getByRole('link', { name: 'See your invitation' })).toHaveAttribute(
       'href',
       portalRoutes.preview('inv-1'),
     );
-    expect(screen.getByText('review form here')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Request changes' })).not.toBeInTheDocument();
   });
 
-  it('keeps the review slot out of every other stage', () => {
-    render(<OrderPanel order={order({ status: 'in_design' })} review={<p>review form here</p>} />);
-    expect(screen.queryByText('review form here')).not.toBeInTheDocument();
+  it('shows the latest decision while in review', () => {
+    render(
+      <OrderPanel
+        order={order({
+          status: 'review',
+          invitation: {
+            ...invitation,
+            latestReview: {
+              decision: 'changes_requested',
+              note: 'Move the date',
+              createdAt: '2026-10-01T10:00:00Z',
+            },
+          },
+        })}
+      />,
+    );
+    expect(
+      screen.getByText('You asked for changes on 1 Oct 2026: Move the date'),
+    ).toBeInTheDocument();
   });
 
   it('gives the live link once delivered', () => {
