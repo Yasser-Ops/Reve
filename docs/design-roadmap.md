@@ -27,8 +27,7 @@ ornament.
 | 9  | `aquarelle`| Airy watercolour wildflowers          |       |       |          |            |          |      |
 | 10 | `olivier`  | Olive grove, terracotta, late sun     |       |       |          |            |          |      |
 
-Lin's envelope ships its sealed frame only (`count: 1` in `lib/envelopes.ts`);
-its opening render is outstanding.
+Lin's envelope opening is rendered and shipped (148 frames).
 
 ## The pipeline
 
