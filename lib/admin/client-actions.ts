@@ -55,8 +55,35 @@ function orderRow(order: z.infer<typeof orderFieldsSchema>, clientId: string) {
     amount: order.amount,
     event_date: order.eventDate,
     due_at: endOfStudioDay(order.dueAt),
-    notes: order.notes || null,
   };
+}
+
+/**
+ * Inserts an order and, when one was typed, its note. The note lives in
+ * `order_notes` (admin-only; clients can read their own order row). Two
+ * inserts, no transaction over PostgREST: a failed note removes the order
+ * again so the caller never sees a half-written order.
+ */
+async function insertOrder(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  order: z.infer<typeof orderFieldsSchema>,
+  clientId: string,
+): Promise<{ orderId: string } | { orderId: null; undone: boolean }> {
+  const inserted = await supabase
+    .from('orders')
+    .insert(orderRow(order, clientId))
+    .select('id')
+    .single();
+  if (inserted.error) return { orderId: null, undone: true };
+
+  const orderId = inserted.data.id;
+  if (!order.notes) return { orderId };
+
+  const noted = await supabase.from('order_notes').insert({ order_id: orderId, body: order.notes });
+  if (!noted.error) return { orderId };
+
+  const removed = await supabase.from('orders').delete().eq('id', orderId);
+  return { orderId: null, undone: !removed.error };
 }
 
 export async function createClientWithOrder(
@@ -91,11 +118,14 @@ export async function createClientWithOrder(
   }
 
   const clientId = created.data.id;
-  const ordered = await supabase.from('orders').insert(orderRow(order.data, clientId));
+  const ordered = await insertOrder(supabase, order.data, clientId);
 
   /* Two inserts, no transaction over PostgREST: undo the first rather than
      leave a client with no order, which the client list could not show. */
-  if (ordered.error) {
+  if (ordered.orderId === null) {
+    if (!ordered.undone) {
+      throw new Error(`Order for client ${clientId} was half-created and could not be removed`);
+    }
     const undone = await supabase.from('clients').delete().eq('id', clientId);
     /* If even the undo fails, fail loudly: a client with no order is hidden
        from the list and would block its email from being used again. */
@@ -125,13 +155,14 @@ export async function updateClient(
   const supabase = await createClient();
   const { error } = await supabase
     .from('clients')
-    .update({
-      full_name: client.data.fullName,
-      phone: client.data.phone,
-      notes: client.data.notes ?? '',
-    })
+    .update({ full_name: client.data.fullName, phone: client.data.phone })
     .eq('id', id.data);
   if (error) return { ok: false, message: UNEXPECTED };
+
+  const noted = await supabase
+    .from('client_notes')
+    .upsert({ client_id: id.data, body: client.data.notes ?? '' });
+  if (noted.error) return { ok: false, message: UNEXPECTED };
 
   revalidatePath(adminRoutes.client(id.data));
   return { ok: true };
@@ -148,8 +179,13 @@ export async function addOrder(
   if (!id.success || !order.success) return { ok: false, message: 'Check the order details.' };
 
   const supabase = await createClient();
-  const { error } = await supabase.from('orders').insert(orderRow(order.data, id.data));
-  if (error) return { ok: false, message: UNEXPECTED };
+  const added = await insertOrder(supabase, order.data, id.data);
+  if (added.orderId === null) {
+    if (!added.undone) {
+      throw new Error(`Order for client ${id.data} was half-created and could not be removed`);
+    }
+    return { ok: false, message: UNEXPECTED };
+  }
 
   revalidatePath(adminRoutes.client(id.data));
   return { ok: true };

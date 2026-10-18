@@ -81,14 +81,25 @@ export async function getClient(id: string) {
   const { data, error } = await supabase
     .from('clients')
     .select(
-      'id, full_name, email, phone, notes, user_id, terms_accepted_at, created_at, orders(id, reference, tier, status, amount, event_date, due_at, notes, created_at, invitations(id, slug, status, template_slug))',
+      'id, full_name, email, phone, user_id, terms_accepted_at, created_at, client_notes(body), orders(id, reference, tier, status, amount, event_date, due_at, created_at, order_notes(body), invitations(id, slug, status, template_slug))',
     )
     .eq('id', id)
     .order('created_at', { referencedTable: 'orders', ascending: false })
     .maybeSingle();
 
   if (error) throw error;
-  return data;
+  if (!data) return null;
+
+  /* The notes live in admin-only tables; callers see them as plain fields. */
+  const { client_notes, orders, ...client } = data;
+  return {
+    ...client,
+    notes: client_notes?.body ?? '',
+    orders: orders.map(({ order_notes, ...order }) => ({
+      ...order,
+      notes: order_notes?.body ?? null,
+    })),
+  };
 }
 
 export type ClientDetail = NonNullable<Awaited<ReturnType<typeof getClient>>>;

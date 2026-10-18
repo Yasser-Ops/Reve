@@ -4,7 +4,7 @@ import { fakeSupabase } from '../../helpers/fake-supabase';
 const state = vi.hoisted(() => ({ fake: null as ReturnType<typeof fakeSupabase> | null }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => state.fake?.client }));
 
-import { clientFiltersSchema, listClients, searchPattern } from '@/lib/admin/clients';
+import { clientFiltersSchema, getClient, listClients, searchPattern } from '@/lib/admin/clients';
 
 beforeEach(() => {
   state.fake = fakeSupabase({ clients: [{ data: [] }] });
@@ -49,5 +49,33 @@ describe('listClients views', () => {
   it('asks for orders in review for the awaiting-approval view', async () => {
     await listClients({ view: 'review' }, now);
     expect(state.fake?.find('clients', 'eq')?.args).toEqual(['orders.status', 'review']);
+  });
+});
+
+describe('getClient', () => {
+  it('embeds the admin-only note tables and flattens them to plain notes', async () => {
+    state.fake = fakeSupabase({
+      clients: [
+        {
+          data: {
+            id: 'c1',
+            client_notes: { body: 'VIP' },
+            orders: [
+              { id: 'o1', order_notes: { body: 'Gold foil' } },
+              { id: 'o2', order_notes: null },
+            ],
+          },
+        },
+      ],
+    });
+
+    const client = await getClient('c1');
+
+    const select = String(state.fake.find('clients', 'select')?.args[0]);
+    expect(select).toContain('client_notes(body)');
+    expect(select).toContain('order_notes(body)');
+    expect(select).not.toMatch(/notes,|, notes/);
+    expect(client?.notes).toBe('VIP');
+    expect(client?.orders.map((order) => order.notes)).toEqual(['Gold foil', null]);
   });
 });

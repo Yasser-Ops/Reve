@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -32,13 +32,35 @@ export type Database = {
         }
         Relationships: []
       }
+      client_notes: {
+        Row: {
+          body: string
+          client_id: string
+        }
+        Insert: {
+          body?: string
+          client_id: string
+        }
+        Update: {
+          body?: string
+          client_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           created_at: string
           email: string
           full_name: string
           id: string
-          notes: string
           phone: string
           terms_accepted_at: string | null
           user_id: string | null
@@ -48,7 +70,6 @@ export type Database = {
           email: string
           full_name: string
           id?: string
-          notes?: string
           phone: string
           terms_accepted_at?: string | null
           user_id?: string | null
@@ -58,7 +79,6 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
-          notes?: string
           phone?: string
           terms_accepted_at?: string | null
           user_id?: string | null
@@ -230,6 +250,29 @@ export type Database = {
           },
         ]
       }
+      order_notes: {
+        Row: {
+          body: string
+          order_id: string
+        }
+        Insert: {
+          body?: string
+          order_id: string
+        }
+        Update: {
+          body?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_notes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           amount: number
@@ -238,7 +281,6 @@ export type Database = {
           due_at: string | null
           event_date: string | null
           id: string
-          notes: string | null
           payment_proof_url: string | null
           reference: string
           status: Database["public"]["Enums"]["order_status"]
@@ -252,7 +294,6 @@ export type Database = {
           due_at?: string | null
           event_date?: string | null
           id?: string
-          notes?: string | null
           payment_proof_url?: string | null
           reference?: string
           status?: Database["public"]["Enums"]["order_status"]
@@ -266,7 +307,6 @@ export type Database = {
           due_at?: string | null
           event_date?: string | null
           id?: string
-          notes?: string | null
           payment_proof_url?: string | null
           reference?: string
           status?: Database["public"]["Enums"]["order_status"]
