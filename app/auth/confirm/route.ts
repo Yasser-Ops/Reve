@@ -10,6 +10,13 @@ import {
 
 const OtpTypeSchema = z.enum(['invite', 'recovery', 'email']);
 
+const QuerySchema = z.object({
+  next: z.string().optional(),
+  token_hash: z.string().min(1).optional(),
+  code: z.string().min(1).optional(),
+  type: z.string().optional(),
+});
+
 /**
  * Where invite and password-reset emails land. A link carrying `token_hash`
  * or `code` is verified here, on the server, so the session cookie is set
@@ -22,16 +29,17 @@ const OtpTypeSchema = z.enum(['invite', 'recovery', 'email']);
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
-  const next = safeNext(searchParams.get('next'));
-  const tokenHash = searchParams.get('token_hash');
-  const code = searchParams.get('code');
+  const query = QuerySchema.safeParse(Object.fromEntries(searchParams));
+  const { next: rawNext, token_hash: tokenHash, code, type: rawType } =
+    query.success ? query.data : {};
+  const next = safeNext(rawNext ?? null);
 
   const to = (path: string) => NextResponse.redirect(new URL(path, origin));
   const expired = () =>
     to(`${ROUTES.PORTAL_LOGIN}?${NOTICE_PARAM}=${PORTAL_NOTICE.LINK_EXPIRED}`);
 
   if (tokenHash) {
-    const type = OtpTypeSchema.safeParse(searchParams.get('type'));
+    const type = OtpTypeSchema.safeParse(rawType);
     if (!type.success) return expired();
 
     const supabase = await createClient();

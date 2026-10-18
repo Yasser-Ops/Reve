@@ -69,10 +69,25 @@ export type PortalNotice = (typeof PORTAL_NOTICE)[keyof typeof PORTAL_NOTICE];
  */
 export function safeNext(next: string | null): string {
   const home: string = ROUTES.PORTAL;
-  if (!next) return home;
-  const inPortal =
-    next === home || next.startsWith(`${home}/`) || next.startsWith(`${home}?`);
-  return inPortal ? next : home;
+  if (!next || next.includes('\\')) return home;
+
+  /* Resolve dot segments (including %2e forms) before judging the path, so
+     /portal/../admin cannot pass a prefix check and then land elsewhere. */
+  const base = 'http://portal.invalid';
+  let url: URL;
+  try {
+    url = new URL(next, base);
+  } catch {
+    return home;
+  }
+  if (url.origin !== base) return home;
+
+  const { pathname, search } = url;
+  const inPortal = pathname === home || pathname.startsWith(`${home}/`);
+  /* A doubled slash or an encoded percent is how a path gets decoded into
+     something else one hop later. */
+  if (!inPortal || pathname.includes('//') || /%25/i.test(pathname)) return home;
+  return pathname + search;
 }
 
 /** The link invite and reset emails carry; `next` is where to go once signed in. */

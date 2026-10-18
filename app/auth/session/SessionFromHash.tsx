@@ -28,6 +28,13 @@ export function SessionFromHash({ next }: { next: string }) {
     const fragment = FragmentSchema.safeParse(
       Object.fromEntries(new URLSearchParams(window.location.hash.slice(1))),
     );
+    /* Tokens must not outlive this read: out of the address bar and the
+       history entry before any network call can fail. */
+    window.history.replaceState(
+      null,
+      '',
+      window.location.pathname + window.location.search,
+    );
     if (!fragment.success) {
       expired();
       return;
@@ -38,7 +45,8 @@ export function SessionFromHash({ next }: { next: string }) {
       .then(({ error }) => {
         if (error) expired();
         else router.replace(safeNext(next));
-      });
+      })
+      .catch(expired);
   }, [next, router]);
 
   return null;

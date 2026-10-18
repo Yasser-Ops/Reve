@@ -36,6 +36,7 @@ describe('GET /auth/confirm', () => {
   it('code exchanges for a session', async () => {
     const res = await call('code=xyz&next=/portal/reset');
     expect(exchangeCodeForSession).toHaveBeenCalledWith('xyz');
+    expect(res.status).toBe(307);
     expect(target(res)).toBe('/portal/reset');
   });
 
@@ -80,6 +81,15 @@ describe('safeNext', () => {
     ['/portalx', '/portal'],
     ['//evil.example', '/portal'],
     ['/admin', '/portal'],
+    ['/portal/../admin', '/portal'],
+    ['/portal/%2e%2e/admin', '/portal'],
+    ['/portal/.%2e//evil.example', '/portal'],
+    ['/portal/..//evil.example', '/portal'],
+    ['/portal@evil', '/portal'],
+    ['/portal\\evil', '/portal'],
+    ['/\\evil.example', '/portal'],
+    ['/portal/%252e%252e/admin', '/portal'],
+    ['/portal/welcome?x=1', '/portal/welcome?x=1'],
   ])('%s -> %s', (input, expected) => {
     expect(safeNext(input)).toBe(expected);
   });
