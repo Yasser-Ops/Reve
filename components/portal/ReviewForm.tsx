@@ -74,8 +74,9 @@ export const REVIEW_BAR_SPACE = 120;
  * Approve the draft on screen or ask for changes. The buttons send the
  * decision themselves rather than submitting the form: React resets a form
  * after an action, which would wipe the note when the server refuses it. The
- * buttons stay after a decision: while the order is in review the latest one
- * wins.
+ * bar opens on the client's latest decision: an approval of what is on
+ * screen offers only "Withdraw approval"; any other state offers Approve and
+ * Request changes.
  */
 export function ReviewForm({ invitationId, fingerprint, latest: initial }: ReviewFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
