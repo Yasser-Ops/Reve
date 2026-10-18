@@ -23,6 +23,10 @@ describe('passwordSchema', () => {
     expect(result.error?.issues[0].message).toBe(PASSWORD_MESSAGES.SAME_AS_EMAIL);
   });
 
+  it('72 characters passes', () => {
+    expect(schema.safeParse('x'.repeat(72)).success).toBe(true);
+  });
+
   it('8 characters passes', () => {
     expect(schema.safeParse('12345678').success).toBe(true);
   });

@@ -8,10 +8,10 @@ import { NOTICE_PARAM, PORTAL_NOTICE, type PortalNotice } from '@/lib/routes';
 
 export const metadata: Metadata = { title: 'Sign in' };
 
-const NOTICE_MESSAGES: Record<PortalNotice, string> = {
+/* Partial: OTHERS_KEPT belongs to the dashboard, not this page. */
+const NOTICE_MESSAGES: Partial<Record<PortalNotice, string>> = {
   [PORTAL_NOTICE.LINK_EXPIRED]: PORTAL_MESSAGES.LINK_EXPIRED,
   [PORTAL_NOTICE.NOT_CLIENT]: PORTAL_MESSAGES.NOT_CLIENT,
-  [PORTAL_NOTICE.PASSWORD_RESET]: PORTAL_MESSAGES.PASSWORD_RESET,
   [PORTAL_NOTICE.SIGNED_OUT]: PORTAL_MESSAGES.SIGNED_OUT,
 };
 

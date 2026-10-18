@@ -94,6 +94,19 @@ describe('acceptInvite', () => {
     expect(adminIs).toHaveBeenCalledWith('terms_accepted_at', null);
   });
 
+  it('sets the password before stamping the terms', async () => {
+    await expect(acceptInvite(null, form(valid))).rejects.toThrow(/^REDIRECT \/portal$/);
+    expect(updateUser.mock.invocationCallOrder[0]).toBeLessThan(
+      adminUpdate.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('a password already set (a retry after a failed stamp) still stamps the terms', async () => {
+    updateUser.mockResolvedValue({ error: { code: 'same_password' } });
+    await expect(acceptInvite(null, form(valid))).rejects.toThrow(/^REDIRECT \/portal$/);
+    expect(adminIs).toHaveBeenCalledWith('terms_accepted_at', null);
+  });
+
   it('a weak_password refusal is worded', async () => {
     updateUser.mockResolvedValue({ error: { code: 'weak_password' } });
     await expect(acceptInvite(null, form(valid))).resolves.toEqual({

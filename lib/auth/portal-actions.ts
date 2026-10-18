@@ -119,9 +119,11 @@ export async function setNewPassword(
   const refusal = await updatePasswordOrRefuse(supabase, input.data.password);
   if (refusal) return refusal;
 
-  /* A reset is usually "someone else may have it": end every other session. */
+  /* A reset is usually "someone else may have it": end every other session.
+     If that fails the password has still changed, so the client goes on to
+     the portal and is told, rather than being left on a form that worked. */
   const { error: signOutError } = await supabase.auth.signOut({ scope: 'others' });
-  if (signOutError) return { ok: false, message: PASSWORD_MESSAGES.CHANGED_OTHERS_KEPT };
+  if (signOutError) redirect(`${ROUTES.PORTAL}?${NOTICE_PARAM}=${PORTAL_NOTICE.OTHERS_KEPT}`);
 
   redirect(ROUTES.PORTAL);
 }
@@ -153,8 +155,11 @@ export async function acceptInvite(
     });
   if (!input.success) return { ok: false, message: input.error.issues[0].message };
 
+  /* "Already your password" means an earlier submit set it and the stamp
+     failed: go on to the stamp, or the retry promised below could never work. */
   const refusal = await updatePasswordOrRefuse(await createClient(), input.data.password);
-  if (refusal) return refusal;
+  const alreadySet = refusal?.ok === false && refusal.message === PASSWORD_MESSAGES.UNCHANGED;
+  if (refusal && !alreadySet) return refusal;
 
   /* The null filter keeps a repeated submit from moving the first timestamp. */
   const { error } = await createAdminClient()
@@ -179,7 +184,9 @@ export async function changeClientPassword(
 }
 
 export async function signOutClient(): Promise<never> {
+  /* Local only: signing out a shared tablet must not end the couple's
+     session on their own phone. */
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope: 'local' });
   redirect(`${ROUTES.PORTAL_LOGIN}?${NOTICE_PARAM}=${PORTAL_NOTICE.SIGNED_OUT}`);
 }

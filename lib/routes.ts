@@ -59,11 +59,13 @@ export const LOGIN_NOTICE = {
 
 export type LoginNotice = (typeof LOGIN_NOTICE)[keyof typeof LOGIN_NOTICE];
 
+/** Notices the portal shows: the login page reads most, the dashboard OTHERS_KEPT. */
 export const PORTAL_NOTICE = {
   LINK_EXPIRED: 'link-expired',
   NOT_CLIENT: 'not-client',
-  PASSWORD_RESET: 'password-reset',
   SIGNED_OUT: 'signed-out',
+  /** A reset changed the password but could not end the other sessions. */
+  OTHERS_KEPT: 'others-kept',
 } as const;
 
 export type PortalNotice = (typeof PORTAL_NOTICE)[keyof typeof PORTAL_NOTICE];

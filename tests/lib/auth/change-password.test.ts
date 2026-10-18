@@ -57,6 +57,14 @@ describe('changePassword', () => {
     expect(verifyPassword).not.toHaveBeenCalled();
   });
 
+  it('refuses a new password equal to the email without checking the current one', async () => {
+    await expect(
+      changePassword(null, form({ ...valid, next: 'OPS@reve.lb', confirm: 'OPS@reve.lb' })),
+    ).resolves.toEqual({ ok: false, message: PASSWORD_MESSAGES.SAME_AS_EMAIL });
+    expect(verifyPassword).not.toHaveBeenCalled();
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
   it('refuses a new password equal to the current one', async () => {
     await expect(
       changePassword(null, form({ current: valid.next, next: valid.next, confirm: valid.next })),

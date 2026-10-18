@@ -168,13 +168,13 @@ describe('setNewPassword', () => {
     expect(updateUser).not.toHaveBeenCalled();
   });
 
-  it('reports when other sessions could not be ended', async () => {
+  it('goes on to the portal with a notice when other sessions could not be ended', async () => {
     getClaims.mockResolvedValue(signedIn);
     updateUser.mockResolvedValue({ error: null });
     signOutSpy.mockResolvedValue({ error: new Error('nope') });
     await expect(
       setNewPassword(null, form({ password: 'long-enough-1', confirm: 'long-enough-1' })),
-    ).resolves.toEqual({ ok: false, message: PASSWORD_MESSAGES.CHANGED_OTHERS_KEPT });
+    ).rejects.toThrow('REDIRECT /portal?notice=others-kept');
   });
 
   it('without claims sends the person to login with link-expired', async () => {
@@ -251,8 +251,8 @@ describe('changeClientPassword', () => {
 });
 
 describe('signOutClient', () => {
-  it('signs out and returns to login with the signed-out notice', async () => {
+  it('signs out this device only and returns to login with the signed-out notice', async () => {
     await expect(signOutClient()).rejects.toThrow('REDIRECT /portal/login?notice=signed-out');
-    expect(signOutSpy).toHaveBeenCalledWith();
+    expect(signOutSpy).toHaveBeenCalledWith({ scope: 'local' });
   });
 });

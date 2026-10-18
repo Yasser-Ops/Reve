@@ -22,17 +22,16 @@ export const PASSWORD_MESSAGES = {
   MISMATCH: 'The two new passwords do not match.',
   UNCHANGED: 'That is already your password.',
   WRONG_CURRENT: 'Your current password is not right.',
-  WEAK: 'Supabase rejected that password as too weak. Try a longer one.',
+  WEAK: 'That password is too easy to guess. Try a longer one.',
   CHANGED: 'Password changed. Other devices were signed out.',
   CHANGED_OTHERS_KEPT:
     'Password changed, but other devices could not be signed out. Sign out there yourself.',
 } as const;
 
 export const PORTAL_MESSAGES = {
-  NOT_CLIENT: 'This email is not a Rêve client account.',
+  NOT_CLIENT: 'This email is not a Rêve client account. If you are the studio, sign in to the admin again.',
   SIGNED_OUT: 'You are signed out.',
   LINK_EXPIRED: 'That link has expired or was already used. Message us on WhatsApp for a new one.',
-  PASSWORD_RESET: 'Check your email for a link to choose a new password.',
   TERMS_REQUIRED: 'Tick the box to accept the terms and confirm you are 18 or older.',
   RESET_LINK_SENT:
     'If that email belongs to a Rêve account, a link to choose a new password is on its way.',

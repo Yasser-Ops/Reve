@@ -1,6 +1,7 @@
 import { ActionForm } from '@/components/admin/ActionForm';
 import { accountState } from '@/lib/admin/invite-state';
 import { inviteClient } from '@/lib/admin/invite';
+import { STUDIO_TIME_ZONE } from '@/lib/constants';
 
 type AccountStatusProps = {
   clientId: string;
@@ -10,7 +11,7 @@ type AccountStatusProps = {
   paid: boolean;
 };
 
-const dateFormat = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: 'UTC' });
+const dateFormat = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: STUDIO_TIME_ZONE });
 
 /** The portal account line on the client page, with the invite button. */
 export function AccountStatus({ clientId, userId, termsAcceptedAt, paid }: AccountStatusProps) {
