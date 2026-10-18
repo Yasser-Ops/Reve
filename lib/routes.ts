@@ -1,5 +1,3 @@
-import { SITE_URL } from '@/lib/site';
-
 /** Every route the app links to or redirects to by name. */
 export const ROUTES = {
   ADMIN: '/admin',
@@ -96,9 +94,4 @@ export function safeNext(next: string | null): string {
      something else one hop later. */
   if (!inPortal || pathname.includes('//') || /%25/i.test(pathname)) return home;
   return pathname + search;
-}
-
-/** The link invite and reset emails carry; `next` is where to go once signed in. */
-export function confirmUrl(next: string): string {
-  return `${SITE_URL}${ROUTES.AUTH_CONFIRM}?next=${encodeURIComponent(next)}`;
 }

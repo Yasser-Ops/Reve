@@ -10,7 +10,8 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 import { GET } from '@/app/auth/confirm/route';
-import { confirmUrl, safeNext } from '@/lib/routes';
+import { confirmUrl } from '@/lib/auth/links';
+import { safeNext } from '@/lib/routes';
 
 const ORIGIN = 'https://reve.test';
 const call = (query: string) =>

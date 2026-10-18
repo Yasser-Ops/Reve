@@ -14,7 +14,8 @@ import {
 import { changePasswordAs, updatePasswordOrRefuse } from '@/lib/auth/password-change';
 import { passwordSchema } from '@/lib/auth/password';
 import { getRecoveryClient } from '@/lib/auth/recovery';
-import { confirmUrl, NOTICE_PARAM, PORTAL_NOTICE, ROUTES } from '@/lib/routes';
+import { confirmUrl } from '@/lib/auth/links';
+import { NOTICE_PARAM, PORTAL_NOTICE, ROUTES } from '@/lib/routes';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createMailClient } from '@/lib/supabase/mailer';
 import { createClient } from '@/lib/supabase/server';

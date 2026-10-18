@@ -29,7 +29,8 @@ vi.mock('@/lib/site', () => ({ SITE_URL: 'https://reve.test' }));
 import { UNEXPECTED } from '@/lib/admin/action-result';
 import { inviteClient } from '@/lib/admin/invite';
 import { accountState, hasPaidOrder } from '@/lib/admin/invite-state';
-import { ROUTES, confirmUrl } from '@/lib/routes';
+import { confirmUrl } from '@/lib/auth/links';
+import { ROUTES } from '@/lib/routes';
 
 const CLIENT = '11111111-1111-4111-8111-111111111111';
 const USER = '33333333-3333-4333-8333-333333333333';

@@ -46,7 +46,8 @@ import {
   signInClient,
   signOutClient,
 } from '@/lib/auth/portal-actions';
-import { confirmUrl, ROUTES } from '@/lib/routes';
+import { confirmUrl } from '@/lib/auth/links';
+import { ROUTES } from '@/lib/routes';
 
 function form(fields: Record<string, string>) {
   const data = new FormData();
