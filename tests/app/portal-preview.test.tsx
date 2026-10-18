@@ -26,8 +26,21 @@ vi.mock('@/components/invitation/DraftRender', () => ({
 }));
 vi.mock('@/components/portal/ReviewForm', () => ({
   REVIEW_BAR_SPACE: 120,
-  ReviewForm: ({ fingerprint, invitationId }: { fingerprint: string; invitationId: string }) => (
-    <form aria-label="Your review" data-fingerprint={fingerprint} data-invitation={invitationId} />
+  ReviewForm: ({
+    fingerprint,
+    invitationId,
+    latest,
+  }: {
+    fingerprint: string;
+    invitationId: string;
+    latest: unknown;
+  }) => (
+    <form
+      aria-label="Your review"
+      data-fingerprint={fingerprint}
+      data-invitation={invitationId}
+      data-latest={JSON.stringify(latest)}
+    />
   ),
 }));
 vi.mock('@/components/invitation/registry', () => ({
@@ -49,7 +62,11 @@ import { contentFingerprint } from '@/lib/invitations/publish-guard';
 const INV = '22222222-2222-4222-8222-222222222222';
 const params = (id: string) => ({ params: Promise.resolve({ id }) });
 
-function invitationRow(status: string, content: unknown = { complete: true, couple: 'Maya' }) {
+function invitationRow(
+  status: string,
+  content: unknown = { complete: true, couple: 'Maya' },
+  invitation_reviews: unknown[] = [],
+) {
   return {
     data: {
       id: INV,
@@ -58,6 +75,7 @@ function invitationRow(status: string, content: unknown = { complete: true, coup
       theme: {},
       entitlements: {},
       orders: { status },
+      invitation_reviews,
     },
   };
 }
@@ -104,6 +122,53 @@ describe('/portal/preview/[id]', () => {
     expect(rendered.content).toEqual({ complete: true, couple: 'Maya' });
     expect(form).toHaveAttribute('data-fingerprint', contentFingerprint(rendered.content));
     expect(form).toHaveAttribute('data-invitation', INV);
+  });
+
+  const review = (decision: string, created_at: string, content_snapshot: unknown) => ({
+    decision,
+    note: decision,
+    created_at,
+    content_snapshot,
+  });
+  const latestOf = () =>
+    JSON.parse(screen.getByRole('form', { name: 'Your review' }).getAttribute('data-latest') ?? 'null');
+
+  it('hands the form the newest review, current when the content is unchanged', async () => {
+    const content = { complete: true, couple: 'Maya' };
+    state.fake = fakeSupabase({
+      invitations: [
+        invitationRow('review', content, [
+          review('changes_requested', '2026-10-01T10:00:00+00:00', content),
+          review('approved', '2026-10-02T10:00:00+00:00', { ...content }),
+        ]),
+      ],
+    });
+    render(await PortalPreviewPage(params(INV)));
+
+    expect(latestOf()).toEqual({
+      decision: 'approved',
+      createdAt: '2026-10-02T10:00:00+00:00',
+      note: 'approved',
+      current: true,
+    });
+  });
+
+  it('marks the latest review not current once the content moved on', async () => {
+    state.fake = fakeSupabase({
+      invitations: [
+        invitationRow('review', { complete: true, couple: 'Maya' }, [
+          review('approved', '2026-10-02T10:00:00+00:00', { complete: true, couple: 'Old' }),
+        ]),
+      ],
+    });
+    render(await PortalPreviewPage(params(INV)));
+    expect(latestOf().current).toBe(false);
+  });
+
+  it('passes no review when there is none', async () => {
+    state.fake = fakeSupabase({ invitations: [invitationRow('review')] });
+    render(await PortalPreviewPage(params(INV)));
+    expect(latestOf()).toBeNull();
   });
 
   it('once delivered, shows the design without the review bar', async () => {

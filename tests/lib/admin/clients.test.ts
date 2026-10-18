@@ -74,6 +74,7 @@ describe('getClient', () => {
     const select = String(state.fake.find('clients', 'select')?.args[0]);
     expect(select).toContain('client_notes(body)');
     expect(select).toContain('order_notes(body)');
+    expect(select).toContain('invitation_reviews(decision, created_at, on_behalf)');
     expect(select).not.toMatch(/notes,|, notes/);
     expect(client?.notes).toBe('VIP');
     expect(client?.orders.map((order) => order.notes)).toEqual(['Gold foil', null]);

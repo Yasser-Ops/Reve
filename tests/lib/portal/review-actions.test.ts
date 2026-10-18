@@ -15,7 +15,7 @@ import { UNEXPECTED } from '@/lib/admin/action-result';
 import { contentFingerprint } from '@/lib/invitations/publish-guard';
 import { REVIEW_MESSAGES } from '@/lib/portal/messages';
 import { submitReview } from '@/lib/portal/review-actions';
-import { ROUTES, adminRoutes } from '@/lib/routes';
+import { ROUTES, adminRoutes, portalRoutes } from '@/lib/routes';
 
 const INV = '22222222-2222-4222-8222-222222222222';
 const content = { coupleFirstName: 'Maya' };
@@ -44,7 +44,11 @@ describe('submitReview', () => {
     expect(state.fake.find('invitation_reviews', 'insert')?.args).toEqual([
       { invitation_id: INV, decision: 'approved', note: '', content_snapshot: content },
     ]);
-    expect(revalidated).toEqual([ROUTES.PORTAL, adminRoutes.invitation(INV)]);
+    expect(revalidated).toEqual([
+      ROUTES.PORTAL,
+      portalRoutes.preview(INV),
+      adminRoutes.invitation(INV),
+    ]);
   });
 
   it('records the note with a request for changes', async () => {

@@ -6,7 +6,7 @@ import { UNEXPECTED, type ActionResult } from '@/lib/admin/action-result';
 import { requireClient } from '@/lib/auth/guards';
 import { contentFingerprint } from '@/lib/invitations/publish-guard';
 import { REVIEW_MESSAGES, REVIEW_RULES } from '@/lib/portal/messages';
-import { ROUTES, adminRoutes } from '@/lib/routes';
+import { ROUTES, adminRoutes, portalRoutes } from '@/lib/routes';
 import { createClient } from '@/lib/supabase/server';
 
 /* Postgres insufficient_privilege: how a refused RLS check arrives. */
@@ -75,6 +75,7 @@ export async function submitReview(
   }
 
   revalidatePath(ROUTES.PORTAL);
+  revalidatePath(portalRoutes.preview(invitation.id));
   revalidatePath(adminRoutes.invitation(invitation.id));
   return { ok: true };
 }

@@ -81,10 +81,14 @@ export async function getClient(id: string) {
   const { data, error } = await supabase
     .from('clients')
     .select(
-      'id, full_name, email, phone, user_id, terms_accepted_at, created_at, client_notes(body), orders(id, reference, tier, status, amount, event_date, due_at, created_at, order_notes(body), invitations(id, slug, status, template_slug))',
+      'id, full_name, email, phone, user_id, terms_accepted_at, created_at, client_notes(body), orders(id, reference, tier, status, amount, event_date, due_at, created_at, order_notes(body), invitations(id, slug, status, template_slug, invitation_reviews(decision, created_at, on_behalf)))',
     )
     .eq('id', id)
     .order('created_at', { referencedTable: 'orders', ascending: false })
+    .order('created_at', {
+      referencedTable: 'orders.invitations.invitation_reviews',
+      ascending: false,
+    })
     .maybeSingle();
 
   if (error) throw error;

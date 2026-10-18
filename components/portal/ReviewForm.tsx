@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRef, useState, useTransition, type CSSProperties } from 'react';
 import type { ActionResult } from '@/lib/admin/action-result';
+import { STUDIO_TIME_ZONE } from '@/lib/constants';
 import { REVIEW_MESSAGES, REVIEW_RULES } from '@/lib/portal/messages';
 import { submitReview } from '@/lib/portal/review-actions';
 import { ROUTES } from '@/lib/routes';
@@ -13,7 +14,17 @@ type ReviewFormProps = {
   invitationId: string;
   /** Which version of the content the client was shown; the action refuses a mismatch. */
   fingerprint: string;
+  /** The client's newest decision; `current` is false once the content moved on. */
+  latest: {
+    decision: Decision;
+    createdAt: string;
+    note: string;
+    current: boolean;
+  } | null;
 };
+
+/* Studio time, not the browser's. */
+const when = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: STUDIO_TIME_ZONE });
 
 /* Inline styles on purpose: this bar sits on the draft preview, outside
    AppSurface, where shadcn's tokens are absent and a stylesheet would leak
@@ -66,23 +77,35 @@ export const REVIEW_BAR_SPACE = 120;
  * buttons stay after a decision: while the order is in review the latest one
  * wins.
  */
-export function ReviewForm({ invitationId, fingerprint }: ReviewFormProps) {
+export function ReviewForm({ invitationId, fingerprint, latest: initial }: ReviewFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const [asking, setAsking] = useState(false);
   const [result, setResult] = useState<ActionResult | null>(null);
   const [sent, setSent] = useState<Decision | null>(null);
+  const [latest, setLatest] = useState(initial);
   const [pending, startTransition] = useTransition();
+
+  /* An approval of content that has since changed counts for nothing. */
+  const approved = latest?.decision === 'approved' && latest.current;
+  const stale = latest?.decision === 'approved' && !latest.current;
 
   function send(decision: Decision) {
     if (!formRef.current) return;
     const formData = new FormData(formRef.current);
     formData.set('decision', decision);
+    /* Withdrawing needs no reason from the client; the action still wants a note. */
+    const typed = String(formData.get('note') ?? '').trim();
+    const note = approved && !typed ? REVIEW_MESSAGES.WITHDRAWN_NOTE : typed;
+    if (approved) formData.set('note', note);
     startTransition(async () => {
       const next = await submitReview(result, formData);
       setResult(next);
       setSent(next.ok ? decision : null);
       /* Fields clear only on success, so a refused note is not lost. */
-      if (next.ok) setAsking(false);
+      if (next.ok) {
+        setAsking(false);
+        setLatest({ decision, createdAt: new Date().toISOString(), note, current: true });
+      }
     });
   }
 
@@ -110,6 +133,20 @@ export function ReviewForm({ invitationId, fingerprint }: ReviewFormProps) {
         </div>
       ) : null}
 
+      {approved && latest ? (
+        <p style={{ ...row, margin: '0 auto' }}>
+          {REVIEW_MESSAGES.APPROVED_ON} {when.format(new Date(latest.createdAt))}.
+        </p>
+      ) : null}
+      {latest?.decision === 'changes_requested' ? (
+        <p style={{ ...row, margin: '0 auto' }}>
+          {REVIEW_MESSAGES.CHANGES_ON} {when.format(new Date(latest.createdAt))}: {latest.note}
+        </p>
+      ) : null}
+      {stale ? (
+        <p style={{ ...row, margin: '0 auto' }}>{REVIEW_MESSAGES.UPDATED_SINCE_APPROVAL}</p>
+      ) : null}
+
       {sent ? (
         <p style={{ ...row, margin: '0 auto' }}>
           {sent === 'approved' ? REVIEW_MESSAGES.THANKS_APPROVED : REVIEW_MESSAGES.THANKS_CHANGES}
@@ -131,7 +168,7 @@ export function ReviewForm({ invitationId, fingerprint }: ReviewFormProps) {
               style={primary}
               type="button"
             >
-              Send my changes
+              {approved ? 'Confirm withdrawal' : 'Send my changes'}
             </button>
             <button
               disabled={pending}
@@ -142,6 +179,15 @@ export function ReviewForm({ invitationId, fingerprint }: ReviewFormProps) {
               Cancel
             </button>
           </>
+        ) : approved ? (
+          <button
+            disabled={pending}
+            onClick={() => setAsking(true)}
+            style={secondary}
+            type="button"
+          >
+            {REVIEW_MESSAGES.WITHDRAW}
+          </button>
         ) : (
           <>
             <button

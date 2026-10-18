@@ -20,6 +20,8 @@ const when = new Intl.DateTimeFormat('en-GB', {
   timeZone: STUDIO_TIME_ZONE,
 });
 
+const day = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: STUDIO_TIME_ZONE });
+
 /**
  * One order. OrderLive (client) owns what moves: badge, stepper, primary
  * move, menu. Provisioning and the invitation row stay server-rendered and
@@ -27,6 +29,8 @@ const when = new Intl.DateTimeFormat('en-GB', {
  */
 export function OrderCard({ order }: { order: Order }) {
   const invitation = order.invitations;
+  /* Newest first: getClient orders the embed. */
+  const review = invitation?.invitation_reviews[0];
   const canProvision = !invitation && hasReached(order.tier, order.status, ORDER_STATUS.PAID);
 
   return (
@@ -66,6 +70,13 @@ export function OrderCard({ order }: { order: Order }) {
               {invitation.slug}
             </p>
             <p className="text-muted-foreground capitalize">{invitation.status}</p>
+            {review ? (
+              <p className="text-muted-foreground">
+                {review.decision === 'approved' ? 'Client approved' : 'Client asked for changes'} on{' '}
+                {day.format(new Date(review.created_at))}
+                {review.on_behalf ? ' (recorded by Rêve)' : ''}
+              </p>
+            ) : null}
           </div>
           <Link
             className={buttonVariants({ variant: 'outline' })}

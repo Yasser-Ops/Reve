@@ -4,7 +4,7 @@ import { DraftRender } from '@/components/invitation/DraftRender';
 import { getTemplateEntry } from '@/components/invitation/registry';
 import { REVIEW_BAR_SPACE, ReviewForm } from '@/components/portal/ReviewForm';
 import { requireClient } from '@/lib/auth/guards';
-import { contentFingerprint } from '@/lib/invitations/publish-guard';
+import { contentFingerprint, sameContent } from '@/lib/invitations/publish-guard';
 import { ORDER_STATUS, type OrderStatus } from '@/lib/orders/status';
 import { REVIEW_MESSAGES } from '@/lib/portal/messages';
 import { createClient } from '@/lib/supabase/server';
@@ -36,7 +36,9 @@ export default async function PortalPreviewPage({
   const supabase = await createClient();
   const { data: invitation, error } = await supabase
     .from('invitations')
-    .select('id, template_slug, content, theme, entitlements, orders(status)')
+    .select(
+      'id, template_slug, content, theme, entitlements, orders(status), invitation_reviews(decision, note, created_at, content_snapshot)',
+    )
     .eq('id', id.data)
     .maybeSingle();
   if (error) throw error;
@@ -49,6 +51,18 @@ export default async function PortalPreviewPage({
   const reviewing =
     invitation.orders.status === ORDER_STATUS.REVIEW &&
     design.schema.safeParse(invitation.content).success;
+
+  const newest = invitation.invitation_reviews
+    .toSorted((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+    .at(0);
+  const latest = newest
+    ? {
+        decision: newest.decision,
+        createdAt: newest.created_at,
+        note: newest.note,
+        current: sameContent(newest.content_snapshot, invitation.content),
+      }
+    : null;
 
   return (
     <>
@@ -65,6 +79,7 @@ export default async function PortalPreviewPage({
           <ReviewForm
             fingerprint={contentFingerprint(invitation.content)}
             invitationId={invitation.id}
+            latest={latest}
           />
         </>
       ) : null}

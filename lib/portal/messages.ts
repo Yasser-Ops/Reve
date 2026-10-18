@@ -12,5 +12,11 @@ export const REVIEW_MESSAGES = {
   THANKS_CHANGES: 'Thank you. We will be in touch on WhatsApp.',
   LAST_APPROVED: 'You approved this invitation',
   LAST_CHANGES: 'You asked for changes',
+  APPROVED_ON: 'You approved this on',
+  CHANGES_ON: 'You asked for changes on',
+  UPDATED_SINCE_APPROVAL: 'We updated your invitation since you approved it. Please look again.',
+  WITHDRAW: 'Withdraw approval',
+  /* Sent when a client withdraws without saying why: the action needs a note. */
+  WITHDRAWN_NOTE: 'Approval withdrawn.',
   INCOMPLETE: 'Your invitation is still being set. Check back soon.',
 } as const;
