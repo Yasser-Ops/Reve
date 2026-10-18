@@ -18,6 +18,7 @@ export const PASSWORD_RULES = { MIN: 8, MAX: 72 } as const;
 export const PASSWORD_MESSAGES = {
   TOO_SHORT: `Use at least ${PASSWORD_RULES.MIN} characters.`,
   TOO_LONG: `Use at most ${PASSWORD_RULES.MAX} characters.`,
+  SAME_AS_EMAIL: 'Choose a password that is not your email address.',
   MISMATCH: 'The two new passwords do not match.',
   UNCHANGED: 'That is already your password.',
   WRONG_CURRENT: 'Your current password is not right.',
