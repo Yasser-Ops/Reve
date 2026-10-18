@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { RENDER_WIDTH } from '@/components/store/TemplateThumbnail';
+import { screenFor } from '@/components/invitation/screen';
+import { RENDER_WIDTH, THUMBNAIL_ASPECT } from '@/components/store/TemplateThumbnail';
 
 /**
  * A template thumbnail that needs no client island.
@@ -32,6 +33,8 @@ export function TemplateFrame({
       <div
         className="pointer-events-none absolute left-0 top-0 origin-top-left select-none"
         style={{
+          /* The hero fills the frame, not the browser window. */
+          ...screenFor(RENDER_WIDTH, THUMBNAIL_ASPECT),
           width: `${RENDER_WIDTH}px`,
           transform: `scale(calc((100cqw / 1px) / ${RENDER_WIDTH}))`,
         }}

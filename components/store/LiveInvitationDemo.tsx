@@ -1,7 +1,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { PhoneShell } from '@/components/PhoneShell';
+import { PHONE_SCREEN_RATIO, PhoneShell } from '@/components/PhoneShell';
+import { screenFor } from '@/components/invitation/screen';
 import { EnvelopeGate } from '@/components/invitation/EnvelopeGate';
 import { RENDER_WIDTH } from '@/components/store/TemplateThumbnail';
 import { getEnvelope } from '@/lib/envelopes';
@@ -80,6 +81,8 @@ export function LiveInvitationDemo({
        */}
       <div
         style={{
+          /* The hero fills the phone's screen, not the browser window. */
+          ...screenFor(RENDER_WIDTH, PHONE_SCREEN_RATIO),
           width: `${RENDER_WIDTH}px`,
           zoom: `calc((100cqw + 0.5px) / 1px / ${RENDER_WIDTH})`,
         }}

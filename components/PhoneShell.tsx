@@ -11,7 +11,11 @@ export const PHONE_MAX_WIDTH = 300;
  * Fixed here rather than per caller, so no preview can draw a shorter, wider
  * phone than the design page does.
  */
-export const PHONE_SCREEN_ASPECT = frameAspect(getEnvelope(undefined).frames);
+const HOUSE_FRAMES = getEnvelope(undefined).frames;
+export const PHONE_SCREEN_ASPECT = frameAspect(HOUSE_FRAMES);
+
+/** The same shape as a number (width / height), for arithmetic. */
+export const PHONE_SCREEN_RATIO = HOUSE_FRAMES.width / HOUSE_FRAMES.height;
 
 type PhoneShellProps = {
   children: ReactNode;

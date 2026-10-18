@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { Petals } from '@/components/invitation/motifs/Petals';
+import { SCREEN_HEIGHT } from '@/components/invitation/screen';
 import { CountdownDial } from './CountdownDial';
 import { EveningTimeline } from './EveningTimeline';
 import { RsvpForm } from './RsvpForm';
@@ -39,8 +40,9 @@ const GOLD = '#8a6d3a';
 export function Lin({ content, theme, entitlements }: LinProps) {
   return (
     <main
-      className={`${linScript.variable} ${linBody.variable} relative min-h-dvh text-[17px]`}
+      className={`${linScript.variable} ${linBody.variable} relative text-[17px]`}
       style={{
+        minHeight: SCREEN_HEIGHT,
         backgroundColor: CREAM,
         color: INK,
         fontFamily: 'var(--font-lin-body)',
@@ -183,8 +185,8 @@ function HeroSection({ content }: { content: LinContent }) {
        ground: the hero is the one section whose text colour depends on what
        is behind it. */
     <section
-      className="relative flex min-h-dvh items-center justify-center overflow-hidden px-6 py-20 text-center"
-      style={{ color: media ? CREAM : INK }}
+      className="relative flex items-center justify-center overflow-hidden px-6 py-20 text-center"
+      style={{ minHeight: SCREEN_HEIGHT, color: media ? CREAM : INK }}
     >
       {media ? (
         <div className="absolute inset-0">

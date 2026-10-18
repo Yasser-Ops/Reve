@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { SCREEN_HEIGHT, screenShare } from '@/components/invitation/screen';
 import { FountainCount } from './FountainCount';
 import { GardenParallax } from './GardenParallax';
 import { GardenPath } from './GardenPath';
@@ -63,8 +64,9 @@ const MOSS = '#55613f';
 export function Jardin({ content, theme, entitlements }: JardinProps) {
   return (
     <main
-      className={`${jardinScript.variable} ${jardinBody.variable} relative min-h-dvh text-[17px]`}
+      className={`${jardinScript.variable} ${jardinBody.variable} relative text-[17px]`}
       style={{
+        minHeight: SCREEN_HEIGHT,
         backgroundColor: PAPER,
         color: INK,
         fontFamily: 'var(--font-jardin-body)',
@@ -160,7 +162,7 @@ export function Jardin({ content, theme, entitlements }: JardinProps) {
 
       {/* The closing plate: the garden at dusk, the same world the hero opens
           in, so the page ends where it began rather than stopping. */}
-      <div className="relative h-[52vh] overflow-hidden">
+      <div className="relative overflow-hidden" style={{ height: screenShare(0.52) }}>
         {/* THE PLATE IS COMPOSED AROUND THIS BOX, not merely placed in it.
             Two constraints it has to satisfy, both invisible in the file:
 
@@ -299,7 +301,10 @@ function HeroSection({
   motion: Theme['motion'];
 }) {
   return (
-    <section className="relative flex min-h-dvh items-center justify-center overflow-hidden px-6 py-24 text-center">
+    <section
+      className="relative flex items-center justify-center overflow-hidden px-6 py-24 text-center"
+      style={{ minHeight: SCREEN_HEIGHT }}
+    >
       <GardenParallax motion={motion} />
 
       {/* NOTHING IS LAID OVER THE PAINTING.

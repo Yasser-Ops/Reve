@@ -1,7 +1,11 @@
 import type { ReactNode } from 'react';
+import { screenFor } from '@/components/invitation/screen';
 
 /** Phone width the templates are laid out at before being scaled down. */
 export const RENDER_WIDTH = 430;
+
+/** The thumbnails' screen: every frame that shows one is 9:16. */
+export const THUMBNAIL_ASPECT = 9 / 16;
 
 /**
  * Renders a full invitation template at phone width, then scales it to fit.
@@ -21,6 +25,8 @@ export function TemplateThumbnail({ children }: { children: ReactNode }) {
       aria-hidden="true"
       className="pointer-events-none absolute left-0 top-0 origin-top-left select-none"
       style={{
+        /* The hero fills the frame, not the browser window. */
+        ...screenFor(RENDER_WIDTH, THUMBNAIL_ASPECT),
         width: RENDER_WIDTH,
         transform: `scale(var(--thumb-scale))`,
       }}
