@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { FountainCount } from './FountainCount';
 import { GardenParallax } from './GardenParallax';
 import { GardenPath } from './GardenPath';
+import { RsvpForm } from './RsvpForm';
 import { jardinBody, jardinScript } from './fonts';
 import type { Entitlements, Theme } from '@/lib/schemas/invitation';
 import type { JardinContent } from './schema';
@@ -390,9 +391,10 @@ function JardinGallery({
 }
 
 /**
- * Static for now: no Server Action or storage wired up, so submitting does
- * nothing. The fields match Lin's so the shape is right once RSVP persistence
- * gets its own design pass and both templates adopt it together.
+ * No storage is wired up yet: the form is a small island that holds a submit
+ * on the page and says replies are not open. The fields match Lin's so the
+ * shape is right once RSVP persistence gets its own design pass and both
+ * templates adopt it together.
  */
 function RsvpSection() {
   return (
@@ -407,45 +409,7 @@ function RsvpSection() {
         </p>
       </div>
 
-      <form className="mx-auto mt-10 flex max-w-sm flex-col gap-5">
-        <label
-          className="flex flex-col gap-2 text-left text-[11px] uppercase tracking-[0.18em]"
-          style={{ color: `${INK}99` }}
-        >
-          Your name
-          <input
-            className="rounded-md border bg-white/50 px-4 py-2.5 text-base normal-case tracking-normal"
-            name="name"
-            style={{ borderColor: `${INK}2e`, color: INK }}
-            type="text"
-          />
-        </label>
-
-        <fieldset
-          className="text-left text-[11px] uppercase tracking-[0.18em]"
-          style={{ color: `${INK}99` }}
-        >
-          <legend>Will you be joining us?</legend>
-          <div className="mt-3 flex gap-6 normal-case tracking-normal text-base">
-            <label className="flex items-center gap-2">
-              <input name="attending" type="radio" value="yes" />
-              Yes
-            </label>
-            <label className="flex items-center gap-2">
-              <input name="attending" type="radio" value="no" />
-              No
-            </label>
-          </div>
-        </fieldset>
-
-        <button
-          className="mt-2 rounded-full px-7 py-3 text-[11px] uppercase tracking-[0.2em]"
-          style={{ backgroundColor: ROSE, color: PAPER }}
-          type="submit"
-        >
-          Send word
-        </button>
-      </form>
+      <RsvpForm accent={ROSE} ink={INK} paper={PAPER} />
     </div>
   );
 }
