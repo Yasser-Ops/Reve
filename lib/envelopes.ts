@@ -118,31 +118,29 @@ export type EnvelopeSpec = SealGeometry & {
 /*
  * Cream linen with an MS wax seal, rendered in Blender.
  *
- * ONLY THE SEALED FRAME EXISTS SO FAR — hence `count: 1`. The envelope sits
- * correctly at rest and the opening does not animate: tapping the seal holds
- * this one frame for its duration and then hands over to the invitation.
+ * THE FULL OPENING IS RENDERED: sealed at 1, the flap and wax lifting away,
+ * and the paper clear of the camera by the last frame. The render is 158
+ * frames at 24fps; `scripts/envelope-frames.mjs` dropped 10 as identical to
+ * their neighbour (three at the head, seven at the tail once the paper had
+ * left frame), so 148 ship, renumbered contiguously.
  *
- * That is the honest state while the sequence is being rendered, and it is
- * deliberately not disguised. The count is what makes it visible: raise it as
- * frames land and the opening starts moving, with no other change anywhere.
- *
- * Geometry is MEASURED off frame 1, not guessed — the wax is a 248px square
- * centred at 49.4% across and 46.4% down an 800x1732 frame.
+ * Geometry is MEASURED off frame 1 by hue, not guessed — the wax is a 246px
+ * square centred at 49.9% across and 44.9% down an 800x1732 frame.
  */
 const LIN: EnvelopeSpec = {
   slug: 'lin',
   name: 'Cream linen, wax seal',
   frames: {
     dir: '/envelope/lin/frames',
-    count: 1,
+    count: 148,
     pad: 4,
-    fps: 30,
+    fps: 24,
     width: 800,
     height: 1732,
   },
-  sealY: '46.4%',
-  sealX: '49.4%',
-  sealSize: '31%',
+  sealY: '44.9%',
+  sealX: '49.9%',
+  sealSize: '30.8%',
 };
 
 /*
