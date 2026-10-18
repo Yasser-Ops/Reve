@@ -34,11 +34,15 @@ export function DraftRender({
   }
 
   return (
-    <TemplateRenderer
-      content={parsed.data}
-      entitlements={entitlementsSchema.parse(entitlements)}
-      templateSlug={templateSlug}
-      theme={themeSchema.parse(theme)}
-    />
+    <>
+      {/* Hides the window scrollbar (globals.css): a preview scrolls like a phone. */}
+      <span data-bare-preview hidden />
+      <TemplateRenderer
+        content={parsed.data}
+        entitlements={entitlementsSchema.parse(entitlements)}
+        templateSlug={templateSlug}
+        theme={themeSchema.parse(theme)}
+      />
+    </>
   );
 }

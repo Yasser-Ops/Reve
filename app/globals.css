@@ -138,6 +138,17 @@ body {
   display: none;
 }
 
+/* A bare draft preview (the admin editor's phone iframe, the client's full
+   screen view) scrolls like a phone: no scrollbar down the side. Keyed off a
+   marker DraftRender renders, since a page cannot style its own <html>. */
+html:has([data-bare-preview]) {
+  scrollbar-width: none;
+}
+
+html:has([data-bare-preview])::-webkit-scrollbar {
+  display: none;
+}
+
 /* Eyebrow labels: wide-tracked small caps, never below 11px. */
 .reve-eyebrow {
   font-family: var(--font-sans);

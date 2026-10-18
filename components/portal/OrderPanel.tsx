@@ -75,7 +75,15 @@ export function OrderPanel({ order }: { order: PortalOrder }) {
       ) : null}
 
       {status === ORDER_STATUS.DELIVERED && invitation ? (
-        <LiveLink url={`${SITE_URL}${publicRoutes.invitation(invitation.slug)}`} />
+        <div className="grid gap-4">
+          <Link
+            className={buttonVariants({ variant: 'outline', className: 'justify-self-start' })}
+            href={portalRoutes.preview(invitation.id)}
+          >
+            See your invitation
+          </Link>
+          <LiveLink url={`${SITE_URL}${publicRoutes.invitation(invitation.slug)}`} />
+        </div>
       ) : null}
 
       {status === ORDER_STATUS.PAID ||
