@@ -36,7 +36,7 @@ beforeEach(() => {
 describe('requireClient', () => {
   it('no claims redirects to /portal/login', async () => {
     getClaims.mockResolvedValue({ data: null, error: null });
-    await expect(requireClient()).rejects.toThrow('REDIRECT /portal/login');
+    await expect(requireClient()).rejects.toThrow(/^REDIRECT \/portal\/login$/);
   });
 
   it('an admin with no client row is sent to the local sign-out route and told so', async () => {

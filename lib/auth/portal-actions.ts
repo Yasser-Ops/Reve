@@ -10,7 +10,9 @@ import {
   SIGN_IN_MESSAGES,
   type SignInResult,
 } from '@/lib/auth/messages';
+import { updatePasswordOrRefuse } from '@/lib/auth/password-change';
 import { passwordSchema } from '@/lib/auth/password';
+import { getRecoveryClient } from '@/lib/auth/recovery';
 import { confirmUrl, NOTICE_PARAM, PORTAL_NOTICE, ROUTES } from '@/lib/routes';
 import { createMailClient } from '@/lib/supabase/mailer';
 import { createClient } from '@/lib/supabase/server';
@@ -38,7 +40,18 @@ export async function signInClient(
     return { ok: false, message: SIGN_IN_MESSAGES.BAD_CREDENTIALS };
   }
 
-  if (!(await getClientForUser(supabase, data.user.id))) {
+  let isClient: boolean;
+  try {
+    isClient = (await getClientForUser(supabase, data.user.id)) !== null;
+  } catch (error) {
+    /* A form never gets a throw. Sign out so a half-finished sign-in does not
+       linger as a session. */
+    console.error('Client lookup failed during sign-in', error);
+    await supabase.auth.signOut({ scope: 'local' });
+    return { ok: false, message: UNEXPECTED };
+  }
+
+  if (!isClient) {
     /* Local only: an admin who typed their password here keeps their other
        sessions. */
     await supabase.auth.signOut({ scope: 'local' });
@@ -63,36 +76,36 @@ export async function requestReset(
   const parsed = emailSchema.safeParse({ email: formData.get('email') });
   if (!parsed.success) return { ok: false, message: SIGN_IN_MESSAGES.INVALID_INPUT };
 
-  await createMailClient().auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: confirmUrl(ROUTES.PORTAL_RESET),
-  });
+  /* Logged, never shown: the answer must not depend on the account existing. */
+  try {
+    const { error } = await createMailClient().auth.resetPasswordForEmail(parsed.data.email, {
+      redirectTo: confirmUrl(ROUTES.PORTAL_RESET),
+    });
+    if (error) console.error('Password reset email failed', error);
+  } catch (error) {
+    console.error('Password reset email threw', error);
+  }
 
   return { ok: true };
 }
 
-/* Supabase's error codes for a refused new password. */
-const PASSWORD_REFUSALS: Record<string, string> = {
-  weak_password: PASSWORD_MESSAGES.WEAK,
-  same_password: PASSWORD_MESSAGES.UNCHANGED,
-};
-
 /**
- * Sets the password for the person the recovery link signed in. No current
- * password is asked for: holding the emailed link is the proof.
+ * Sets the password for a client the recovery link signed in. No current
+ * password is asked for: holding the emailed link is the proof, which is why
+ * only a session marked as recovery (see getRecoveryClient) may do this.
  */
 export async function setNewPassword(
   _previous: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
   const supabase = await createClient();
-  const { data, error: claimsError } = await supabase.auth.getClaims();
-  const claims = claimsError ? null : data?.claims;
-  if (!claims) {
+  const person = await getRecoveryClient(supabase);
+  if (!person) {
     redirect(`${ROUTES.PORTAL_LOGIN}?${NOTICE_PARAM}=${PORTAL_NOTICE.LINK_EXPIRED}`);
   }
 
   const input = z
-    .object({ password: passwordSchema(claims.email ?? ''), confirm: z.string() })
+    .object({ password: passwordSchema(person.email), confirm: z.string() })
     .refine((value) => value.confirm === value.password, PASSWORD_MESSAGES.MISMATCH)
     .safeParse({
       password: formData.get('password') ?? '',
@@ -100,17 +113,12 @@ export async function setNewPassword(
     });
   if (!input.success) return { ok: false, message: input.error.issues[0].message };
 
-  const { error } = await supabase.auth.updateUser({ password: input.data.password });
-  if (error) {
-    const code = error.code ?? '';
-    return {
-      ok: false,
-      message: Object.hasOwn(PASSWORD_REFUSALS, code) ? PASSWORD_REFUSALS[code] : UNEXPECTED,
-    };
-  }
+  const refusal = await updatePasswordOrRefuse(supabase, input.data.password);
+  if (refusal) return refusal;
 
   /* A reset is usually "someone else may have it": end every other session. */
-  await supabase.auth.signOut({ scope: 'others' });
+  const { error: signOutError } = await supabase.auth.signOut({ scope: 'others' });
+  if (signOutError) return { ok: false, message: PASSWORD_MESSAGES.CHANGED_OTHERS_KEPT };
 
   redirect(ROUTES.PORTAL);
 }

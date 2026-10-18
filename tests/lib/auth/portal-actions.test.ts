@@ -30,6 +30,7 @@ vi.mock('@/lib/supabase/mailer', () => ({
   createMailClient: () => ({ auth: { resetPasswordForEmail } }),
 }));
 
+import { UNEXPECTED } from '@/lib/admin/action-result';
 import { PASSWORD_MESSAGES, PORTAL_MESSAGES, SIGN_IN_MESSAGES } from '@/lib/auth/messages';
 import {
   requestReset,
@@ -74,7 +75,20 @@ describe('signInClient', () => {
   it('success redirects to the portal', async () => {
     signInWithPassword.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
     maybeSingle.mockResolvedValue({ data: { id: 'client-1' }, error: null });
-    await expect(signInClient(null, creds)).rejects.toThrow('REDIRECT /portal');
+    await expect(signInClient(null, creds)).rejects.toThrow(/^REDIRECT \/portal$/);
+  });
+});
+
+describe('signInClient lookup failure', () => {
+  it('signs out and returns a message instead of throwing', async () => {
+    signInWithPassword.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    maybeSingle.mockResolvedValue({ data: null, error: new Error('db down') });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(
+      signInClient(null, form({ email: 'maya@example.com', password: 'right-password' })),
+    ).resolves.toEqual({ ok: false, message: UNEXPECTED });
+    expect(signOutSpy).toHaveBeenCalledWith({ scope: 'local' });
   });
 });
 
@@ -82,6 +96,14 @@ describe('requestReset', () => {
   it('always answers ok, whatever Supabase says', async () => {
     resetPasswordForEmail.mockResolvedValue({ data: null, error: new Error('no such user') });
     await expect(requestReset(null, form({ email: 'ghost@example.com' }))).resolves.toEqual({
+      ok: true,
+    });
+  });
+
+  it('still answers ok when the mail client throws', async () => {
+    resetPasswordForEmail.mockRejectedValue(new Error('network'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(requestReset(null, form({ email: 'maya@example.com' }))).resolves.toEqual({
       ok: true,
     });
   });
@@ -102,7 +124,41 @@ describe('requestReset', () => {
 });
 
 describe('setNewPassword', () => {
-  const signedIn = { data: { claims: { sub: 'user-1', email: 'maya@example.com' } }, error: null };
+  const recoveryClaims = (amr: { method: string }[]) => ({
+    data: { claims: { sub: 'user-1', email: 'maya@example.com', amr } },
+    error: null,
+  });
+  const signedIn = recoveryClaims([{ method: 'recovery' }, { method: 'password' }]);
+
+  beforeEach(() => {
+    maybeSingle.mockResolvedValue({ data: { id: 'client-1' }, error: null });
+  });
+
+  it('refuses a session that did not come from a recovery link', async () => {
+    getClaims.mockResolvedValue(recoveryClaims([{ method: 'password' }]));
+    await expect(
+      setNewPassword(null, form({ password: 'long-enough-1', confirm: 'long-enough-1' })),
+    ).rejects.toThrow('REDIRECT /portal/login?notice=link-expired');
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  it('refuses a recovery session that is not a client account', async () => {
+    getClaims.mockResolvedValue(signedIn);
+    maybeSingle.mockResolvedValue({ data: null, error: null });
+    await expect(
+      setNewPassword(null, form({ password: 'long-enough-1', confirm: 'long-enough-1' })),
+    ).rejects.toThrow('REDIRECT /portal/login?notice=link-expired');
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  it('reports when other sessions could not be ended', async () => {
+    getClaims.mockResolvedValue(signedIn);
+    updateUser.mockResolvedValue({ error: null });
+    signOutSpy.mockResolvedValue({ error: new Error('nope') });
+    await expect(
+      setNewPassword(null, form({ password: 'long-enough-1', confirm: 'long-enough-1' })),
+    ).resolves.toEqual({ ok: false, message: PASSWORD_MESSAGES.CHANGED_OTHERS_KEPT });
+  });
 
   it('without claims sends the person to login with link-expired', async () => {
     getClaims.mockResolvedValue({ data: null, error: null });
@@ -135,7 +191,7 @@ describe('setNewPassword', () => {
 
     await expect(
       setNewPassword(null, form({ password: 'long-enough-1', confirm: 'long-enough-1' })),
-    ).rejects.toThrow('REDIRECT /portal');
+    ).rejects.toThrow(/^REDIRECT \/portal$/);
     expect(updateUser).toHaveBeenCalledWith({ password: 'long-enough-1' });
     expect(signOutSpy).toHaveBeenCalledWith({ scope: 'others' });
   });

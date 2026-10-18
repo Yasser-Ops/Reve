@@ -1,8 +1,10 @@
 import 'server-only';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { UNEXPECTED, type ActionResult } from '@/lib/admin/action-result';
 import { PASSWORD_MESSAGES } from '@/lib/auth/messages';
 import { passwordSchema } from '@/lib/auth/password';
+import type { Database } from '@/lib/supabase/database.types';
 import { verifyPassword } from '@/lib/supabase/password-check';
 import { createClient } from '@/lib/supabase/server';
 
@@ -11,6 +13,24 @@ const PASSWORD_REFUSALS: Record<string, string> = {
   weak_password: PASSWORD_MESSAGES.WEAK,
   same_password: PASSWORD_MESSAGES.UNCHANGED,
 };
+
+/**
+ * Sets the signed-in user's password. Returns null when it changed, or the
+ * failure for the form. Shared by the change-password and reset flows.
+ */
+export async function updatePasswordOrRefuse(
+  supabase: SupabaseClient<Database>,
+  password: string,
+): Promise<ActionResult | null> {
+  const { error } = await supabase.auth.updateUser({ password });
+  if (!error) return null;
+
+  const code = error.code ?? '';
+  return {
+    ok: false,
+    message: Object.hasOwn(PASSWORD_REFUSALS, code) ? PASSWORD_REFUSALS[code] : UNEXPECTED,
+  };
+}
 
 /**
  * Changes the signed-in identity's password. The current password is checked
@@ -44,16 +64,8 @@ export async function changePasswordAs(
   }
 
   const supabase = await createClient();
-  const { error: updateError } = await supabase.auth.updateUser({
-    password: input.data.next,
-  });
-  if (updateError) {
-    const code = updateError.code ?? '';
-    return {
-      ok: false,
-      message: Object.hasOwn(PASSWORD_REFUSALS, code) ? PASSWORD_REFUSALS[code] : UNEXPECTED,
-    };
-  }
+  const refusal = await updatePasswordOrRefuse(supabase, input.data.next);
+  if (refusal) return refusal;
 
   const { error: signOutError } = await supabase.auth.signOut({ scope: 'others' });
   if (signOutError) return { ok: false, message: PASSWORD_MESSAGES.CHANGED_OTHERS_KEPT };

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { NOTICE_PARAM, PORTAL_NOTICE, ROUTES } from '@/lib/routes';
 import { createClient } from '@/lib/supabase/server';
 
-const NoticeSchema = z.enum(Object.values(PORTAL_NOTICE) as [string, ...string[]]);
+const NoticeSchema = z.enum(PORTAL_NOTICE);
 
 /**
  * Ends this browser's session and shows the portal login. The guard sends

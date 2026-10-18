@@ -33,5 +33,6 @@ export const PORTAL_MESSAGES = {
   SIGNED_OUT: 'You are signed out.',
   LINK_EXPIRED: 'That link has expired or was already used. Message us on WhatsApp for a new one.',
   PASSWORD_RESET: 'Check your email for a link to choose a new password.',
-  RESET_FAILED: 'We could not save that password. Open the link in your email again.',
+  RESET_LINK_SENT:
+    'If that email belongs to a Rêve account, a link to choose a new password is on its way.',
 } as const;

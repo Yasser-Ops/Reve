@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { ActionResult } from '@/lib/admin/action-result';
+import { PORTAL_MESSAGES } from '@/lib/auth/messages';
 import { requestReset } from '@/lib/auth/portal-actions';
 import { ROUTES } from '@/lib/routes';
 
@@ -21,7 +22,7 @@ export function ForgotForm() {
       {result?.ok ? (
         <Alert>
           <AlertDescription>
-            If that email belongs to a Rêve account, a link to choose a new password is on its way.
+            {PORTAL_MESSAGES.RESET_LINK_SENT}
           </AlertDescription>
         </Alert>
       ) : null}

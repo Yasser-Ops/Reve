@@ -4,11 +4,11 @@ import { PortalCard } from '../PortalCard';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PORTAL_MESSAGES } from '@/lib/auth/messages';
 import { whatsappLink } from '@/lib/contact';
-import { NOTICE_PARAM, PORTAL_NOTICE } from '@/lib/routes';
+import { NOTICE_PARAM, PORTAL_NOTICE, type PortalNotice } from '@/lib/routes';
 
 export const metadata: Metadata = { title: 'Sign in' };
 
-const NOTICE_MESSAGES: Record<string, string> = {
+const NOTICE_MESSAGES: Record<PortalNotice, string> = {
   [PORTAL_NOTICE.LINK_EXPIRED]: PORTAL_MESSAGES.LINK_EXPIRED,
   [PORTAL_NOTICE.NOT_CLIENT]: PORTAL_MESSAGES.NOT_CLIENT,
   [PORTAL_NOTICE.PASSWORD_RESET]: PORTAL_MESSAGES.PASSWORD_RESET,
@@ -25,7 +25,8 @@ export default async function PortalLoginPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const raw = (await searchParams)[NOTICE_PARAM];
-  const key = typeof raw === 'string' && Object.hasOwn(NOTICE_MESSAGES, raw) ? raw : null;
+  const key =
+    typeof raw === 'string' && Object.hasOwn(NOTICE_MESSAGES, raw) ? (raw as PortalNotice) : null;
 
   return (
     <PortalCard subtitle="Sign in to see your invitation">
