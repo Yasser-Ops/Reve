@@ -2,8 +2,9 @@
 
 Digital invitations for weddings, engagements, and other occasions. Public
 storefront, a per-invitation guest-facing page at its own link, and a private
-admin where the operator runs clients, orders, content, approval and publishing.
-The client portal (Phase 3), RSVP (4) and Custom extras (5) are specced in
+admin where the operator runs clients, orders, content, approval and publishing,
+and a private client portal where an invited couple follows their order and
+approves their draft. RSVP (Phase 4) and Custom extras (5) are specced in
 `docs/superpowers/specs/2026-09-29-client-portal-design.md` and not built.
 
 ---
@@ -127,7 +128,38 @@ scripts/
   optimize-images.mjs           public/, or `<folder>` for client photos
 
 supabase/migrations/            append-only; 0005 admin pipeline, 0006 view
-                                seal, 0007 admin_delete_client
+                                seal, 0007 admin_delete_client, 0008 client
+                                RLS, 0009 admin-only notes, 0010 review
+                                server time
+```
+
+**Client portal and auth links**
+
+```
+app/auth/confirm/route.ts       GET token_hash -> verifyOtp | code -> exchange
+                                | neither -> /auth/session (the #fragment
+                                survives the 3xx); failure -> login link-expired
+app/auth/session/page.tsx       noindex; SessionFromHash [CLIENT]: reads
+                                #access_token, clears it (replaceState), sets
+                                the session ONCE (useRef: StrictMode), replace
+app/auth/signout/route.ts       GET ?notice= (zod) -> signOut local -> login
+app/portal/
+  layout.tsx                    metadata only (noindex)
+  login | forgot | reset | welcome/   public, one form island each (PortalCard)
+  (gated)/layout.tsx            requireClient + AppSurface + header
+  (gated)/page.tsx              dashboard: OrderPanel per order [LiveLink
+                                CLIENT], LockedCard upsell for Basic
+  (gated)/settings/             read-only details + ChangePasswordForm
+  preview/[id]/page.tsx         BARE (outside AppSurface): DraftRender, and in
+                                `review` the ReviewForm [CLIENT] fixed bar
+components/invitation/DraftRender.tsx   shared by admin and portal preview
+components/auth/ChangePasswordForm.tsx  shared by admin and portal settings
+components/admin/AccountStatus.tsx      not invited / invited / active + button
+lib/auth/   guards (requireAdmin, requireClientAccount, requireClient),
+            portal-actions, recovery, password, password-change, links
+lib/portal/ orders (dashboard read), review-actions, messages
+lib/supabase/admin.ts           service role, server-only
+lib/supabase/mailer.ts          non-persisting implicit-flow client for auth email
 ```
 
 **Client islands are deliberately shallow.** `InvitationDemo`, `RsvpPanel`,
@@ -287,6 +319,56 @@ build  ->  generateStaticParams() from EVENTS  ->  /engagements, /birthdays
 GET /[event]
   getEvent(slug) || notFound()      dynamicParams = false
   metadata + Service JSON-LD on the initial response
+```
+
+**Operator invites a client**
+
+```
+/admin/clients/[id]  AccountStatus -> inviteClient (lib/admin/invite.ts)
+  requireAdmin; hasPaidOrder gate; email read from the ROW, never the form
+  not invited -> admin.auth.admin.inviteUserByEmail(redirectTo
+                 confirmUrl('/portal/welcome'))
+              -> clients.user_id via the admin's cookie client
+                 .is('user_id', null); 0 rows (lost race) -> delete new user
+  invited     -> createMailClient().resetPasswordForEmail (resend)
+  429 / over_email_send_rate_limit -> "Too many emails just now."
+```
+
+**Client accepts, signs in, resets**
+
+```
+email link -> /auth/confirm (or /auth/session) -> /portal/welcome
+  requireClientAccount (claims + client row, else /auth/signout?notice=not-client)
+  acceptInvite: passwordSchema(email) + terms === 'on'
+    updatePasswordOrRefuse (same_password counts as set: the retry path)
+    admin client stamps terms_accepted_at, keyed on claims sub,
+      .is('terms_accepted_at', null)  -> /portal
+/portal/forgot -> requestReset (always ok; mail client) -> /auth/confirm
+  -> /portal/reset: getRecoveryClient = amr `recovery` entry <= 15 min old
+     AND a client row -> setNewPassword -> signOut others
+     (failure -> /portal?notice=others-kept)
+```
+
+**Client approves the draft**
+
+```
+/portal  OrderPanel (review): "See your invitation" + latest decision text
+/portal/preview/[id]  requireClient; RLS read with orders(status);
+  notFound unless review | delivered
+  DraftRender + ReviewForm bar, fingerprint = contentFingerprint(content
+  this page rendered)
+submitReview: fingerprint mismatch -> DRAFT_CHANGED (no insert)
+  else insert {invitation_id, decision, note, content_snapshot} AS THE USER
+  RLS: owns, order in review, snapshot = content; 0010 trigger stamps
+  created_at = now(), id; refusal 42501 -> DRAFT_CHANGED
+```
+
+**Operator deletes a client**
+
+```
+deleteClient: read user_id -> admin_delete_client rpc -> media ->
+  isAdmin(service role)? skip : admin.auth.admin.deleteUser
+  skipped or failed -> ?notice=client-deleted-account-left
 ```
 
 ---
@@ -542,14 +624,18 @@ sample rather than letting marketing drift from the product.
 
 Every admin policy is `for all to authenticated using (private.is_admin())`.
 `private` is not exposed by PostgREST; `authenticated` holds USAGE and
-EXECUTE, anon holds nothing. Clients get their own policies in Phase 3.
+EXECUTE, anon holds nothing. Client policies (0008) go through
+`private.owns_invitation(id)` and `private.can_review(id, snapshot)`. No client
+UPDATE or DELETE policy exists anywhere. TRUNCATE, TRIGGER and REFERENCES are
+revoked from `authenticated` (0009).
 
 | table | policy | notes |
 |---|---|---|
-| `clients` | admin all | email unique, lowercase; `user_id` null until invited (Phase 3), ON DELETE SET NULL; deleted only through `admin_delete_client` |
-| `orders` | admin all | `client_id`, `due_at`, reference default `RV-####` (sequence); status adds `brief`, `concept` |
-| `invitations` | admin all | `order_id` unique; `content` is the working draft, `published_content` the approved snapshot guests see |
-| `invitation_reviews` | admin all | `content_snapshot` IS the approval; `on_behalf`; `created_by` has no delete action |
+| `clients` | admin all; client self read | email unique, lowercase; `user_id` set by the invite, ON DELETE SET NULL; deleted only through `admin_delete_client` |
+| `orders` | admin all; client read own | `client_id`, `due_at`, reference default `RV-####` (sequence); status adds `brief`, `concept` |
+| `client_notes`, `order_notes` | admin all ONLY | operator notes (0009). Row RLS cannot hide a column and admins share `authenticated`, so notes left `clients`/`orders` |
+| `invitations` | admin all; client read own | `order_id` unique; `content` is the working draft, `published_content` the approved snapshot guests see |
+| `invitation_reviews` | admin all; client read own; client insert own | `content_snapshot` IS the approval; `on_behalf`; `created_by` has no delete action. Client insert: owns, `created_by = auth.uid()`, `on_behalf = false`, order in `review`, snapshot = content. `note` <= 1000. 0010 trigger sets `created_at = now()` and `id`: "latest" orders by it, so no caller may choose it |
 | `guests`, `rsvps`, `custom_leads` | admin all | |
 | `admin_users` | `admin_users self read` | membership, not a JWT claim, makes an admin |
 | view `published_invitations` | SELECT to anon, authenticated ONLY | runs as its owner; projects `published_content as content` |
@@ -588,6 +674,25 @@ No dark mode. An invitation is a fixed artifact, like printed stationery.
 
 ### Invariants
 
+- **`lib/routes.ts` stays import-free.** `next.config.ts` imports it and is
+  transpiled without the `@/` alias: one `@/lib/site` import passed every test
+  and broke `next build` at config load. `tests/next-config.test.ts` pins it;
+  URL builders that need `SITE_URL` live in `lib/auth/links.ts`.
+- **Auth emails are sent from a non-persisting implicit-flow client**
+  (`lib/supabase/mailer.ts`). From the SSR cookie client the PKCE verifier
+  lands in the sender's browser and the recipient's code can never be
+  exchanged.
+- **A Server Component cannot sign anyone out** (it cannot write cookies).
+  Guards redirect to `/auth/signout` instead.
+- **A session may set a password without the current one only when its
+  recovery is under 15 minutes old** (`getRecoveryClient`), or on the welcome
+  step before terms are accepted. Everywhere else `changePasswordAs` checks
+  the current password.
+- **An approval is of the version the client was shown.** The preview carries a
+  fingerprint of what it rendered; the policy pins the snapshot to the stored
+  content; the server stamps the time.
+- **`lib/invitations/publish-guard.ts` uses `node:crypto`**: never import it
+  from a `'use client'` module.
 - **A helper used inside RLS must be executable by the role the policy runs
   as.** 0003 revoked EXECUTE on `public.is_admin()` to quiet the advisor and
   silently broke every admin policy ("permission denied for function"). Policy
@@ -714,17 +819,30 @@ base from the walk.
 - `/i/[slug]` renders dynamically; SSG via `generateStaticParams` is possible
   once the published set is known at build time.
 - Testimonials are marked placeholders. Rêve is pre-launch.
-- **Portal Phases 3 to 5 are not built:** client invite and portal (the
-  invite email links to `/auth/confirm`, Phase 3), RSVP and the guest list
-  (Phase 4, write path in `2026-09-05-guest-rsvp-design.md`), private designs
-  and per-client envelopes (Phase 5). Payment stays manual (Whish).
+- **Portal Phases 4 and 5 are not built:** RSVP and the guest list (Phase 4,
+  write path in `2026-09-05-guest-rsvp-design.md`; the portal shows a
+  placeholder card), private designs and per-client envelopes (Phase 5).
+  Payment stays manual (Whish).
 - **Operator setup still open:** custom SMTP for auth emails (the built-in
-  sender allows a few an hour), the Invite and Reset email templates pointing
-  at `/auth/confirm`, Supabase password minimum 8, leaked-password
-  protection. Sign-ups are OFF.
-- **Deleting a client does not touch `auth.users`.** Clients have no accounts
-  before Phase 3; Phase 3 must extend `deleteClient` to remove the client's
-  auth user (service role) once invites exist.
+  sender allows a few an hour); the Invite and Reset templates linking to
+  `/auth/confirm?token_hash=...`; `<site>/auth/confirm**` in Supabase Auth's
+  redirect allowlist (otherwise invites silently land on the Site URL);
+  Supabase password minimum 8; leaked-password protection. Sign-ups are OFF.
+- **The portal has not seen a real email end to end.** Confirm once with a
+  real invite and a real reset: that the recovery session's JWT `amr` is an
+  object entry with a `timestamp` (if Supabase sends the string form, every
+  reset is refused), and that the review bar does not cover a design's own
+  fixed bottom element.
+- **`/auth/session` allows login CSRF** (a crafted fragment carrying someone
+  else's tokens). It exists only because the default templates send
+  fragments; remove it once the templates use `token_hash`.
+- **There is no terms page.** The welcome checkbox accepts terms it cannot
+  link to.
+- **Deferred Phase 3 minors:** GET `/auth/signout` is cross-site triggerable
+  (local sign-out only); the settings page reads the client row twice;
+  `ChangePasswordForm` imports admin primitives; a DB outage during sign-in or
+  reset can throw to the form; the Playwright invite to approve flow waits on a
+  local Supabase stack.
 - **Deferred Phase 2 minors** (from the final review): search over 80
   characters lists every client; `moveOrder` does not re-check the status it
   read, so a stale button can move an order back; provisioning races map to a
