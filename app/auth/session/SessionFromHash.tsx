@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/client';
@@ -18,8 +18,14 @@ const FragmentSchema = z.object({
  */
 export function SessionFromHash({ next }: { next: string }) {
   const router = useRouter();
+  /* The fragment is single-use: StrictMode (the App Router default in dev)
+     runs effects twice, and the second run would find it already cleared. */
+  const started = useRef(false);
 
   useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+
     const expired = () =>
       router.replace(
         `${ROUTES.PORTAL_LOGIN}?${NOTICE_PARAM}=${PORTAL_NOTICE.LINK_EXPIRED}`,

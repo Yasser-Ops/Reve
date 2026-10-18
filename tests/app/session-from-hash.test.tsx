@@ -1,4 +1,5 @@
 import { render, waitFor } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { replace, setSession } = vi.hoisted(() => ({
@@ -59,5 +60,17 @@ describe('SessionFromHash', () => {
     render(<SessionFromHash next="/portal/welcome" />);
     await waitFor(() => expect(setSession).toHaveBeenCalled());
     expect(hashAtCall).toBe('');
+  });
+
+  it('under StrictMode reads the fragment once and navigates once', async () => {
+    window.location.hash = '#access_token=a&refresh_token=r';
+    render(
+      <StrictMode>
+        <SessionFromHash next="/portal/welcome" />
+      </StrictMode>,
+    );
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/portal/welcome'));
+    expect(setSession).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledTimes(1);
   });
 });
