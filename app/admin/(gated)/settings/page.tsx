@@ -1,11 +1,10 @@
 import type { Metadata } from 'next';
-import { ActionForm } from '@/components/admin/ActionForm';
 import { Breadcrumbs } from '@/components/admin/Breadcrumbs';
 import { Eyebrow } from '@/components/admin/Eyebrow';
-import { Field } from '@/components/admin/fields';
+import { ChangePasswordForm } from '@/components/auth/ChangePasswordForm';
 import { changePassword } from '@/lib/auth/actions';
 import { requireAdmin } from '@/lib/auth/guards';
-import { PASSWORD_MESSAGES, PASSWORD_RULES } from '@/lib/auth/messages';
+import { PASSWORD_RULES } from '@/lib/auth/messages';
 import { ROUTES } from '@/lib/routes';
 
 export const metadata: Metadata = { title: 'Settings' };
@@ -30,35 +29,7 @@ export default async function SettingsPage() {
             At least {PASSWORD_RULES.MIN} characters. Changing it signs out every other device.
           </p>
         </div>
-        <ActionForm
-          action={changePassword}
-          className="grid gap-4"
-          pendingLabel="Changing"
-          submitLabel="Change password"
-          successMessage={PASSWORD_MESSAGES.CHANGED}
-        >
-          <Field
-            autoComplete="current-password"
-            label="Current password"
-            name="current"
-            required
-            type="password"
-          />
-          <Field
-            autoComplete="new-password"
-            label="New password"
-            name="next"
-            required
-            type="password"
-          />
-          <Field
-            autoComplete="new-password"
-            label="New password again"
-            name="confirm"
-            required
-            type="password"
-          />
-        </ActionForm>
+        <ChangePasswordForm action={changePassword} />
       </section>
     </main>
   );

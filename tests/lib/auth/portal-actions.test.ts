@@ -8,7 +8,9 @@ const {
   updateUser,
   maybeSingle,
   resetPasswordForEmail,
+  changePasswordAs,
 } = vi.hoisted(() => ({
+  changePasswordAs: vi.fn(),
   redirect: (url: string): never => {
     throw new Error(`REDIRECT ${url}`);
   },
@@ -30,9 +32,15 @@ vi.mock('@/lib/supabase/mailer', () => ({
   createMailClient: () => ({ auth: { resetPasswordForEmail } }),
 }));
 
+vi.mock('@/lib/auth/password-change', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/auth/password-change')>()),
+  changePasswordAs,
+}));
+
 import { UNEXPECTED } from '@/lib/admin/action-result';
 import { PASSWORD_MESSAGES, PORTAL_MESSAGES, SIGN_IN_MESSAGES } from '@/lib/auth/messages';
 import {
+  changeClientPassword,
   requestReset,
   setNewPassword,
   signInClient,
@@ -194,6 +202,42 @@ describe('setNewPassword', () => {
     ).rejects.toThrow(/^REDIRECT \/portal$/);
     expect(updateUser).toHaveBeenCalledWith({ password: 'long-enough-1' });
     expect(signOutSpy).toHaveBeenCalledWith({ scope: 'others' });
+  });
+});
+
+describe('changeClientPassword', () => {
+  const fields = form({ current: 'old-password-1', next: 'new-password-1', confirm: 'new-password-1' });
+
+  it('requires a client and delegates', async () => {
+    getClaims.mockResolvedValue({
+      data: { claims: { sub: 'user-1', email: 'maya@example.com' } },
+      error: null,
+    });
+    maybeSingle.mockResolvedValue({
+      data: {
+        id: 'client-1',
+        full_name: 'Maya',
+        email: 'maya@example.com',
+        phone: '',
+        terms_accepted_at: '2026-01-01T00:00:00Z',
+      },
+      error: null,
+    });
+    changePasswordAs.mockResolvedValue({ ok: true });
+
+    await expect(changeClientPassword(null, fields)).resolves.toEqual({ ok: true });
+    expect(changePasswordAs).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'maya@example.com' }),
+      fields,
+    );
+  });
+
+  it('without a session redirects to login and changes nothing', async () => {
+    getClaims.mockResolvedValue({ data: null, error: null });
+    await expect(changeClientPassword(null, fields)).rejects.toThrow(
+      /^REDIRECT \/portal\/login$/,
+    );
+    expect(changePasswordAs).not.toHaveBeenCalled();
   });
 });
 

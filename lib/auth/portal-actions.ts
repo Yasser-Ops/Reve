@@ -4,14 +4,14 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { UNEXPECTED, type ActionResult } from '@/lib/admin/action-result';
 import { getClientForUser } from '@/lib/auth/client-membership';
-import { requireClientAccount } from '@/lib/auth/guards';
+import { requireClient, requireClientAccount } from '@/lib/auth/guards';
 import {
   PASSWORD_MESSAGES,
   PORTAL_MESSAGES,
   SIGN_IN_MESSAGES,
   type SignInResult,
 } from '@/lib/auth/messages';
-import { updatePasswordOrRefuse } from '@/lib/auth/password-change';
+import { changePasswordAs, updatePasswordOrRefuse } from '@/lib/auth/password-change';
 import { passwordSchema } from '@/lib/auth/password';
 import { getRecoveryClient } from '@/lib/auth/recovery';
 import { confirmUrl, NOTICE_PARAM, PORTAL_NOTICE, ROUTES } from '@/lib/routes';
@@ -167,6 +167,14 @@ export async function acceptInvite(
   }
 
   redirect(ROUTES.PORTAL);
+}
+
+/** The settings form: a signed-in client changes their own password. */
+export async function changeClientPassword(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return changePasswordAs(await requireClient(), formData);
 }
 
 export async function signOutClient(): Promise<never> {
