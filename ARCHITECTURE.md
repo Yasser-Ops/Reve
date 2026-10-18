@@ -693,6 +693,24 @@ No dark mode. An invitation is a fixed artifact, like printed stationery.
   content; the server stamps the time.
 - **`lib/invitations/publish-guard.ts` uses `node:crypto`**: never import it
   from a `'use client'` module.
+- **One phone, one shape.** `components/PhoneShell.tsx` draws every phone
+  (design page, homepage, admin editor, client preview) and fixes its screen
+  to the house envelope render's proportions (`PHONE_SCREEN_RATIO`, 800/1732).
+  Callers choose only the width. A shorter, wider phone crops the envelope.
+- **A template's first screen is its container's, not the window's.**
+  Templates size the hero with `SCREEN_HEIGHT` (`components/invitation/screen.ts`,
+  `var(--invitation-screen-h, 100dvh)`), never `dvh`/`vh`: inside a scaled
+  preview `dvh` is the browser window. Every scaled container sets the var with
+  `screenFor(RENDER_WIDTH, aspect)` (phone: `PHONE_SCREEN_RATIO`; thumbnails
+  and frames: `THUMBNAIL_ASPECT`, 9/16).
+- **Open pages update themselves.** `components/LiveRefresh.tsx` subscribes to
+  Realtime on `invitation_reviews` and `orders` (0011 publishes them; RLS
+  scopes each viewer) and calls `router.refresh()`, debounced, plus on tab
+  focus. Mounted on the admin clients list, client page and invitation editor,
+  and the portal dashboard and preview.
+- **Guest RSVP forms do not submit yet.** Each template's form is a client
+  island that prevents the reload and says replies open soon; nothing is
+  stored until Phase 4.
 - **A helper used inside RLS must be executable by the role the policy runs
   as.** 0003 revoked EXECUTE on `public.is_admin()` to quiet the advisor and
   silently broke every admin policy ("permission denied for function"). Policy
