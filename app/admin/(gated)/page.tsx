@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { AutoSubmitForm } from '@/components/admin/AutoSubmitForm';
 import { ClientRows } from '@/components/admin/ClientRows';
 import { Eyebrow } from '@/components/admin/Eyebrow';
-import { LIVE_TABLE, LiveRefresh } from '@/components/admin/LiveRefresh';
+import { LIVE_TABLE, LiveRefresh } from '@/components/LiveRefresh';
 import { SummaryTiles } from '@/components/admin/SummaryTiles';
 import { buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

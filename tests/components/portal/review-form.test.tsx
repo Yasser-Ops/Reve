@@ -163,4 +163,16 @@ describe('ReviewForm with a previous decision', () => {
     expect(await screen.findByRole('button', { name: 'Withdraw approval' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument();
   });
+
+  /* LiveRefresh re-renders the preview with fresh server props; a note the
+     client is still typing must survive it. */
+  it('keeps an unsent note across a server refresh', () => {
+    const { rerender } = renderForm();
+    fireEvent.click(screen.getByRole('button', { name: 'Request changes' }));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Move the date' } });
+
+    rerender(<ReviewForm fingerprint={'b'.repeat(64)} invitationId="inv-1" latest={null} />);
+
+    expect(screen.getByRole('textbox')).toHaveValue('Move the date');
+  });
 });

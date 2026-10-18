@@ -15,7 +15,7 @@ vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({ channel: () => channel, removeChannel }),
 }));
 
-import { LIVE_TABLE, LiveRefresh } from '@/components/admin/LiveRefresh';
+import { LIVE_TABLE, LiveRefresh } from '@/components/LiveRefresh';
 
 const DEBOUNCE = 500;
 const THROTTLE = 5000;

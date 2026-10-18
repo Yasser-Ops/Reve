@@ -16,6 +16,13 @@ vi.mock('next/navigation', () => ({
 }));
 vi.mock('@/lib/auth/guards', () => ({ requireClient }));
 vi.mock('@/lib/supabase/server', () => ({ createClient }));
+/* Realtime is not under test here: the stand-in records what it watches. */
+vi.mock('@/components/LiveRefresh', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/components/LiveRefresh')>()),
+  LiveRefresh: ({ tables }: { tables: readonly string[] }) => (
+    <div data-live={[...tables].sort().join(',')} data-testid="live-refresh" />
+  ),
+}));
 
 /* The design itself is not under test here: stand-ins record their props. */
 vi.mock('@/components/invitation/DraftRender', () => ({
@@ -184,5 +191,14 @@ describe('/portal/preview/[id]', () => {
     render(await PortalPreviewPage(params(INV)));
 
     expect(screen.queryByRole('form', { name: 'Your review' })).not.toBeInTheDocument();
+  });
+
+  it('refreshes live on order moves and review decisions', async () => {
+    state.fake = fakeSupabase({ invitations: [invitationRow('review')] });
+    render(await PortalPreviewPage(params(INV)));
+    expect(screen.getByTestId('live-refresh')).toHaveAttribute(
+      'data-live',
+      'invitation_reviews,orders',
+    );
   });
 });

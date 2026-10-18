@@ -7,7 +7,7 @@ import { Breadcrumbs } from '@/components/admin/Breadcrumbs';
 import { DeleteClientDialog } from '@/components/admin/DeleteClientDialog';
 import { Eyebrow } from '@/components/admin/Eyebrow';
 import { Field, OrderFields, TextareaField } from '@/components/admin/fields';
-import { LIVE_TABLE, LiveRefresh } from '@/components/admin/LiveRefresh';
+import { LIVE_TABLE, LiveRefresh } from '@/components/LiveRefresh';
 import { OrderCard } from '@/components/admin/OrderCard';
 import { addOrder, updateClient } from '@/lib/admin/client-actions';
 import { hasPaidOrder } from '@/lib/admin/invite-state';

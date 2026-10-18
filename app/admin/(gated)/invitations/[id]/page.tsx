@@ -7,7 +7,7 @@ import { ContentEditor } from '@/components/admin/ContentEditor';
 import { CopyChecklist } from '@/components/admin/CopyChecklist';
 import { Eyebrow } from '@/components/admin/Eyebrow';
 import { Field } from '@/components/admin/fields';
-import { LIVE_TABLE, LiveRefresh } from '@/components/admin/LiveRefresh';
+import { LIVE_TABLE, LiveRefresh } from '@/components/LiveRefresh';
 import { MediaSection } from '@/components/admin/MediaSection';
 import { ReviewPanel } from '@/components/admin/ReviewPanel';
 import { getTemplateEntry } from '@/components/invitation/registry';

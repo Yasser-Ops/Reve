@@ -5,6 +5,13 @@ vi.mock('@/lib/auth/guards', () => ({
   requireClient: async () => ({ fullName: 'Maya Lee' }),
 }));
 vi.mock('@/lib/portal/orders', () => ({ getPortalOrders: async () => [] }));
+/* Realtime is not under test here: the stand-in records what it watches. */
+vi.mock('@/components/LiveRefresh', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/components/LiveRefresh')>()),
+  LiveRefresh: ({ tables }: { tables: readonly string[] }) => (
+    <div data-live={[...tables].sort().join(',')} data-testid="live-refresh" />
+  ),
+}));
 
 import PortalHomePage from '@/app/portal/(gated)/page';
 import { PASSWORD_MESSAGES } from '@/lib/auth/messages';
@@ -25,5 +32,13 @@ describe('/portal dashboard', () => {
     render(await page('signed-out'));
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(screen.queryByText(PASSWORD_MESSAGES.CHANGED_OTHERS_KEPT)).not.toBeInTheDocument();
+  });
+
+  it('refreshes live on order moves and review decisions', async () => {
+    render(await page());
+    expect(screen.getByTestId('live-refresh')).toHaveAttribute(
+      'data-live',
+      'invitation_reviews,orders',
+    );
   });
 });

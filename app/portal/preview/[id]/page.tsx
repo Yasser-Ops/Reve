@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
+import { LIVE_TABLE, LiveRefresh } from '@/components/LiveRefresh';
 import { DraftRender } from '@/components/invitation/DraftRender';
 import { getTemplateEntry } from '@/components/invitation/registry';
 import { REVIEW_BAR_SPACE, ReviewForm } from '@/components/portal/ReviewForm';
@@ -64,8 +65,12 @@ export default async function PortalPreviewPage({
       }
     : null;
 
+  /* LiveRefresh re-renders this page in place when the order moves or a
+     decision lands, so a publish shows without a reload. The review bar keeps
+     its state across the refresh, an unsent note included. */
   return (
     <>
+      <LiveRefresh tables={[LIVE_TABLE.ORDERS, LIVE_TABLE.REVIEWS]} />
       <DraftRender
         content={invitation.content}
         entitlements={invitation.entitlements}

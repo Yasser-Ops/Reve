@@ -11,7 +11,7 @@ export const LIVE_TABLE = {
 
 export type LiveTable = (typeof LIVE_TABLE)[keyof typeof LIVE_TABLE];
 
-export const LIVE_CHANNEL = 'admin-live-refresh';
+export const LIVE_CHANNEL = 'live-refresh';
 const REALTIME_EVENT = 'postgres_changes';
 const CHANGE_EVENTS = ['INSERT', 'UPDATE'] as const;
 const REALTIME_SCHEMA = 'public';
@@ -21,6 +21,9 @@ const FOCUS_THROTTLE_MS = 5000;
 /**
  * Refreshes the page's server data when a client decision or an order move
  * lands, and when the tab comes back into view. Renders nothing.
+ *
+ * Shared by admin and the portal. RLS decides which rows' changes reach the
+ * browser, so a client only ever hears about their own invitation and order.
  */
 export function LiveRefresh({ tables }: { tables: readonly LiveTable[] }) {
   const router = useRouter();
