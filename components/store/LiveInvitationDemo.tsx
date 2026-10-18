@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { PhoneShell } from '@/components/PhoneShell';
 import { EnvelopeGate } from '@/components/invitation/EnvelopeGate';
 import { RENDER_WIDTH } from '@/components/store/TemplateThumbnail';
 import { frameAspect, getEnvelope } from '@/lib/envelopes';
@@ -20,10 +21,13 @@ import { frameAspect, getEnvelope } from '@/lib/envelopes';
  */
 export function LiveInvitationDemo({
   envelope,
+  maxWidth,
   children,
 }: {
   /** Which envelope opens over the invitation. Defaults to the house design. */
   envelope?: string;
+  /** Widest the phone grows; PhoneShell's default otherwise. */
+  maxWidth?: number;
   children: ReactNode;
 }) {
   const spec = getEnvelope(envelope);
@@ -86,56 +90,30 @@ export function LiveInvitationDemo({
   );
 
   return (
-    <div className="relative mx-auto w-full max-w-[300px]">
-      {/* The device's side buttons. Purely decorative, and drawn on the shell
-          rather than the screen: they sit just outside the bezel's rounded
-          edge, half-tucked behind it, which is how a phone's hardware reads
-          from the front. Percentages, not pixels, so they keep their place as
-          the frame scales with the column. */}
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute -left-[3px] top-[26%] z-10 h-[7.5%] w-[3px] rounded-l-sm bg-ink/85"
-      />
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute -left-[3px] top-[35.5%] z-10 h-[7.5%] w-[3px] rounded-l-sm bg-ink/85"
-      />
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-[3px] top-[29%] z-10 h-[11%] w-[3px] rounded-r-sm bg-ink/85"
-      />
+    /* envelope-scope contains the gate, which is `fixed` on a real
+       invitation. The gate is a sibling of the scroller, never inside it, or
+       the ceremony would scroll away with the invitation behind it.
 
-      <div className="rounded-[2.5rem] border border-taupe/60 bg-ink p-2.5 shadow-[0_30px_60px_-30px_rgb(var(--reve-shadow-rgb)/0.6)]">
-        {/* envelope-scope contains the gate, which is `fixed` on a real
-            invitation. The gate is a sibling of the scroller, never inside it,
-            or the ceremony would scroll away with the invitation behind it. */}
-        {/* THE SCREEN IS THE SHAPE OF THE ENVELOPE IT SHOWS. Taken from the
-            render rather than fixed at 9/16: the frames fill this box with
-            `object-fit: cover`, so a box of a different shape crops the
-            envelope's top and foot off. */}
-        <div
-          className="envelope-scope rounded-[2rem] bg-bone"
-          style={{
-            aspectRatio: frameAspect(spec.frames),
-            containerType: 'inline-size',
-          }}
-        >
-          <div
-            aria-hidden="true"
-            className="absolute left-1/2 top-2 z-[60] h-5 w-20 -translate-x-1/2 rounded-full bg-ink"
-          />
-
-          {/* `reve-no-scrollbar` on the scroller: this is a picture of a
-              phone, and phones do not paint a scrollbar down the side of the
-              screen. And `zoom` rather than a transform, because a transform
-              does not change the layout box — the unscaled child would still
-              reserve its full width and the frame would drag sideways to 152px
-              of nothing. */}
-          <EnvelopeGate contained envelope={spec.slug}>
-            {scroller}
-          </EnvelopeGate>
-        </div>
-      </div>
-    </div>
+       THE SCREEN IS THE SHAPE OF THE ENVELOPE IT SHOWS. Taken from the render
+       rather than fixed at 9/16: the frames fill this box with
+       `object-fit: cover`, so a box of a different shape crops the envelope's
+       top and foot off. */
+    <PhoneShell
+      maxWidth={maxWidth}
+      screenClassName="envelope-scope"
+      screenStyle={{
+        aspectRatio: frameAspect(spec.frames),
+        containerType: 'inline-size',
+      }}
+    >
+      {/* `reve-no-scrollbar` on the scroller: this is a picture of a phone,
+          and phones do not paint a scrollbar down the side of the screen.
+          And `zoom` rather than a transform, because a transform does not
+          change the layout box — the unscaled child would still reserve its
+          full width and the frame would drag sideways to 152px of nothing. */}
+      <EnvelopeGate contained envelope={spec.slug}>
+        {scroller}
+      </EnvelopeGate>
+    </PhoneShell>
   );
 }
