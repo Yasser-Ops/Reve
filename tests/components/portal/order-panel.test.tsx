@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { OrderPanel } from '@/components/portal/OrderPanel';
 import type { PortalOrder } from '@/lib/portal/orders';
-import { portalRoutes } from '@/lib/routes';
+import { portalRoutes, publicRoutes } from '@/lib/routes';
 import { SITE_URL } from '@/lib/site';
 
 const invitation: NonNullable<PortalOrder['invitation']> = {
@@ -55,7 +55,7 @@ describe('OrderPanel by stage', () => {
 
   it('gives the live link once delivered', () => {
     render(<OrderPanel order={order({ status: 'delivered' })} />);
-    expect(screen.getByDisplayValue(`${SITE_URL}/i/maya-and-omar`)).toBeInTheDocument();
+    expect(screen.getByDisplayValue(`${SITE_URL}${publicRoutes.invitation('maya-and-omar')}`)).toBeInTheDocument();
   });
 
   it('asks for payment over WhatsApp, carrying the reference', () => {

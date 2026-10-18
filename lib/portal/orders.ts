@@ -43,9 +43,8 @@ export async function getPortalOrders(): Promise<PortalOrder[]> {
 
   return data.map((order) => {
     const invitation = order.invitations;
-    /* ISO timestamps from one column sort as text. */
     const latest = invitation?.invitation_reviews
-      .toSorted((a, b) => b.created_at.localeCompare(a.created_at))
+      .toSorted((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
       .at(0);
 
     return {

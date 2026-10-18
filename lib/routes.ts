@@ -28,6 +28,11 @@ export const adminRoutes = {
   preview: (id: string) => `/admin/preview/${id}`,
 } as const;
 
+/** Public pages addressed by slug. */
+export const publicRoutes = {
+  invitation: (slug: string) => `/i/${encodeURIComponent(slug)}`,
+} as const;
+
 /** Portal pages addressed by id. */
 export const portalRoutes = {
   preview: (id: string) => `/portal/preview/${id}`,

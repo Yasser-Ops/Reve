@@ -9,7 +9,7 @@ import { TIERS } from '@/lib/constants';
 import { whatsappLink } from '@/lib/contact';
 import { ORDER_STATUS, STATUS_LABELS, hasReached } from '@/lib/orders/status';
 import type { PortalOrder } from '@/lib/portal/orders';
-import { portalRoutes } from '@/lib/routes';
+import { portalRoutes, publicRoutes } from '@/lib/routes';
 import { checklistProgress } from '@/lib/schemas/content/checklist';
 import { SITE_URL } from '@/lib/site';
 
@@ -66,7 +66,7 @@ export function OrderPanel({ order, review }: OrderPanelProps) {
       ) : null}
 
       {status === ORDER_STATUS.DELIVERED && invitation ? (
-        <LiveLink url={`${SITE_URL}/i/${invitation.slug}`} />
+        <LiveLink url={`${SITE_URL}${publicRoutes.invitation(invitation.slug)}`} />
       ) : null}
 
       {status === ORDER_STATUS.PAID ||

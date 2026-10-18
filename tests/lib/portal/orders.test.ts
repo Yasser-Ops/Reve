@@ -51,6 +51,7 @@ describe('getPortalOrders', () => {
                   review('changes_requested', '2026-10-01T10:00:00Z'),
                   review('approved', '2026-10-03T10:00:00Z'),
                   review('changes_requested', '2026-10-02T10:00:00Z'),
+                  review('changes_requested', '2026-10-03T10:00:00.500Z'),
                 ],
               },
             },
@@ -69,10 +70,11 @@ describe('getPortalOrders', () => {
     const [first, second] = await getPortalOrders();
 
     expect(first.invitation?.templateSlug).toBe('velours');
+    /* Same second as the approval, 500ms later: it is the latest, though a text sort puts it first or last by locale. */
     expect(first.invitation?.latestReview).toEqual({
-      decision: 'approved',
+      decision: 'changes_requested',
       note: '',
-      createdAt: '2026-10-03T10:00:00Z',
+      createdAt: '2026-10-03T10:00:00.500Z',
     });
     expect(second.invitation).toBeNull();
   });
