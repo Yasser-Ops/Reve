@@ -35,3 +35,29 @@ export function checklistMessage(items: readonly ChecklistItem[]): string {
     )
     .join('\n');
 }
+
+/**
+ * The checklist with what the client has already given. A field is done when
+ * it holds a value its own schema accepts; an empty string or list is the
+ * blank a draft starts with, not an answer.
+ */
+export function checklistProgress(
+  schema: z.ZodObject,
+  content: unknown,
+): (ChecklistItem & { done: boolean })[] {
+  const values: Record<string, unknown> =
+    typeof content === 'object' && content !== null && !Array.isArray(content)
+      ? (content as Record<string, unknown>)
+      : {};
+
+  return checklistFor(schema).map((item) => {
+    const value = values[item.key];
+    const filled =
+      value !== undefined &&
+      value !== '' &&
+      !(Array.isArray(value) && value.length === 0) &&
+      schema.shape[item.key].safeParse(value).success;
+
+    return { ...item, done: filled };
+  });
+}

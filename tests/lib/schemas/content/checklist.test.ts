@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { BLOCKS } from '@/lib/schemas/content/blocks';
-import { checklistFor, checklistMessage } from '@/lib/schemas/content/checklist';
+import { checklistFor, checklistMessage, checklistProgress } from '@/lib/schemas/content/checklist';
 import { coreContentSchema } from '@/lib/schemas/content/core';
 
 const schema = coreContentSchema.extend({
@@ -53,5 +53,36 @@ describe('checklistMessage', () => {
     ]);
 
     expect(message).toBe('1. Your names\n2. A short message (optional)');
+  });
+});
+
+describe('checklistProgress', () => {
+  const doneByKey = (content: unknown) =>
+    Object.fromEntries(checklistProgress(schema, content).map((item) => [item.key, item.done]));
+
+  it('marks nothing done for empty content', () => {
+    expect(Object.values(doneByKey({})).every((done) => !done)).toBe(true);
+  });
+
+  it('marks a filled field done and leaves the rest', () => {
+    const done = doneByKey({ coupleFirstName: 'Maya' });
+    expect(done.coupleFirstName).toBe(true);
+    expect(done.venue).toBe(false);
+  });
+
+  it('does not count an empty string or an empty array', () => {
+    const done = doneByKey({ coupleFirstName: '', schedule: [] });
+    expect(done.coupleFirstName).toBe(false);
+    expect(done.schedule).toBe(false);
+  });
+
+  it('does not count a value the field rejects', () => {
+    expect(doneByKey({ eventDate: 12 }).eventDate).toBe(false);
+  });
+
+  it('marks nothing done when the content is not an object', () => {
+    for (const content of [null, undefined, 'text', 4, ['a']]) {
+      expect(Object.values(doneByKey(content)).every((done) => !done)).toBe(true);
+    }
   });
 });
