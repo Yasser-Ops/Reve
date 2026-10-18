@@ -1,13 +1,24 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { frameAspect, getEnvelope } from '@/lib/envelopes';
 
 /** The design page's phone width, and the default everywhere else. */
 export const PHONE_MAX_WIDTH = 300;
+
+/*
+ * THE SCREEN IS THE SHAPE OF THE ENVELOPE RENDER. Every envelope is drawn on
+ * the same tall frame, and the frames fill the screen with `object-fit:
+ * cover`, so a screen of any other shape crops the envelope's top and foot.
+ * Fixed here rather than per caller, so no preview can draw a shorter, wider
+ * phone than the design page does.
+ */
+export const PHONE_SCREEN_ASPECT = frameAspect(getEnvelope(undefined).frames);
 
 type PhoneShellProps = {
   children: ReactNode;
   /** Widest the phone grows, in CSS pixels; below that it fills its column. */
   maxWidth?: number;
-  /** Added to the screen, the box inside the bezel that holds the content. */
+  /** Added to the screen, the box inside the bezel that holds the content.
+      Its shape is fixed; content fills it with `h-full`. */
   screenClassName?: string;
   screenStyle?: CSSProperties;
 };
@@ -51,7 +62,7 @@ export function PhoneShell({
       <div className="rounded-[2.5rem] border border-taupe/60 bg-ink p-2.5 shadow-[0_30px_60px_-30px_rgb(var(--reve-shadow-rgb)/0.6)]">
         <div
           className={`relative overflow-hidden rounded-[2rem] bg-bone ${screenClassName ?? ''}`}
-          style={screenStyle}
+          style={{ ...screenStyle, aspectRatio: PHONE_SCREEN_ASPECT }}
         >
           {/* Above the envelope gate, which stacks at 50 inside the screen. */}
           <div

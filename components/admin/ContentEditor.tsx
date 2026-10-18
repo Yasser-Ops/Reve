@@ -162,7 +162,7 @@ export function ContentEditor({
       <div className="lg:sticky lg:top-6 lg:self-start">
         <PhoneFrame maxWidth={410}>
           <iframe
-            className="block h-[680px] w-full"
+            className="block h-full w-full"
             key={version}
             src={previewUrl}
             title="Invitation preview"

@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { PhoneShell } from '@/components/PhoneShell';
 import { EnvelopeGate } from '@/components/invitation/EnvelopeGate';
 import { RENDER_WIDTH } from '@/components/store/TemplateThumbnail';
-import { frameAspect, getEnvelope } from '@/lib/envelopes';
+import { getEnvelope } from '@/lib/envelopes';
 
 /**
  * The real invitation, playing inside a phone, scrollable by the visitor.
@@ -92,19 +92,12 @@ export function LiveInvitationDemo({
   return (
     /* envelope-scope contains the gate, which is `fixed` on a real
        invitation. The gate is a sibling of the scroller, never inside it, or
-       the ceremony would scroll away with the invitation behind it.
-
-       THE SCREEN IS THE SHAPE OF THE ENVELOPE IT SHOWS. Taken from the render
-       rather than fixed at 9/16: the frames fill this box with
-       `object-fit: cover`, so a box of a different shape crops the envelope's
-       top and foot off. */
+       the ceremony would scroll away with the invitation behind it. The
+       screen's shape is PhoneShell's, which is the envelope frame's. */
     <PhoneShell
       maxWidth={maxWidth}
       screenClassName="envelope-scope"
-      screenStyle={{
-        aspectRatio: frameAspect(spec.frames),
-        containerType: 'inline-size',
-      }}
+      screenStyle={{ containerType: 'inline-size' }}
     >
       {/* `reve-no-scrollbar` on the scroller: this is a picture of a phone,
           and phones do not paint a scrollbar down the side of the screen.

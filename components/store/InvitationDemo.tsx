@@ -45,7 +45,7 @@ export function InvitationDemo() {
   return (
     <div
       aria-hidden="true"
-      className="demo grid aspect-9/16 select-none"
+      className="demo grid h-full select-none"
       style={
         {
           '--demo-cycle': `${CYCLE_MS}ms`,
