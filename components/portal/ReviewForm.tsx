@@ -1,6 +1,6 @@
 'use client';
 
-import { startTransition, useActionState, useRef, useState } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,8 @@ type Decision = 'approved' | 'changes_requested';
 
 type ReviewFormProps = {
   invitationId: string;
+  /** Which version of the content the client was shown; the action refuses a mismatch. */
+  fingerprint: string;
   latestReview: NonNullable<PortalOrder['invitation']>['latestReview'];
 };
 
@@ -23,39 +25,33 @@ const when = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: S
 /**
  * Approve the draft or ask for changes. The buttons send the decision
  * themselves rather than submitting the form: React resets a form after an
- * action, which would wipe the note when the server refuses it.
+ * action, which would wipe the note when the server refuses it. The buttons
+ * stay after a decision: while the order is in review the latest one wins.
  */
-export function ReviewForm({ invitationId, latestReview }: ReviewFormProps) {
+export function ReviewForm({ invitationId, fingerprint, latestReview }: ReviewFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const [asking, setAsking] = useState(false);
+  const [result, setResult] = useState<ActionResult | null>(null);
   const [sent, setSent] = useState<Decision | null>(null);
-  const [result, run, pending] = useActionState<ActionResult | null, FormData>(
-    async (previous, formData) => {
-      const next = await submitReview(previous, formData);
-      if (next.ok) setSent(formData.get('decision') as Decision);
-      return next;
-    },
-    null,
-  );
+  const [pending, startTransition] = useTransition();
 
   function send(decision: Decision) {
     if (!formRef.current) return;
     const formData = new FormData(formRef.current);
     formData.set('decision', decision);
-    startTransition(() => run(formData));
-  }
-
-  if (sent) {
-    return (
-      <p>
-        {sent === 'approved' ? REVIEW_MESSAGES.THANKS_APPROVED : REVIEW_MESSAGES.THANKS_CHANGES}
-      </p>
-    );
+    startTransition(async () => {
+      const next = await submitReview(result, formData);
+      setResult(next);
+      setSent(next.ok ? decision : null);
+      /* Fields clear only on success, so a refused note is not lost. */
+      if (next.ok) setAsking(false);
+    });
   }
 
   return (
     <form className="grid gap-3" onSubmit={(event) => event.preventDefault()} ref={formRef}>
       <input name="invitationId" type="hidden" value={invitationId} />
+      <input name="fingerprint" type="hidden" value={fingerprint} />
 
       {latestReview ? (
         <p className="text-muted-foreground">
@@ -79,6 +75,12 @@ export function ReviewForm({ invitationId, latestReview }: ReviewFormProps) {
         </div>
       ) : null}
 
+      {sent ? (
+        <p>
+          {sent === 'approved' ? REVIEW_MESSAGES.THANKS_APPROVED : REVIEW_MESSAGES.THANKS_CHANGES}
+        </p>
+      ) : null}
+
       {result && !result.ok ? (
         <Alert variant="destructive">
           <AlertDescription>{result.message}</AlertDescription>
@@ -95,7 +97,12 @@ export function ReviewForm({ invitationId, latestReview }: ReviewFormProps) {
             <Button disabled={pending} onClick={() => send('approved')} type="button">
               Approve
             </Button>
-            <Button onClick={() => setAsking(true)} type="button" variant="outline">
+            <Button
+              disabled={pending}
+              onClick={() => setAsking(true)}
+              type="button"
+              variant="outline"
+            >
               Request changes
             </Button>
           </>

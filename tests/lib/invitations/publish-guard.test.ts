@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   PUBLISH_BLOCK,
   canPublish,
+  contentFingerprint,
   publishReadiness,
   sameContent,
 } from '@/lib/invitations/publish-guard';
@@ -70,5 +71,19 @@ describe('publishReadiness', () => {
       ok: false,
       reason: PUBLISH_BLOCK.CONTENT_CHANGED,
     });
+  });
+});
+
+describe('contentFingerprint', () => {
+  it('is a sha256 hex digest blind to key order', () => {
+    const reordered = { schedule: [{ title: 'Dinner', time: '19:00' }], coupleFirstName: 'Maya' };
+    expect(contentFingerprint(content)).toMatch(/^[0-9a-f]{64}$/);
+    expect(contentFingerprint(reordered)).toBe(contentFingerprint(content));
+  });
+
+  it('changes when the content does', () => {
+    expect(contentFingerprint({ ...content, coupleFirstName: 'Sara' })).not.toBe(
+      contentFingerprint(content),
+    );
   });
 });

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { ORDER_STATUS, type OrderStatus } from '@/lib/orders/status';
 
 export const PUBLISH_BLOCK = {
@@ -49,6 +50,11 @@ export function publishReadiness(
 /** Deep equality for JSON values, blind to object key order. */
 export function sameContent(a: unknown, b: unknown): boolean {
   return canonical(a) === canonical(b);
+}
+
+/** What a form carries to say which version of the content its reader was shown. */
+export function contentFingerprint(content: unknown): string {
+  return createHash('sha256').update(canonical(content)).digest('hex');
 }
 
 function canonical(value: unknown): string {

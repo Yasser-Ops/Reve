@@ -12,12 +12,14 @@ vi.mock('@/lib/auth/guards', () => ({
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => state.fake?.client }));
 
 import { UNEXPECTED } from '@/lib/admin/action-result';
+import { contentFingerprint } from '@/lib/invitations/publish-guard';
 import { REVIEW_MESSAGES } from '@/lib/portal/messages';
 import { submitReview } from '@/lib/portal/review-actions';
 import { ROUTES, adminRoutes } from '@/lib/routes';
 
 const INV = '22222222-2222-4222-8222-222222222222';
 const content = { coupleFirstName: 'Maya' };
+const fingerprint = contentFingerprint(content);
 
 function form(fields: Record<string, string>) {
   const data = new FormData();
@@ -35,7 +37,7 @@ describe('submitReview', () => {
     state.fake = fakeSupabase({ invitations: [{ data: { id: INV, content } }] });
 
     await expect(
-      submitReview(null, form({ invitationId: INV, decision: 'approved' })),
+      submitReview(null, form({ invitationId: INV, fingerprint, decision: 'approved' })),
     ).resolves.toEqual({ ok: true });
 
     expect(state.fake.find('invitations', 'select')?.args).toEqual(['id, content']);
@@ -50,7 +52,7 @@ describe('submitReview', () => {
 
     await submitReview(
       null,
-      form({ invitationId: INV, decision: 'changes_requested', note: '  Move the date  ' }),
+      form({ invitationId: INV, fingerprint, decision: 'changes_requested', note: '  Move the date  ' }),
     );
 
     expect(state.fake.find('invitation_reviews', 'insert')?.args).toEqual([
@@ -70,7 +72,7 @@ describe('submitReview', () => {
     });
 
     await expect(
-      submitReview(null, form({ invitationId: INV, decision: 'approved' })),
+      submitReview(null, form({ invitationId: INV, fingerprint, decision: 'approved' })),
     ).resolves.toEqual({ ok: false, message: REVIEW_MESSAGES.DRAFT_CHANGED });
     expect(REVIEW_MESSAGES.DRAFT_CHANGED).toBe(
       'This draft just changed. Reload to see the latest.',
@@ -82,9 +84,34 @@ describe('submitReview', () => {
     state.fake = fakeSupabase({ invitations: [{ data: { id: INV, content } }] });
 
     await expect(
-      submitReview(null, form({ invitationId: INV, decision: 'changes_requested', note: '   ' })),
+      submitReview(null, form({ invitationId: INV, fingerprint, decision: 'changes_requested', note: '   ' })),
     ).resolves.toEqual({ ok: false, message: 'Tell us what to change.' });
     expect(state.fake.find('invitation_reviews', 'insert')).toBeUndefined();
+  });
+
+  it('a fingerprint of older content is refused without an insert', async () => {
+    state.fake = fakeSupabase({ invitations: [{ data: { id: INV, content } }] });
+
+    await expect(
+      submitReview(
+        null,
+        form({
+          invitationId: INV,
+          fingerprint: contentFingerprint({ coupleFirstName: 'Mayya' }),
+          decision: 'approved',
+        }),
+      ),
+    ).resolves.toEqual({ ok: false, message: REVIEW_MESSAGES.DRAFT_CHANGED });
+    expect(state.fake.find('invitation_reviews', 'insert')).toBeUndefined();
+    expect(revalidated).toEqual([]);
+  });
+
+  it('refuses a missing fingerprint', async () => {
+    state.fake = fakeSupabase();
+
+    await expect(
+      submitReview(null, form({ invitationId: INV, decision: 'approved' })),
+    ).resolves.toEqual({ ok: false, message: UNEXPECTED });
   });
 
   it('refuses a note over 1000 characters', async () => {
@@ -92,7 +119,7 @@ describe('submitReview', () => {
 
     const result = await submitReview(
       null,
-      form({ invitationId: INV, decision: 'changes_requested', note: 'x'.repeat(1001) }),
+      form({ invitationId: INV, fingerprint, decision: 'changes_requested', note: 'x'.repeat(1001) }),
     );
 
     expect(result.ok).toBe(false);
@@ -103,7 +130,7 @@ describe('submitReview', () => {
     state.fake = fakeSupabase();
 
     await expect(
-      submitReview(null, form({ invitationId: INV, decision: 'published' })),
+      submitReview(null, form({ invitationId: INV, fingerprint, decision: 'published' })),
     ).resolves.toEqual({ ok: false, message: UNEXPECTED });
   });
 
@@ -111,7 +138,7 @@ describe('submitReview', () => {
     state.fake = fakeSupabase({ invitations: [{ data: null }] });
 
     await expect(
-      submitReview(null, form({ invitationId: INV, decision: 'approved' })),
+      submitReview(null, form({ invitationId: INV, fingerprint, decision: 'approved' })),
     ).resolves.toEqual({ ok: false, message: UNEXPECTED });
   });
 });

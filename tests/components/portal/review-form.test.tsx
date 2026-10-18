@@ -6,36 +6,40 @@ vi.mock('@/lib/portal/review-actions', () => ({ submitReview }));
 
 import { ReviewForm } from '@/components/portal/ReviewForm';
 
+const FP = 'a'.repeat(64);
+
 beforeEach(() => submitReview.mockReset());
 
 describe('ReviewForm', () => {
   it('offers approve and request changes, with the note hidden', () => {
-    render(<ReviewForm invitationId="inv-1" latestReview={null} />);
+    render(<ReviewForm fingerprint={FP} invitationId="inv-1" latestReview={null} />);
     expect(screen.getByRole('button', { name: 'Approve' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Request changes' })).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   });
 
   it('request changes reveals the note field', () => {
-    render(<ReviewForm invitationId="inv-1" latestReview={null} />);
+    render(<ReviewForm fingerprint={FP} invitationId="inv-1" latestReview={null} />);
     fireEvent.click(screen.getByRole('button', { name: 'Request changes' }));
     expect(screen.getByRole('textbox')).toBeInTheDocument();
   });
 
   it('thanks the client for an approval', async () => {
     submitReview.mockResolvedValue({ ok: true });
-    render(<ReviewForm invitationId="inv-1" latestReview={null} />);
+    render(<ReviewForm fingerprint={FP} invitationId="inv-1" latestReview={null} />);
     fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
 
     expect(await screen.findByText('Thank you. We have your approval.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Approve' })).toBeInTheDocument();
     const sent = submitReview.mock.calls[0][1] as FormData;
     expect(sent.get('decision')).toBe('approved');
     expect(sent.get('invitationId')).toBe('inv-1');
+    expect(sent.get('fingerprint')).toBe(FP);
   });
 
   it('thanks the client for a request for changes', async () => {
     submitReview.mockResolvedValue({ ok: true });
-    render(<ReviewForm invitationId="inv-1" latestReview={null} />);
+    render(<ReviewForm fingerprint={FP} invitationId="inv-1" latestReview={null} />);
     fireEvent.click(screen.getByRole('button', { name: 'Request changes' }));
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Move the date' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send my changes' }));
@@ -50,7 +54,7 @@ describe('ReviewForm', () => {
 
   it('shows the refusal and keeps the form', async () => {
     submitReview.mockResolvedValue({ ok: false, message: 'Tell us what to change.' });
-    render(<ReviewForm invitationId="inv-1" latestReview={null} />);
+    render(<ReviewForm fingerprint={FP} invitationId="inv-1" latestReview={null} />);
     fireEvent.click(screen.getByRole('button', { name: 'Request changes' }));
     fireEvent.click(screen.getByRole('button', { name: 'Send my changes' }));
 
@@ -61,7 +65,7 @@ describe('ReviewForm', () => {
   it('shows the latest decision above the buttons', () => {
     render(
       <ReviewForm
-        invitationId="inv-1"
+        fingerprint={FP} invitationId="inv-1"
         latestReview={{
           decision: 'changes_requested',
           note: 'Move the date',
