@@ -43,6 +43,18 @@ export const portalRoutes = {
  */
 export const PRIVATE_ROUTE_PATTERNS = ['/admin/:path*', '/portal/:path*'] as const;
 
+/** How the client's draft preview is framed, carried in `?view=`. */
+export const VIEW_PARAM = 'view';
+
+export const PREVIEW_VIEW = {
+  /** The invitation inside the shared phone, envelope first. */
+  PHONE: 'phone',
+  /** The invitation filling the window, as on a guest's phone. */
+  FULL: 'full',
+} as const;
+
+export type PreviewView = (typeof PREVIEW_VIEW)[keyof typeof PREVIEW_VIEW];
+
 /** Why a page is showing a notice, carried in `?notice=`. */
 export const NOTICE_PARAM = 'notice';
 
