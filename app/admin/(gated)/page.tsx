@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AutoSubmitForm } from '@/components/admin/AutoSubmitForm';
 import { ClientRows } from '@/components/admin/ClientRows';
 import { Eyebrow } from '@/components/admin/Eyebrow';
+import { LIVE_TABLE, LiveRefresh } from '@/components/admin/LiveRefresh';
 import { SummaryTiles } from '@/components/admin/SummaryTiles';
 import { buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +42,7 @@ export default async function ClientsPage({
 
   return (
     <main className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6">
+      <LiveRefresh tables={[LIVE_TABLE.ORDERS, LIVE_TABLE.REVIEWS]} />
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <Eyebrow>Studio</Eyebrow>

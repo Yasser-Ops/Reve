@@ -7,6 +7,7 @@ import { ContentEditor } from '@/components/admin/ContentEditor';
 import { CopyChecklist } from '@/components/admin/CopyChecklist';
 import { Eyebrow } from '@/components/admin/Eyebrow';
 import { Field } from '@/components/admin/fields';
+import { LIVE_TABLE, LiveRefresh } from '@/components/admin/LiveRefresh';
 import { MediaSection } from '@/components/admin/MediaSection';
 import { ReviewPanel } from '@/components/admin/ReviewPanel';
 import { getTemplateEntry } from '@/components/invitation/registry';
@@ -63,6 +64,7 @@ export default async function InvitationEditorPage({
 
   return (
     <main className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6">
+      <LiveRefresh tables={[LIVE_TABLE.REVIEWS, LIVE_TABLE.ORDERS]} />
       <Breadcrumbs items={crumbs} />
 
       <header className="flex flex-wrap items-end justify-between gap-4">

@@ -7,6 +7,7 @@ import { Breadcrumbs } from '@/components/admin/Breadcrumbs';
 import { DeleteClientDialog } from '@/components/admin/DeleteClientDialog';
 import { Eyebrow } from '@/components/admin/Eyebrow';
 import { Field, OrderFields, TextareaField } from '@/components/admin/fields';
+import { LIVE_TABLE, LiveRefresh } from '@/components/admin/LiveRefresh';
 import { OrderCard } from '@/components/admin/OrderCard';
 import { addOrder, updateClient } from '@/lib/admin/client-actions';
 import { hasPaidOrder } from '@/lib/admin/invite-state';
@@ -41,6 +42,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
 
   return (
     <main className="mx-auto grid max-w-4xl gap-8 px-4 py-10 sm:px-6">
+      <LiveRefresh tables={[LIVE_TABLE.REVIEWS, LIVE_TABLE.ORDERS]} />
       <Breadcrumbs items={[{ label: 'Clients', href: ROUTES.ADMIN }, { label: client.full_name }]} />
 
       <header>
