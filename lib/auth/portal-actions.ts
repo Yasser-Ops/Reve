@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { UNEXPECTED, type ActionResult } from '@/lib/admin/action-result';
 import { getClientForUser } from '@/lib/auth/client-membership';
+import { requireClientAccount } from '@/lib/auth/guards';
 import {
   PASSWORD_MESSAGES,
   PORTAL_MESSAGES,
@@ -14,6 +15,7 @@ import { updatePasswordOrRefuse } from '@/lib/auth/password-change';
 import { passwordSchema } from '@/lib/auth/password';
 import { getRecoveryClient } from '@/lib/auth/recovery';
 import { confirmUrl, NOTICE_PARAM, PORTAL_NOTICE, ROUTES } from '@/lib/routes';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createMailClient } from '@/lib/supabase/mailer';
 import { createClient } from '@/lib/supabase/server';
 
@@ -119,6 +121,50 @@ export async function setNewPassword(
   /* A reset is usually "someone else may have it": end every other session. */
   const { error: signOutError } = await supabase.auth.signOut({ scope: 'others' });
   if (signOutError) return { ok: false, message: PASSWORD_MESSAGES.CHANGED_OTHERS_KEPT };
+
+  redirect(ROUTES.PORTAL);
+}
+
+/**
+ * The welcome step: an invited client chooses a password and accepts the
+ * terms. The password goes through the signed-in session; the terms stamp goes
+ * through the admin client because clients cannot write their own row. If the
+ * stamp fails the password change stands, and resubmitting is safe.
+ */
+export async function acceptInvite(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const identity = await requireClientAccount();
+  if (identity.termsAcceptedAt !== null) redirect(ROUTES.PORTAL);
+
+  const input = z
+    .object({
+      password: passwordSchema(identity.email),
+      confirm: z.string(),
+      terms: z.literal('on', PORTAL_MESSAGES.TERMS_REQUIRED),
+    })
+    .refine((value) => value.confirm === value.password, PASSWORD_MESSAGES.MISMATCH)
+    .safeParse({
+      password: formData.get('password') ?? '',
+      confirm: formData.get('confirm') ?? '',
+      terms: formData.get('terms'),
+    });
+  if (!input.success) return { ok: false, message: input.error.issues[0].message };
+
+  const refusal = await updatePasswordOrRefuse(await createClient(), input.data.password);
+  if (refusal) return refusal;
+
+  /* The null filter keeps a repeated submit from moving the first timestamp. */
+  const { error } = await createAdminClient()
+    .from('clients')
+    .update({ terms_accepted_at: new Date().toISOString() })
+    .eq('user_id', identity.userId)
+    .is('terms_accepted_at', null);
+  if (error) {
+    console.error('Stamping terms acceptance failed', error);
+    return { ok: false, message: UNEXPECTED };
+  }
 
   redirect(ROUTES.PORTAL);
 }
