@@ -133,18 +133,26 @@ describe('requestReset', () => {
 });
 
 describe('setNewPassword', () => {
-  const recoveryClaims = (amr: { method: string }[]) => ({
-    data: { claims: { sub: 'user-1', email: 'maya@example.com', amr } },
+  /* Stamped now: getRecoveryClient only honours a recent recovery. */
+  const at = () => Math.floor(Date.now() / 1000);
+  const recoveryClaims = (methods: string[]) => ({
+    data: {
+      claims: {
+        sub: 'user-1',
+        email: 'maya@example.com',
+        amr: methods.map((method) => ({ method, timestamp: at() })),
+      },
+    },
     error: null,
   });
-  const signedIn = recoveryClaims([{ method: 'recovery' }, { method: 'password' }]);
+  const signedIn = recoveryClaims(['recovery', 'password']);
 
   beforeEach(() => {
     maybeSingle.mockResolvedValue({ data: { id: 'client-1' }, error: null });
   });
 
   it('refuses a session that did not come from a recovery link', async () => {
-    getClaims.mockResolvedValue(recoveryClaims([{ method: 'password' }]));
+    getClaims.mockResolvedValue(recoveryClaims(['password']));
     await expect(
       setNewPassword(null, form({ password: 'long-enough-1', confirm: 'long-enough-1' })),
     ).rejects.toThrow('REDIRECT /portal/login?notice=link-expired');
