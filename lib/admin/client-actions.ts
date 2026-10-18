@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { UNEXPECTED, type ActionResult } from '@/lib/admin/action-result';
 import { removeInvitationMedia } from '@/lib/admin/media';
+import { isAdmin } from '@/lib/auth/admin-membership';
 import { requireAdmin } from '@/lib/auth/guards';
 import { STUDIO_TIME_ZONE, TIERS } from '@/lib/constants';
 import { ADMIN_NOTICE, NOTICE_PARAM, ROUTES, adminRoutes } from '@/lib/routes';
@@ -203,6 +204,21 @@ const DELETE_REFUSALS: Record<string, string> = {
   RV002: 'Their invitation is live for guests, so this client cannot be deleted.',
 };
 
+/**
+ * Deletes a client's sign-in. admin_users cascades from auth.users, so a
+ * user_id that points at an admin must never reach deleteUser. Anything
+ * uncertain counts as not removed and surfaces as the operator notice.
+ */
+async function removeSignIn(userId: string): Promise<boolean> {
+  const admin = createAdminClient();
+  try {
+    if (await isAdmin(admin, userId)) return false;
+    return !(await admin.auth.admin.deleteUser(userId)).error;
+  } catch {
+    return false;
+  }
+}
+
 export async function deleteClient(
   _previous: ActionResult | null,
   formData: FormData,
@@ -240,9 +256,7 @@ export async function deleteClient(
   /* The sign-in goes last: a client without rows but with a live login is the
      worse leftover, so a failure here is the notice the operator must act on. */
   const userId = account.data?.user_id;
-  const accountRemoved = userId
-    ? !(await createAdminClient().auth.admin.deleteUser(userId)).error
-    : true;
+  const accountRemoved = userId ? await removeSignIn(userId) : true;
 
   revalidatePath(ROUTES.ADMIN);
   const notice = !accountRemoved

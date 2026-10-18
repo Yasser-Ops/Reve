@@ -9,11 +9,11 @@ import { Eyebrow } from '@/components/admin/Eyebrow';
 import { Field, OrderFields, TextareaField } from '@/components/admin/fields';
 import { OrderCard } from '@/components/admin/OrderCard';
 import { addOrder, updateClient } from '@/lib/admin/client-actions';
+import { hasPaidOrder } from '@/lib/admin/invite-state';
 import { getClient } from '@/lib/admin/clients';
 import { requireAdmin } from '@/lib/auth/guards';
 import { INVITATION_STATUS } from '@/lib/constants';
 import { whatsappChat } from '@/lib/contact';
-import { ORDER_STATUS, hasReached } from '@/lib/orders/status';
 import { ROUTES } from '@/lib/routes';
 
 export const metadata: Metadata = { title: 'Client' };
@@ -37,9 +37,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
     (invitation) => invitation.status === INVITATION_STATUS.PUBLISHED,
   );
 
-  const paid = client.orders.some((order) =>
-    hasReached(order.tier, order.status, ORDER_STATUS.PAID),
-  );
+  const paid = hasPaidOrder(client.orders);
 
   return (
     <main className="mx-auto grid max-w-4xl gap-8 px-4 py-10 sm:px-6">

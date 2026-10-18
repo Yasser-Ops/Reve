@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeSupabase } from '../../helpers/fake-supabase';
 
-const { state, invite, deleteUser, resetPassword } = vi.hoisted(() => ({
+const { state, invite, deleteUser, resetPassword, cookieReset } = vi.hoisted(() => ({
   state: { fake: null as ReturnType<typeof fakeSupabase> | null },
   invite: vi.fn(),
   deleteUser: vi.fn(),
   resetPassword: vi.fn(),
+  cookieReset: vi.fn(),
 }));
 vi.mock('next/cache', () => ({ revalidatePath: () => {} }));
 vi.mock('@/lib/auth/guards', () => ({
@@ -14,16 +15,20 @@ vi.mock('@/lib/auth/guards', () => ({
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     ...state.fake?.client,
-    auth: { resetPasswordForEmail: resetPassword },
+    auth: { resetPasswordForEmail: cookieReset },
   }),
 }));
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ auth: { admin: { inviteUserByEmail: invite, deleteUser } } }),
 }));
+vi.mock('@/lib/supabase/mailer', () => ({
+  createMailClient: () => ({ auth: { resetPasswordForEmail: resetPassword } }),
+}));
 vi.mock('@/lib/site', () => ({ SITE_URL: 'https://reve.test' }));
 
+import { UNEXPECTED } from '@/lib/admin/action-result';
 import { inviteClient } from '@/lib/admin/invite';
-import { accountState } from '@/lib/admin/invite-state';
+import { accountState, hasPaidOrder } from '@/lib/admin/invite-state';
 import { ROUTES, confirmUrl } from '@/lib/routes';
 
 const CLIENT = '11111111-1111-4111-8111-111111111111';
@@ -52,6 +57,7 @@ beforeEach(() => {
   invite.mockReset().mockResolvedValue({ data: { user: { id: USER } }, error: null });
   deleteUser.mockReset().mockResolvedValue({ error: null });
   resetPassword.mockReset().mockResolvedValue({ error: null });
+  cookieReset.mockReset();
 });
 
 describe('inviteClient', () => {
@@ -88,6 +94,7 @@ describe('inviteClient', () => {
 
     expect(resetPassword).toHaveBeenCalledWith('maya@gmail.com', { redirectTo: REDIRECT_TO });
     expect(invite).not.toHaveBeenCalled();
+    expect(cookieReset).not.toHaveBeenCalled();
     expect(state.fake.calls.filter((call) => call.table === 'clients')).toHaveLength(1);
   });
 
@@ -116,16 +123,68 @@ describe('inviteClient', () => {
     state.fake = fakeSupabase({
       clients: [{ data: clientRow() }, { error: { code: 'XX000' } }],
     });
-    const result = await inviteClient(null, form());
-    expect(result.ok).toBe(false);
+    await expect(inviteClient(null, form())).resolves.toEqual({
+      ok: false,
+      message: UNEXPECTED,
+    });
     expect(deleteUser).toHaveBeenCalledWith(USER);
   });
 
   it('removes the new auth user when no row took the user_id', async () => {
     state.fake = fakeSupabase({ clients: [{ data: clientRow() }, { data: [] }] });
-    const result = await inviteClient(null, form());
-    expect(result.ok).toBe(false);
+    await expect(inviteClient(null, form())).resolves.toEqual({
+      ok: false,
+      message: UNEXPECTED,
+    });
     expect(deleteUser).toHaveBeenCalledWith(USER);
+  });
+
+  it('reports the orphan instead of throwing when the cleanup fails too', async () => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    state.fake = fakeSupabase({ clients: [{ data: clientRow() }, { data: [] }] });
+    deleteUser.mockResolvedValue({ error: { message: 'x' } });
+    await expect(inviteClient(null, form())).resolves.toEqual({
+      ok: false,
+      message:
+        'The invite went out but could not be saved, and its sign-in could not be removed. Delete it under Supabase Auth.',
+    });
+    expect(logged).toHaveBeenCalledWith(expect.stringContaining(USER));
+    logged.mockRestore();
+  });
+
+  it('tells the operator to wait when the email rate limit is hit', async () => {
+    state.fake = fakeSupabase({ clients: [{ data: clientRow() }] });
+    invite.mockResolvedValue({
+      data: { user: null },
+      error: { code: 'over_email_send_rate_limit', status: 429 },
+    });
+    await expect(inviteClient(null, form())).resolves.toEqual({
+      ok: false,
+      message: 'Too many emails just now. Try again in a minute.',
+    });
+  });
+
+  it('maps a bare 429 on the resend to the same wait message', async () => {
+    state.fake = fakeSupabase({ clients: [{ data: clientRow({ user_id: USER }) }] });
+    resetPassword.mockResolvedValue({ error: { status: 429 } });
+    await expect(inviteClient(null, form())).resolves.toEqual({
+      ok: false,
+      message: 'Too many emails just now. Try again in a minute.',
+    });
+  });
+});
+
+describe('hasPaidOrder', () => {
+  it('is true once any order has reached paid, per its own tier flow', () => {
+    expect(hasPaidOrder([])).toBe(false);
+    expect(hasPaidOrder([{ tier: 'managed', status: 'pending_payment' }])).toBe(false);
+    expect(hasPaidOrder([{ tier: 'custom', status: 'brief' }])).toBe(true);
+    expect(
+      hasPaidOrder([
+        { tier: 'managed', status: 'cancelled' },
+        { tier: 'basic', status: 'paid' },
+      ]),
+    ).toBe(true);
   });
 });
 

@@ -3,16 +3,25 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { UNEXPECTED, type ActionResult } from '@/lib/admin/action-result';
-import { accountState } from '@/lib/admin/invite-state';
+import { accountState, hasPaidOrder } from '@/lib/admin/invite-state';
 import { requireAdmin } from '@/lib/auth/guards';
-import { ORDER_STATUS, hasReached } from '@/lib/orders/status';
 import { ROUTES, adminRoutes, confirmUrl } from '@/lib/routes';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createMailClient } from '@/lib/supabase/mailer';
 import { createClient } from '@/lib/supabase/server';
 
 const EMAIL_EXISTS = 'email_exists';
+const EMAIL_RATE_LIMIT = 'over_email_send_rate_limit';
+const TOO_MANY_EMAILS = 'Too many emails just now. Try again in a minute.';
+const TOO_MANY_REQUESTS = 429;
 
 const inviteSchema = z.object({ clientId: z.uuid() });
+
+function sendFailure(error: { code?: string; status?: number }): string {
+  return error.code === EMAIL_RATE_LIMIT || error.status === TOO_MANY_REQUESTS
+    ? TOO_MANY_EMAILS
+    : UNEXPECTED;
+}
 
 /**
  * Invites a client to the portal, or sends an invited client the email again.
@@ -42,26 +51,27 @@ export async function inviteClient(
 
   if (state === 'invited') {
     /* A recovery email reaches the same welcome page without making a second
-       user. It is an anon-key call: it sends mail and touches no session. */
-    const resent = await supabase.auth.resetPasswordForEmail(client.email, { redirectTo });
-    return resent.error ? { ok: false, message: UNEXPECTED } : { ok: true };
+       user. It goes from a throwaway implicit-flow client, not the cookie one:
+       that would leave a PKCE verifier in the admin's cookies. */
+    const resent = await createMailClient().auth.resetPasswordForEmail(client.email, {
+      redirectTo,
+    });
+    if (resent.error) return { ok: false, message: sendFailure(resent.error) };
+    return { ok: true };
   }
 
-  const paid = client.orders.some((order) =>
-    hasReached(order.tier, order.status, ORDER_STATUS.PAID),
-  );
-  if (!paid) return { ok: false, message: 'Invite them once their payment is in.' };
+  if (!hasPaidOrder(client.orders)) return { ok: false, message: 'Invite them once their payment is in.' };
 
   const admin = createAdminClient();
   const invited = await admin.auth.admin.inviteUserByEmail(client.email, { redirectTo });
   if (invited.error || !invited.data.user) {
-    return {
-      ok: false,
-      message:
-        invited.error?.code === EMAIL_EXISTS
-          ? 'That email already has an account. Check it is not an admin address.'
-          : UNEXPECTED,
-    };
+    if (invited.error?.code === EMAIL_EXISTS) {
+      return {
+        ok: false,
+        message: 'That email already has an account. Check it is not an admin address.',
+      };
+    }
+    return { ok: false, message: invited.error ? sendFailure(invited.error) : UNEXPECTED };
   }
 
   const userId = invited.data.user.id;
@@ -77,7 +87,12 @@ export async function inviteClient(
   if (linked.error || !linked.data?.length) {
     const removed = await admin.auth.admin.deleteUser(userId);
     if (removed.error) {
-      throw new Error(`Auth user ${userId} was invited but could not be linked or removed`);
+      console.error(`Auth user ${userId} was invited but could not be linked or removed`);
+      return {
+        ok: false,
+        message:
+          'The invite went out but could not be saved, and its sign-in could not be removed. Delete it under Supabase Auth.',
+      };
     }
     return { ok: false, message: UNEXPECTED };
   }
