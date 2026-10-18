@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
+import { AccountStatus } from '@/components/admin/AccountStatus';
 import { ActionForm } from '@/components/admin/ActionForm';
 import { Breadcrumbs } from '@/components/admin/Breadcrumbs';
 import { DeleteClientDialog } from '@/components/admin/DeleteClientDialog';
@@ -12,6 +13,7 @@ import { getClient } from '@/lib/admin/clients';
 import { requireAdmin } from '@/lib/auth/guards';
 import { INVITATION_STATUS } from '@/lib/constants';
 import { whatsappChat } from '@/lib/contact';
+import { ORDER_STATUS, hasReached } from '@/lib/orders/status';
 import { ROUTES } from '@/lib/routes';
 
 export const metadata: Metadata = { title: 'Client' };
@@ -35,6 +37,10 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
     (invitation) => invitation.status === INVITATION_STATUS.PUBLISHED,
   );
 
+  const paid = client.orders.some((order) =>
+    hasReached(order.tier, order.status, ORDER_STATUS.PAID),
+  );
+
   return (
     <main className="mx-auto grid max-w-4xl gap-8 px-4 py-10 sm:px-6">
       <Breadcrumbs items={[{ label: 'Clients', href: ROUTES.ADMIN }, { label: client.full_name }]} />
@@ -51,8 +57,15 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
           ) : (
             <span>{client.phone}</span>
           )}
-          <span>{client.user_id ? 'Has an account' : 'Not invited yet'}</span>
         </p>
+        <div className="mt-3 text-muted-foreground">
+          <AccountStatus
+            clientId={client.id}
+            paid={paid}
+            termsAcceptedAt={client.terms_accepted_at}
+            userId={client.user_id}
+          />
+        </div>
         {client.notes ? <p className="mt-3 max-w-prose">{client.notes}</p> : null}
       </header>
 

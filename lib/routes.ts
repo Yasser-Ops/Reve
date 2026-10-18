@@ -45,6 +45,7 @@ export const NOTICE_PARAM = 'notice';
 export const ADMIN_NOTICE = {
   CLIENT_DELETED: 'client-deleted',
   CLIENT_DELETED_FILES_LEFT: 'client-deleted-files-left',
+  CLIENT_DELETED_ACCOUNT_LEFT: 'client-deleted-account-left',
 } as const;
 
 export const LOGIN_NOTICE = {

@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeSupabase } from '../../helpers/fake-supabase';
 
-const { redirect, state } = vi.hoisted(() => ({
+const { redirect, state, deleteUser } = vi.hoisted(() => ({
+  deleteUser: vi.fn(),
   redirect: (url: string): never => {
     throw new Error(`REDIRECT ${url}`);
   },
@@ -12,11 +13,15 @@ vi.mock('next/cache', () => ({ revalidatePath: () => {} }));
 vi.mock('@/lib/auth/guards', () => ({
   requireAdmin: async () => ({ userId: 'admin-1', email: 'ops@reve.lb' }),
 }));
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({ auth: { admin: { deleteUser } } }),
+}));
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => state.fake?.client }));
 
 import { deleteClient } from '@/lib/admin/client-actions';
 
 const CLIENT = '11111111-1111-4111-8111-111111111111';
+const USER = '33333333-3333-4333-8333-333333333333';
 const INVITATION = '22222222-2222-4222-8222-222222222222';
 
 function form(fields: Record<string, string>) {
@@ -27,6 +32,7 @@ function form(fields: Record<string, string>) {
 
 beforeEach(() => {
   state.fake = null;
+  deleteUser.mockReset().mockResolvedValue({ error: null });
 });
 
 describe('deleteClient', () => {
@@ -94,5 +100,41 @@ describe('deleteClient', () => {
       deleteClient(null, form({ clientId: CLIENT, confirmName: '  ' })),
     ).resolves.toEqual({ ok: false, message: 'Type the client’s full name to confirm.' });
     expect(state.fake.calls).toHaveLength(0);
+  });
+
+  it('reads user_id before the rpc, then removes the sign-in after the files', async () => {
+    state.fake = fakeSupabase({
+      clients: [{ data: { user_id: USER } }],
+      'rpc:admin_delete_client': [{ data: [INVITATION] }],
+    });
+    await expect(
+      deleteClient(null, form({ clientId: CLIENT, confirmName: 'Maya Haddad' })),
+    ).rejects.toThrow('REDIRECT /admin?notice=client-deleted');
+
+    const tables = state.fake.calls.map((call) => call.table);
+    expect(tables.indexOf('clients')).toBeLessThan(tables.indexOf('rpc:admin_delete_client'));
+    expect(deleteUser).toHaveBeenCalledWith(USER);
+  });
+
+  it('does not touch auth when the client never had an account', async () => {
+    state.fake = fakeSupabase({
+      clients: [{ data: { user_id: null } }],
+      'rpc:admin_delete_client': [{ data: [] }],
+    });
+    await expect(
+      deleteClient(null, form({ clientId: CLIENT, confirmName: 'Maya Haddad' })),
+    ).rejects.toThrow('REDIRECT /admin?notice=client-deleted');
+    expect(deleteUser).not.toHaveBeenCalled();
+  });
+
+  it('says so when the sign-in could not be removed', async () => {
+    state.fake = fakeSupabase({
+      clients: [{ data: { user_id: USER } }],
+      'rpc:admin_delete_client': [{ data: [] }],
+    });
+    deleteUser.mockResolvedValue({ error: { message: 'x' } });
+    await expect(
+      deleteClient(null, form({ clientId: CLIENT, confirmName: 'Maya Haddad' })),
+    ).rejects.toThrow('REDIRECT /admin?notice=client-deleted-account-left');
   });
 });

@@ -8,6 +8,7 @@ import { removeInvitationMedia } from '@/lib/admin/media';
 import { requireAdmin } from '@/lib/auth/guards';
 import { STUDIO_TIME_ZONE, TIERS } from '@/lib/constants';
 import { ADMIN_NOTICE, NOTICE_PARAM, ROUTES, adminRoutes } from '@/lib/routes';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
 const UNIQUE_VIOLATION = '23505';
@@ -210,8 +211,16 @@ export async function deleteClient(
   const input = deleteSchema.safeParse(fields(formData, ['clientId', 'confirmName']));
   if (!input.success) return { ok: false, message: 'Type the client’s full name to confirm.' };
 
-  /* One transaction in the database: the rows go together or not at all. */
+  /* The row is gone after the rpc, and with it the link to the sign-in. */
   const supabase = await createClient();
+  const account = await supabase
+    .from('clients')
+    .select('user_id')
+    .eq('id', input.data.clientId)
+    .maybeSingle();
+  if (account.error) return { ok: false, message: UNEXPECTED };
+
+  /* One transaction in the database: the rows go together or not at all. */
   const { data, error } = await supabase.rpc('admin_delete_client', {
     p_client_id: input.data.clientId,
     p_confirm_name: input.data.confirmName,
@@ -227,10 +236,19 @@ export async function deleteClient(
      way. Files go after the rows: a storage failure leaves harmless orphans,
      never a client whose files were deleted but rows were not. */
   const filesRemoved = await removeInvitationMedia(supabase, data ?? []);
+
+  /* The sign-in goes last: a client without rows but with a live login is the
+     worse leftover, so a failure here is the notice the operator must act on. */
+  const userId = account.data?.user_id;
+  const accountRemoved = userId
+    ? !(await createAdminClient().auth.admin.deleteUser(userId)).error
+    : true;
+
   revalidatePath(ROUTES.ADMIN);
-  redirect(
-    `${ROUTES.ADMIN}?${NOTICE_PARAM}=${
-      filesRemoved ? ADMIN_NOTICE.CLIENT_DELETED : ADMIN_NOTICE.CLIENT_DELETED_FILES_LEFT
-    }`,
-  );
+  const notice = !accountRemoved
+    ? ADMIN_NOTICE.CLIENT_DELETED_ACCOUNT_LEFT
+    : filesRemoved
+      ? ADMIN_NOTICE.CLIENT_DELETED
+      : ADMIN_NOTICE.CLIENT_DELETED_FILES_LEFT;
+  redirect(`${ROUTES.ADMIN}?${NOTICE_PARAM}=${notice}`);
 }

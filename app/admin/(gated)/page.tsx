@@ -21,6 +21,8 @@ const NOTICES: Record<string, string> = {
   [ADMIN_NOTICE.CLIENT_DELETED]: 'Client deleted.',
   [ADMIN_NOTICE.CLIENT_DELETED_FILES_LEFT]:
     'Client deleted. Some uploaded files could not be removed; they are harmless but take space.',
+  [ADMIN_NOTICE.CLIENT_DELETED_ACCOUNT_LEFT]:
+    'Client deleted. Their sign-in could not be removed; delete it under Supabase Auth.',
 };
 
 export default async function ClientsPage({
