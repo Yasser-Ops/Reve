@@ -16,6 +16,8 @@ export const ROUTES = {
   AUTH_CONFIRM: '/auth/confirm',
   /** Fallback for links that carry the session in the URL fragment. */
   AUTH_SESSION: '/auth/session',
+  /** Ends the local session, then shows the portal login. A route because render cannot write cookies. */
+  AUTH_SIGNOUT: '/auth/signout',
 } as const;
 
 /** Admin pages addressed by id. */

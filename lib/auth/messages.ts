@@ -27,3 +27,11 @@ export const PASSWORD_MESSAGES = {
   CHANGED_OTHERS_KEPT:
     'Password changed, but other devices could not be signed out. Sign out there yourself.',
 } as const;
+
+export const PORTAL_MESSAGES = {
+  NOT_CLIENT: 'This email is not a Rêve client account.',
+  SIGNED_OUT: 'You are signed out.',
+  LINK_EXPIRED: 'That link has expired or was already used. Message us on WhatsApp for a new one.',
+  PASSWORD_RESET: 'Check your email for a link to choose a new password.',
+  RESET_FAILED: 'We could not save that password. Open the link in your email again.',
+} as const;
