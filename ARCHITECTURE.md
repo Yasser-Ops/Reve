@@ -850,11 +850,6 @@ base from the walk.
   limit; uploads differing only in case or punctuation overwrite each other;
   an empty upgrade amount records $0; the fake Supabase in tests ignores query
   filters.
-- **Lin's envelope has ONE frame.** `frames.count === 1`: the sealed render
-  exists and the sequence does not. Tapping the seal holds that frame for
-  `HOLD_MS` and hands over. The count is what makes this visible rather than
-  disguised — raise it as frames land and the opening starts moving, with no
-  other change anywhere. Requirements are in `public/envelope/BRIEF.md`.
 - **The collection card is a build artefact and nothing detects staleness.**
   `card.webp` is composed from a design's stills, one of which is captured off
   the live template. A design change means recomposing; nothing warns that the
