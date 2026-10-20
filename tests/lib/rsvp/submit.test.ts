@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeSupabase } from '../../helpers/fake-supabase';
 
 const { state } = vi.hoisted(() => ({
@@ -34,9 +34,27 @@ function insertCalls() {
   );
 }
 
+const errorLog = vi.spyOn(console, 'error');
+
 beforeEach(() => {
   state.fake = null;
+  errorLog.mockReset();
+  errorLog.mockImplementation(() => {});
 });
+
+afterEach(() => {
+  errorLog.mockReset();
+});
+
+/** The log carries the failure, never the guest. */
+function expectLoggedWithoutGuest(step: string) {
+  expect(errorLog).toHaveBeenCalledTimes(1);
+  const logged = JSON.stringify(errorLog.mock.calls[0]);
+  expect(logged).toContain('[rsvp]');
+  expect(logged).toContain(step);
+  expect(logged).not.toContain('Sara');
+  expect(logged).not.toContain('Congrats');
+}
 
 describe('submitRsvp', () => {
   it('stores a valid reply, trimmed, with empty notes as null', async () => {
@@ -91,18 +109,28 @@ describe('submitRsvp', () => {
   it('returns a friendly message when the insert fails', async () => {
     state.fake = fakeSupabase({
       invitations: [{ data: invitationRow() }],
-      rsvps: [{ error: { message: 'boom: secret detail' } }],
+      rsvps: [{ error: { code: '23514', message: 'boom: secret detail' } }],
     });
-    const result = await submitRsvp(null, form());
+    const result = await submitRsvp(null, form({ message: 'Congrats' }));
     expect(result).toEqual({
       ok: false,
       message: 'We could not send your reply. Please try again.',
     });
+    expectLoggedWithoutGuest('insert');
+    expect(JSON.stringify(errorLog.mock.calls[0])).toContain('23514');
   });
 
   it('returns a friendly message when the lookup fails', async () => {
     state.fake = fakeSupabase({ invitations: [{ error: { message: 'down' } }] });
     const result = await submitRsvp(null, form());
     expect(result).toEqual({ ok: false, message: RSVP_MESSAGES.FAILED });
+    expectLoggedWithoutGuest('lookup');
+  });
+
+  it('logs and answers calmly when the client throws', async () => {
+    state.fake = null;
+    const result = await submitRsvp(null, form());
+    expect(result).toEqual({ ok: false, message: RSVP_MESSAGES.FAILED });
+    expectLoggedWithoutGuest('exception');
   });
 });

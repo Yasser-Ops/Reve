@@ -98,18 +98,20 @@ export function Lin({ content, theme, entitlements, rsvpSlug = null }: LinProps)
         </Band>
       ) : null}
 
-      <Band bg={SAGE_DEEP}>
-        {entitlements.rsvp ? <RsvpSection rsvpSlug={rsvpSlug} /> : null}
+      {entitlements.rsvp || content.registryMessage ? (
+        <Band bg={SAGE_DEEP}>
+          {entitlements.rsvp ? <RsvpSection rsvpSlug={rsvpSlug} /> : null}
 
-        {content.registryMessage ? (
-          <Section className="pt-0 text-center">
-            <ScriptHeading>Wedding Registry</ScriptHeading>
-            <p className="mx-auto mt-4 max-w-md text-[14px] leading-relaxed">
-              {content.registryMessage}
-            </p>
-          </Section>
-        ) : null}
-      </Band>
+          {content.registryMessage ? (
+            <Section className="pt-0 text-center">
+              <ScriptHeading>Wedding Registry</ScriptHeading>
+              <p className="mx-auto mt-4 max-w-md text-[14px] leading-relaxed">
+                {content.registryMessage}
+              </p>
+            </Section>
+          ) : null}
+        </Band>
+      ) : null}
 
       <LinGallery content={content} entitlements={entitlements} />
     </main>

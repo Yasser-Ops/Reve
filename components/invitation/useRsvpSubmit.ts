@@ -81,7 +81,6 @@ export function useRsvpSubmit(rsvpSlug: string | null) {
   return {
     ...outcome,
     state: pending ? RSVP_STATE.SENDING : outcome.state,
-    submit,
     onSubmit,
     setChoice,
     isYes: choice === RSVP_ATTENDING.YES,

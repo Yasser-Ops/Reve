@@ -181,9 +181,9 @@ describe.each([
 });
 
 describe.each([
-  ['Lin', Lin, linContentSchema],
-  ['Jardin', Jardin, jardinContentSchema],
-])('%s reply section', (_name, Design, schema) => {
+  ['Lin', Lin, linContentSchema, 'Reservation'],
+  ['Jardin', Jardin, jardinContentSchema, 'Will you come?'],
+])('%s reply section', (_name, Design, schema, heading) => {
   /* The petal layer measures itself; jsdom has no ResizeObserver. */
   beforeEach(() => {
     vi.stubGlobal(
@@ -212,5 +212,17 @@ describe.each([
   it('is absent when the rsvp entitlement is off', () => {
     renderDesign(false);
     expect(screen.queryByRole('form', { name: 'Reply' })).not.toBeInTheDocument();
+  });
+
+  it('leaves no empty wrapper behind when the rsvp entitlement is off', () => {
+    const on = renderDesign(true);
+    const sectionsOn = on.container.querySelectorAll('section').length;
+    expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument();
+    on.unmount();
+
+    const off = renderDesign(false);
+    expect(screen.queryByRole('heading', { name: heading })).not.toBeInTheDocument();
+    /* The reply section is the only one that goes: no coloured band stays. */
+    expect(off.container.querySelectorAll('section')).toHaveLength(sectionsOn - 1);
   });
 });

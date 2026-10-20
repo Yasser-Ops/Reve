@@ -20,6 +20,9 @@ export const RSVP_ATTENDING = { YES: 'yes', NO: 'no' } as const;
 
 const SLUG_MAX = 200;
 
+/* Zero-width characters survive trim(), so a name of only them looked filled. */
+const ZERO_WIDTH = /[​-‍﻿]/g;
+
 /** A blank optional field is stored as null, never as an empty string. */
 const optionalNote = z
   .string()
@@ -37,7 +40,10 @@ const partySize = z.preprocess(
 export const rsvpSubmissionSchema = z
   .object({
     slug: z.string().min(1).max(SLUG_MAX),
-    name: z.string().trim().min(1).max(RSVP_LIMITS.NAME_MAX),
+    name: z
+      .string()
+      .transform((value) => value.replace(ZERO_WIDTH, '').trim())
+      .pipe(z.string().min(1).max(RSVP_LIMITS.NAME_MAX)),
     attending: z
       .enum([RSVP_ATTENDING.YES, RSVP_ATTENDING.NO])
       .transform((value) => value === RSVP_ATTENDING.YES),

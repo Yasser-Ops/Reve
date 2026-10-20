@@ -16,6 +16,7 @@ import { checklistProgress } from '@/lib/schemas/content/checklist';
 import { SITE_URL } from '@/lib/site';
 
 const NO_REPLIES: GuestListSummary = { guests: [], coming: 0, declined: 0, replies: 0 };
+const NO_REPLIES_NOTE = 'Replies are not included in this invitation.';
 const CHECKLIST_TITLE = 'What we need from you';
 
 const when = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: STUDIO_TIME_ZONE });
@@ -137,7 +138,7 @@ export function OrderPanel({
           </div>
           <GuestList summary={guestList ?? NO_REPLIES} />
         </section>
-      ) : invitation || tier === TIERS.BASIC ? (
+      ) : tier === TIERS.BASIC ? (
         <LockedCard
           actionHref={whatsappLink(`Hi, I would like to upgrade order ${reference} to Managed.`)}
           actionLabel="Upgrade"
@@ -145,6 +146,8 @@ export function OrderPanel({
         >
           Manage your guests and their replies with the Managed plan.
         </LockedCard>
+      ) : invitation ? (
+        <p className="text-muted-foreground">{NO_REPLIES_NOTE}</p>
       ) : (
         <section className="grid gap-2 rounded-xl bg-muted/40 p-4">
           <h3 className="font-heading text-lg">Guest list</h3>

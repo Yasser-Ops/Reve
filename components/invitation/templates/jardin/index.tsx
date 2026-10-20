@@ -142,9 +142,11 @@ export function Jardin({ content, theme, entitlements, rsvpSlug = null }: Jardin
         </Section>
       ) : null}
 
-      <Section ground={PAPER_DEEP}>
-        {entitlements.rsvp ? <RsvpSection rsvpSlug={rsvpSlug} /> : null}
-      </Section>
+      {entitlements.rsvp ? (
+        <Section ground={PAPER_DEEP}>
+          <RsvpSection rsvpSlug={rsvpSlug} />
+        </Section>
+      ) : null}
 
       {content.registryMessage ? (
         /* One sentence. At full padding this was half air — the emptiest

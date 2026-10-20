@@ -5,6 +5,14 @@ import { entitlementsSchema } from '@/lib/schemas/invitation';
 import { RSVP_MESSAGES, rsvpSubmissionSchema, type RsvpResult } from '@/lib/schemas/rsvp';
 import { createAdminClient } from '@/lib/supabase/admin';
 
+const LOG_TAG = '[rsvp]';
+
+/** Code and message only: never the guest's name, notes or message. */
+function logFailure(step: string, failure: unknown) {
+  const { code, message } = (failure ?? {}) as { code?: unknown; message?: unknown };
+  console.error(LOG_TAG, step, { code, message });
+}
+
 /**
  * Stores an anonymous guest's reply. Anon has no grants on `rsvps`, so the
  * service role writes it, after checking here that the invitation is live and
@@ -36,7 +44,10 @@ export async function submitRsvp(
       .select('id, status, entitlements')
       .eq('slug', reply.slug)
       .maybeSingle();
-    if (error) return { ok: false, message: RSVP_MESSAGES.FAILED };
+    if (error) {
+      logFailure('lookup', error);
+      return { ok: false, message: RSVP_MESSAGES.FAILED };
+    }
 
     const open =
       invitation?.status === INVITATION_STATUS.PUBLISHED &&
@@ -51,10 +62,14 @@ export async function submitRsvp(
       dietary_notes: reply.dietaryNotes,
       message: reply.message,
     });
-    if (insertError) return { ok: false, message: RSVP_MESSAGES.FAILED };
+    if (insertError) {
+      logFailure('insert', insertError);
+      return { ok: false, message: RSVP_MESSAGES.FAILED };
+    }
 
     return { ok: true, attending: reply.attending };
-  } catch {
+  } catch (caught) {
+    logFailure('exception', caught);
     return { ok: false, message: RSVP_MESSAGES.FAILED };
   }
 }

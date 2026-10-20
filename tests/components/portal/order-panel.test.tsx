@@ -139,6 +139,9 @@ describe('OrderPanel guest list', () => {
     expect(decodeURIComponent(upgrade.getAttribute('href') ?? '')).toContain(
       'Hi, I would like to upgrade order REV-0001 to Managed.',
     );
+    expect(
+      screen.queryByText('Replies are not included in this invitation.'),
+    ).not.toBeInTheDocument();
   });
 
   it('shows the list and the export link for an entitled invitation', () => {
@@ -189,9 +192,26 @@ describe('OrderPanel guest list', () => {
         })}
       />,
     );
-    expect(screen.getByRole('link', { name: 'Upgrade' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Upgrade' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Download CSV' })).not.toBeInTheDocument();
+    expect(screen.getByText('Replies are not included in this invitation.')).toBeInTheDocument();
   });
+
+  it.each(['managed', 'custom'] as const)(
+    'offers no upgrade on %s, only a note, when replies are off',
+    (tier) => {
+      render(
+        <OrderPanel
+          order={order({
+            tier,
+            invitation: { ...invitation, entitlements: { rsvp: false, portal: true, gallery: true } },
+          })}
+        />,
+      );
+      expect(screen.queryByRole('link', { name: 'Upgrade' })).not.toBeInTheDocument();
+      expect(screen.getByText('Replies are not included in this invitation.')).toBeInTheDocument();
+    },
+  );
 
   it('shows the empty state when entitled but no list was passed', () => {
     render(<OrderPanel order={order()} />);

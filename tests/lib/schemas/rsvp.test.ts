@@ -14,6 +14,13 @@ describe('rsvpSubmissionSchema', () => {
     expect(rsvpSubmissionSchema.safeParse({ ...base, name: '   ' }).success).toBe(false);
   });
 
+  it('rejects a name of only zero-width characters and strips them from a real one', () => {
+    const hidden = '​‌‍﻿';
+    expect(rsvpSubmissionSchema.safeParse({ ...base, name: hidden }).success).toBe(false);
+    expect(rsvpSubmissionSchema.safeParse({ ...base, name: ` ${hidden} ` }).success).toBe(false);
+    expect(rsvpSubmissionSchema.parse({ ...base, name: `Sa​ra${hidden}` }).name).toBe('Sara');
+  });
+
   it('rejects a name over 80 characters', () => {
     expect(rsvpSubmissionSchema.safeParse({ ...base, name: 'a'.repeat(81) }).success).toBe(false);
     expect(rsvpSubmissionSchema.safeParse({ ...base, name: 'a'.repeat(80) }).success).toBe(true);

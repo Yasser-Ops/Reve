@@ -863,8 +863,10 @@ base from the walk.
   Payment stays manual (Whish).
 - **RSVP has only a honeypot.** No Turnstile (no Cloudflare keys yet) and no
   rate limit: a determined submitter can post repeatedly to a live slug.
-  Duplicates do not inflate the headcount (latest per name), but they fill
-  the table.
+  Repeated replies under the same name count once (latest per name), but
+  distinct fake names do inflate the headcount, and every reply fills the
+  table. Each reply also triggers live refreshes, so a burst multiplies
+  reads too.
 - **No email when a guest replies or a client decides.** Comes with the
   Resend work.
 - **Operator setup still open:** custom SMTP for auth emails (the built-in
