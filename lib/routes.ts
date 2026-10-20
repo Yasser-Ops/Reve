@@ -34,6 +34,7 @@ export const publicRoutes = {
 /** Portal pages addressed by id. */
 export const portalRoutes = {
   preview: (id: string) => `/portal/preview/${id}`,
+  guestsExport: (id: string) => `/portal/guests/${id}/export`,
 } as const;
 
 /**

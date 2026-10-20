@@ -38,7 +38,7 @@ describe('/portal dashboard', () => {
     render(await page());
     expect(screen.getByTestId('live-refresh')).toHaveAttribute(
       'data-live',
-      'invitation_reviews,orders',
+      'invitation_reviews,orders,rsvps',
     );
   });
 });

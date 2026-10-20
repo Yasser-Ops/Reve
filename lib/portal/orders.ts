@@ -1,6 +1,7 @@
 import 'server-only';
 import type { Tier } from '@/lib/constants';
 import { ORDER_STATUS, type OrderStatus } from '@/lib/orders/status';
+import { entitlementsSchema, type Entitlements } from '@/lib/schemas/invitation';
 import type { Database } from '@/lib/supabase/database.types';
 import { createClient } from '@/lib/supabase/server';
 
@@ -14,6 +15,8 @@ export type PortalOrder = {
     slug: string;
     status: Database['public']['Enums']['invitation_status'];
     templateSlug: string;
+    /** What was bought, snapshotted on the invitation: the gate for the guest list. */
+    entitlements: Entitlements;
     content: unknown;
     latestReview: {
       decision: Database['public']['Enums']['review_decision'];
@@ -25,7 +28,7 @@ export type PortalOrder = {
 
 /* No notes column anywhere: operator notes are admin-only and RLS hides them. */
 const SELECT =
-  'id, reference, tier, status, created_at, invitations(id, slug, status, template_slug, content, invitation_reviews(decision, note, created_at))';
+  'id, reference, tier, status, created_at, invitations(id, slug, status, template_slug, entitlements, content, invitation_reviews(decision, note, created_at))';
 
 /**
  * The signed-in client's orders. The user's own client does the reading, so
@@ -58,6 +61,7 @@ export async function getPortalOrders(): Promise<PortalOrder[]> {
             slug: invitation.slug,
             status: invitation.status,
             templateSlug: invitation.template_slug,
+            entitlements: entitlementsSchema.parse(invitation.entitlements),
             content: invitation.content,
             latestReview: latest
               ? { decision: latest.decision, note: latest.note, createdAt: latest.created_at }

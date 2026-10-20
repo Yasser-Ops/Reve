@@ -10,6 +10,7 @@ const invitation: NonNullable<PortalOrder['invitation']> = {
   slug: 'maya-and-omar',
   status: 'draft',
   templateSlug: 'lin',
+  entitlements: { rsvp: true, portal: true, gallery: true },
   content: { coupleFirstName: 'Maya' },
   latestReview: null,
 };
@@ -127,15 +128,70 @@ describe('OrderPanel checklist', () => {
 
 describe('OrderPanel guest list', () => {
   it('locks the card on Basic with an upgrade link carrying the reference', () => {
-    render(<OrderPanel order={order({ tier: 'basic' })} />);
+    render(<OrderPanel order={order({
+          tier: 'basic',
+          invitation: { ...invitation, entitlements: { rsvp: false, portal: false, gallery: true } },
+        })} />);
     const upgrade = screen.getByRole('link', { name: 'Upgrade' });
     expect(decodeURIComponent(upgrade.getAttribute('href') ?? '')).toContain(
       'Hi, I would like to upgrade order REV-0001 to Managed.',
     );
   });
 
-  it('shows the placeholder on other tiers', () => {
-    render(<OrderPanel order={order({ tier: 'managed' })} />);
+  it('shows the list and the export link for an entitled invitation', () => {
+    render(
+      <OrderPanel
+        guestList={{
+          guests: [
+            {
+              name: 'Layla',
+              attending: true,
+              partySize: 2,
+              dietaryNotes: 'Vegan',
+              message: null,
+              repliedAt: '2026-10-02T10:00:00Z',
+              earlierReplies: 0,
+            },
+          ],
+          coming: 2,
+          declined: 0,
+          replies: 1,
+        }}
+        order={order({ tier: 'managed' })}
+      />,
+    );
+    expect(screen.getByText('Layla')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Download CSV' })).toHaveAttribute(
+      'href',
+      portalRoutes.guestsExport('inv-1'),
+    );
+    expect(screen.queryByRole('link', { name: 'Upgrade' })).not.toBeInTheDocument();
+  });
+
+  it('shows the empty state before anyone has replied', () => {
+    render(
+      <OrderPanel guestList={{ guests: [], coming: 0, declined: 0, replies: 0 }} order={order()} />,
+    );
+    expect(
+      screen.getByText('No replies yet. They appear here as guests answer.'),
+    ).toBeInTheDocument();
+  });
+
+  it('gates on the snapshot of what was bought, not on the tier', () => {
+    render(
+      <OrderPanel
+        order={order({
+          tier: 'managed',
+          invitation: { ...invitation, entitlements: { rsvp: false, portal: true, gallery: true } },
+        })}
+      />,
+    );
+    expect(screen.getByRole('link', { name: 'Upgrade' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Download CSV' })).not.toBeInTheDocument();
+  });
+
+  it('keeps the placeholder while an entitled order has no invitation yet', () => {
+    render(<OrderPanel order={order({ tier: 'managed', status: 'paid', invitation: null })} />);
     expect(screen.getByText('Your guest list opens here soon.')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Upgrade' })).not.toBeInTheDocument();
   });

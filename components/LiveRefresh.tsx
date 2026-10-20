@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 export const LIVE_TABLE = {
   REVIEWS: 'invitation_reviews',
   ORDERS: 'orders',
+  RSVPS: 'rsvps',
 } as const;
 
 export type LiveTable = (typeof LIVE_TABLE)[keyof typeof LIVE_TABLE];

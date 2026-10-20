@@ -23,6 +23,7 @@ describe('getPortalOrders', () => {
     const select = String(state.fake?.find('orders', 'select')?.args[0]);
     expect(select).toContain('invitations(');
     expect(select).toContain('invitation_reviews(');
+    expect(select).toContain('entitlements');
     expect(select).not.toContain('notes');
     expect(state.fake?.find('orders', 'order')?.args).toEqual([
       'created_at',
@@ -46,6 +47,7 @@ describe('getPortalOrders', () => {
                 slug: 'maya-and-omar',
                 status: 'draft',
                 template_slug: 'velours',
+                entitlements: { rsvp: true },
                 content: {},
                 invitation_reviews: [
                   review('changes_requested', '2026-10-01T10:00:00Z'),
@@ -76,6 +78,7 @@ describe('getPortalOrders', () => {
       note: '',
       createdAt: '2026-10-03T10:00:00.500Z',
     });
+    expect(first.invitation?.entitlements).toEqual({ rsvp: true, portal: false, gallery: false });
     expect(second.invitation).toBeNull();
   });
 

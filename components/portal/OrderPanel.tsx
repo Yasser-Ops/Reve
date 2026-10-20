@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { GuestList } from '@/components/GuestList';
 import { Eyebrow } from '@/components/admin/Eyebrow';
 import { getTemplateEntry } from '@/components/invitation/registry';
 import { LiveLink } from '@/components/portal/LiveLink';
@@ -9,6 +10,7 @@ import { whatsappLink } from '@/lib/contact';
 import { ORDER_STATUS, STATUS_LABELS, hasReached } from '@/lib/orders/status';
 import { REVIEW_MESSAGES } from '@/lib/portal/messages';
 import type { PortalOrder } from '@/lib/portal/orders';
+import type { GuestListSummary } from '@/lib/rsvp/guest-list';
 import { portalRoutes, publicRoutes } from '@/lib/routes';
 import { checklistProgress } from '@/lib/schemas/content/checklist';
 import { SITE_URL } from '@/lib/site';
@@ -20,9 +22,17 @@ const when = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: S
 /**
  * One order, told by its stage. Server-rendered: only the live link is
  * interactive. Approving happens on the preview, next to the design it
- * approves; here the client only reads their last decision.
+ * approves; here the client only reads their last decision. The guest list is
+ * gated on the invitation's entitlements, what was bought, not on the tier.
  */
-export function OrderPanel({ order }: { order: PortalOrder }) {
+export function OrderPanel({
+  order,
+  guestList,
+}: {
+  order: PortalOrder;
+  /** The replies, fetched by the page for an invitation that includes them. */
+  guestList?: GuestListSummary;
+}) {
   const { invitation, reference, status, tier } = order;
   const latestReview = invitation?.latestReview;
 
@@ -112,7 +122,21 @@ export function OrderPanel({ order }: { order: PortalOrder }) {
         </section>
       ) : null}
 
-      {tier === TIERS.BASIC ? (
+      {invitation?.entitlements.rsvp ? (
+        <section className="grid gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="font-heading text-lg">Guest list</h3>
+            <a
+              className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              download
+              href={portalRoutes.guestsExport(invitation.id)}
+            >
+              Download CSV
+            </a>
+          </div>
+          {guestList ? <GuestList summary={guestList} /> : null}
+        </section>
+      ) : invitation || tier === TIERS.BASIC ? (
         <LockedCard
           actionHref={whatsappLink(`Hi, I would like to upgrade order ${reference} to Managed.`)}
           actionLabel="Upgrade"
