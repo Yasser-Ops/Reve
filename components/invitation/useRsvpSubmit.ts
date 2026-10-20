@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { submitRsvp } from "@/lib/rsvp/submit";
-import { RSVP_COPY } from "@/lib/schemas/rsvp";
+import { useState, useTransition, type FormEvent } from 'react';
+import { submitRsvp } from '@/lib/rsvp/submit';
+import { RSVP_ATTENDING, RSVP_COPY, RSVP_MESSAGES } from '@/lib/schemas/rsvp';
 
 export const RSVP_STATE = {
-  IDLE: "idle",
-  SENDING: "sending",
-  SENT: "sent",
-  PREVIEW: "preview",
-  ERROR: "error",
+  IDLE: 'idle',
+  SENDING: 'sending',
+  SENT: 'sent',
+  PREVIEW: 'preview',
+  ERROR: 'error',
 } as const;
 
 type RsvpState = (typeof RSVP_STATE)[keyof typeof RSVP_STATE];
@@ -45,30 +45,45 @@ export function useRsvpSubmit(rsvpSlug: string | null) {
       });
       return;
     }
-    formData.set("slug", rsvpSlug);
+    formData.set('slug', rsvpSlug);
     startTransition(async () => {
-      const result = await submitRsvp(null, formData);
-      setOutcome(
-        result.ok
-          ? {
-              state: RSVP_STATE.SENT,
-              attending: result.attending,
-              message: result.attending
-                ? RSVP_COPY.THANKS_YES
-                : RSVP_COPY.THANKS_NO,
-            }
-          : {
-              state: RSVP_STATE.ERROR,
-              message: result.message,
-              attending: null,
-            },
-      );
+      try {
+        const result = await submitRsvp(null, formData);
+        setOutcome(
+          result.ok
+            ? {
+                state: RSVP_STATE.SENT,
+                attending: result.attending,
+                message: result.attending ? RSVP_COPY.THANKS_YES : RSVP_COPY.THANKS_NO,
+              }
+            : {
+                state: RSVP_STATE.ERROR,
+                message: result.message,
+                attending: null,
+              },
+        );
+      } catch {
+        /* Offline or a dropped connection: the form stays, with a plain message. */
+        setOutcome({ state: RSVP_STATE.ERROR, message: RSVP_MESSAGES.FAILED, attending: null });
+      }
     });
+  }
+
+  /* Which of Yes and No is picked, so a design can show the Yes-only fields. */
+  const [choice, setChoice] = useState<string | null>(null);
+
+  /* A plain form would GET its own URL and replay the envelope. */
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    submit(new FormData(event.currentTarget));
   }
 
   return {
     ...outcome,
     state: pending ? RSVP_STATE.SENDING : outcome.state,
     submit,
+    onSubmit,
+    setChoice,
+    isYes: choice === RSVP_ATTENDING.YES,
   };
 }

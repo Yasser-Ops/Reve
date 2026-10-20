@@ -1,26 +1,26 @@
-import {
-  createEvent,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { RsvpForm as JardinRsvpForm } from "@/components/invitation/templates/jardin/RsvpForm";
-import { RsvpForm as LinRsvpForm } from "@/components/invitation/templates/lin/RsvpForm";
-import { Lin } from "@/components/invitation/templates/lin";
-import { Jardin } from "@/components/invitation/templates/jardin";
-import { RSVP_COPY, RSVP_LIMITS } from "@/lib/schemas/rsvp";
-import { entitlementsSchema } from "@/lib/schemas/invitation";
-import { SAMPLE_CONTENT, SAMPLE_THEME } from "@/lib/sample-invitation";
-import { linContentSchema } from "@/components/invitation/templates/lin/schema";
-import { jardinContentSchema } from "@/components/invitation/templates/jardin/schema";
+import { createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { RsvpForm as JardinRsvpForm } from '@/components/invitation/templates/jardin/RsvpForm';
+import { RsvpForm as LinRsvpForm } from '@/components/invitation/templates/lin/RsvpForm';
+import { Lin } from '@/components/invitation/templates/lin';
+import { Jardin } from '@/components/invitation/templates/jardin';
+import { RSVP_COPY, RSVP_LIMITS, RSVP_MESSAGES } from '@/lib/schemas/rsvp';
+import { entitlementsSchema } from '@/lib/schemas/invitation';
+import { SAMPLE_CONTENT, SAMPLE_THEME } from '@/lib/sample-invitation';
+import { linContentSchema } from '@/components/invitation/templates/lin/schema';
+import { jardinContentSchema } from '@/components/invitation/templates/jardin/schema';
 
 const submitRsvp = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/rsvp/submit", () => ({ submitRsvp }));
+/* A rejection returned through a spy is re-thrown by vitest's own bookkeeping
+   and fails a test that handled it, so the offline case bypasses the spy. */
+const offline = vi.hoisted(() => ({ on: false }));
+vi.mock('@/lib/rsvp/submit', () => ({
+  submitRsvp: (...args: unknown[]) =>
+    offline.on ? Promise.reject(new Error('offline')) : submitRsvp(...args),
+}));
 
-const SLUG = "test-couple";
+const SLUG = 'test-couple';
 
 /**
  * A plain form GETs its own URL on submit, which reloaded the invitation and
@@ -28,24 +28,20 @@ const SLUG = "test-couple";
  * live invitation and says it is a preview everywhere else.
  */
 describe.each([
-  ["Lin", LinRsvpForm, "Submit"],
-  ["Jardin", JardinRsvpForm, "Send word"],
-])("%s RsvpForm", (_name, RsvpForm, label) => {
+  ['Lin', LinRsvpForm, 'Submit'],
+  ['Jardin', JardinRsvpForm, 'Send word'],
+])('%s RsvpForm', (_name, RsvpForm, label) => {
   const renderForm = (rsvpSlug: string | null) =>
-    render(
-      <RsvpForm
-        accent="#8a6d3a"
-        ink="#3a2f22"
-        paper="#f5f0e6"
-        rsvpSlug={rsvpSlug}
-      />,
-    );
+    render(<RsvpForm accent="#8a6d3a" ink="#3a2f22" paper="#f5f0e6" rsvpSlug={rsvpSlug} />);
 
-  beforeEach(() => submitRsvp.mockReset());
+  beforeEach(() => {
+    submitRsvp.mockReset();
+    offline.on = false;
+  });
 
-  it("does not navigate on submit", () => {
+  it('does not navigate on submit', () => {
     renderForm(null);
-    const form = screen.getByRole("form", { name: "Reply" });
+    const form = screen.getByRole('form', { name: 'Reply' });
     const submit = createEvent.submit(form);
 
     fireEvent(form, submit);
@@ -53,110 +49,141 @@ describe.each([
     expect(submit.defaultPrevented).toBe(true);
   });
 
-  it("with no slug, shows the preview line and never calls the action", async () => {
+  it('with no slug, shows the preview line and never calls the action', async () => {
     const user = userEvent.setup();
     renderForm(null);
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
 
-    await user.type(screen.getByLabelText("Your name"), "Sam");
-    await user.click(screen.getByLabelText("Yes"));
-    await user.click(screen.getByRole("button", { name: label }));
+    await user.type(screen.getByLabelText('Your name'), 'Sam');
+    await user.click(screen.getByLabelText('Yes'));
+    await user.click(screen.getByRole('button', { name: label }));
 
-    expect(screen.getByRole("status")).toHaveTextContent(RSVP_COPY.PREVIEW);
+    expect(screen.getByRole('status')).toHaveTextContent(RSVP_COPY.PREVIEW);
     expect(submitRsvp).not.toHaveBeenCalled();
   });
 
-  it("with a slug, sends the form plus the slug and swaps in the yes confirmation", async () => {
+  it('with a slug, sends the form plus the slug and swaps in the yes confirmation', async () => {
     submitRsvp.mockResolvedValue({ ok: true, attending: true });
     const user = userEvent.setup();
     renderForm(SLUG);
 
-    await user.type(screen.getByLabelText("Your name"), "Sam");
-    await user.click(screen.getByLabelText("Yes"));
-    await user.click(screen.getByRole("button", { name: label }));
+    await user.type(screen.getByLabelText('Your name'), 'Sam');
+    await user.click(screen.getByLabelText('Yes'));
+    await user.click(screen.getByRole('button', { name: label }));
 
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
-        RSVP_COPY.THANKS_YES,
-      ),
-    );
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(RSVP_COPY.THANKS_YES));
     const sent = submitRsvp.mock.calls[0][1] as FormData;
-    expect(sent.get("slug")).toBe(SLUG);
-    expect(sent.get("name")).toBe("Sam");
-    expect(sent.get("attending")).toBe("yes");
-    expect(
-      screen.queryByRole("form", { name: "Reply" }),
-    ).not.toBeInTheDocument();
+    expect(sent.get('slug')).toBe(SLUG);
+    expect(sent.get('name')).toBe('Sam');
+    expect(sent.get('attending')).toBe('yes');
+    expect(screen.queryByRole('form', { name: 'Reply' })).not.toBeInTheDocument();
   });
 
-  it("confirms a decline with its own line", async () => {
+  it('confirms a decline with its own line', async () => {
     submitRsvp.mockResolvedValue({ ok: true, attending: false });
     const user = userEvent.setup();
     renderForm(SLUG);
 
-    await user.type(screen.getByLabelText("Your name"), "Sam");
-    await user.click(screen.getByLabelText("No"));
-    await user.click(screen.getByRole("button", { name: label }));
+    await user.type(screen.getByLabelText('Your name'), 'Sam');
+    await user.click(screen.getByLabelText('No'));
+    await user.click(screen.getByRole('button', { name: label }));
 
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(RSVP_COPY.THANKS_NO),
-    );
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(RSVP_COPY.THANKS_NO));
   });
 
-  it("shows a refusal and keeps what was typed", async () => {
+  it('shows a refusal and keeps what was typed', async () => {
     submitRsvp.mockResolvedValue({
       ok: false,
-      message: "Replies are not open.",
+      message: 'Replies are not open.',
     });
     const user = userEvent.setup();
     renderForm(SLUG);
 
-    await user.type(screen.getByLabelText("Your name"), "Sam");
-    await user.click(screen.getByLabelText("Yes"));
-    await user.click(screen.getByRole("button", { name: label }));
+    await user.type(screen.getByLabelText('Your name'), 'Sam');
+    await user.click(screen.getByLabelText('Yes'));
+    await user.click(screen.getByRole('button', { name: label }));
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "Replies are not open.",
-      ),
+      expect(screen.getByRole('status')).toHaveTextContent('Replies are not open.'),
     );
-    expect(screen.getByLabelText("Your name")).toHaveValue("Sam");
-    expect(screen.getByLabelText("Yes")).toBeChecked();
+    expect(screen.getByLabelText('Your name')).toHaveValue('Sam');
+    expect(screen.getByLabelText('Yes')).toBeChecked();
   });
 
-  it("shows party size and dietary notes only for Yes", async () => {
+  it('shows party size and dietary notes only for Yes', async () => {
     const user = userEvent.setup();
     renderForm(SLUG);
-    expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+    expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
 
-    await user.click(screen.getByLabelText("Yes"));
-    expect(screen.getByRole("spinbutton")).toHaveAttribute(
-      "max",
-      String(RSVP_LIMITS.PARTY_MAX),
-    );
-    expect(screen.getByLabelText("Dietary needs")).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Yes'));
+    expect(screen.getByRole('spinbutton')).toHaveAttribute('max', String(RSVP_LIMITS.PARTY_MAX));
+    expect(screen.getByLabelText('Dietary needs')).toBeInTheDocument();
 
-    await user.click(screen.getByLabelText("No"));
-    expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+    await user.click(screen.getByLabelText('No'));
+    expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
   });
 
-  it("carries a hidden honeypot that stays out of the tab order", () => {
+  it('maps a rejected action to the failed message and keeps the form', async () => {
+    offline.on = true;
+    const user = userEvent.setup();
     renderForm(SLUG);
-    const trap = screen.getByLabelText("Company", {
-      selector: "input",
+
+    await user.type(screen.getByLabelText('Your name'), 'Sam');
+    await user.click(screen.getByLabelText('Yes'));
+    await user.click(screen.getByRole('button', { name: label }));
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(RSVP_MESSAGES.FAILED));
+    expect(screen.getByLabelText('Your name')).toHaveValue('Sam');
+  });
+
+  it('passes the honeypot value to the action', async () => {
+    submitRsvp.mockResolvedValue({ ok: true, attending: true });
+    const user = userEvent.setup();
+    renderForm(SLUG);
+
+    await user.type(screen.getByLabelText('Your name'), 'Sam');
+    await user.click(screen.getByLabelText('Yes'));
+    await user.type(screen.getByLabelText('Company'), 'Acme');
+    await user.click(screen.getByRole('button', { name: label }));
+
+    await waitFor(() => expect(submitRsvp).toHaveBeenCalled());
+    expect((submitRsvp.mock.calls[0][1] as FormData).get('company')).toBe('Acme');
+  });
+
+  it('disables the button while sending', async () => {
+    let finish: (result: unknown) => void = () => {};
+    submitRsvp.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    const user = userEvent.setup();
+    renderForm(SLUG);
+
+    await user.type(screen.getByLabelText('Your name'), 'Sam');
+    await user.click(screen.getByLabelText('Yes'));
+    await user.click(screen.getByRole('button', { name: label }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: label })).toBeDisabled());
+    finish({ ok: true, attending: true });
+    await waitFor(() =>
+      expect(screen.queryByRole('form', { name: 'Reply' })).not.toBeInTheDocument(),
+    );
+  });
+
+  it('carries a hidden honeypot that stays out of the tab order', () => {
+    renderForm(SLUG);
+    const trap = screen.getByLabelText('Company', {
+      selector: 'input',
       exact: false,
     });
 
-    expect(trap).toHaveAttribute("tabindex", "-1");
-    expect(trap).toHaveAttribute("autocomplete", "off");
+    expect(trap).toHaveAttribute('tabindex', '-1');
+    expect(trap).toHaveAttribute('autocomplete', 'off');
     expect(trap.closest('[aria-hidden="true"]')).not.toBeNull();
   });
 });
 
 describe.each([
-  ["Lin", Lin, linContentSchema],
-  ["Jardin", Jardin, jardinContentSchema],
-])("%s reply section", (_name, Design, schema) => {
+  ['Lin', Lin, linContentSchema],
+  ['Jardin', Jardin, jardinContentSchema],
+])('%s reply section', (_name, Design, schema) => {
   /* The petal layer measures itself; jsdom has no ResizeObserver. */
   beforeEach(() => {
     vi.stubGlobal(
@@ -177,15 +204,13 @@ describe.each([
       />,
     );
 
-  it("shows the reply card when the rsvp entitlement is on", () => {
+  it('shows the reply card when the rsvp entitlement is on', () => {
     renderDesign(true);
-    expect(screen.getByRole("form", { name: "Reply" })).toBeInTheDocument();
+    expect(screen.getByRole('form', { name: 'Reply' })).toBeInTheDocument();
   });
 
-  it("is absent when the rsvp entitlement is off", () => {
+  it('is absent when the rsvp entitlement is off', () => {
     renderDesign(false);
-    expect(
-      screen.queryByRole("form", { name: "Reply" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('form', { name: 'Reply' })).not.toBeInTheDocument();
   });
 });

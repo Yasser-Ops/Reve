@@ -1,11 +1,8 @@
-"use client";
+'use client';
 
-import { useState, type FormEvent } from "react";
-import {
-  RSVP_STATE,
-  useRsvpSubmit,
-} from "@/components/invitation/useRsvpSubmit";
-import { RSVP_ATTENDING, RSVP_LIMITS } from "@/lib/schemas/rsvp";
+import { RsvpHoneypot } from '@/components/invitation/RsvpHoneypot';
+import { RSVP_STATE, useRsvpSubmit } from '@/components/invitation/useRsvpSubmit';
+import { RSVP_ATTENDING, RSVP_LIMITS } from '@/lib/schemas/rsvp';
 
 type RsvpFormProps = {
   ink: string;
@@ -13,14 +10,6 @@ type RsvpFormProps = {
   paper: string;
   rsvpSlug: string | null;
 };
-
-/** Off-screen rather than display:none, which some bots skip. */
-const HONEYPOT_STYLE = {
-  position: "absolute",
-  left: "-10000px",
-  width: 1,
-  height: 1,
-} as const;
 
 /**
  * Jardin's reply card. Its own file so the client boundary stays here: the
@@ -32,13 +21,7 @@ const HONEYPOT_STYLE = {
  * comes in as props because the template owns it.
  */
 export function RsvpForm({ ink, accent, paper, rsvpSlug }: RsvpFormProps) {
-  const { state, message, submit } = useRsvpSubmit(rsvpSlug);
-  const [attending, setAttending] = useState<string | null>(null);
-
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    submit(new FormData(event.currentTarget));
-  }
+  const { state, message, onSubmit, setChoice, isYes } = useRsvpSubmit(rsvpSlug);
 
   if (state === RSVP_STATE.SENT) {
     return (
@@ -53,10 +36,9 @@ export function RsvpForm({ ink, accent, paper, rsvpSlug }: RsvpFormProps) {
   }
 
   const fieldClass =
-    "rounded-md border bg-white/50 px-4 py-2.5 text-base normal-case tracking-normal";
+    'rounded-md border bg-white/50 px-4 py-2.5 text-base normal-case tracking-normal';
   const fieldStyle = { borderColor: `${ink}2e`, color: ink };
-  const labelClass =
-    "flex flex-col gap-2 text-left text-[11px] uppercase tracking-[0.18em]";
+  const labelClass = 'flex flex-col gap-2 text-left text-[11px] uppercase tracking-[0.18em]';
 
   return (
     <form
@@ -85,7 +67,7 @@ export function RsvpForm({ ink, accent, paper, rsvpSlug }: RsvpFormProps) {
           <label className="flex items-center gap-2">
             <input
               name="attending"
-              onChange={() => setAttending(RSVP_ATTENDING.YES)}
+              onChange={() => setChoice(RSVP_ATTENDING.YES)}
               required
               type="radio"
               value={RSVP_ATTENDING.YES}
@@ -95,7 +77,7 @@ export function RsvpForm({ ink, accent, paper, rsvpSlug }: RsvpFormProps) {
           <label className="flex items-center gap-2">
             <input
               name="attending"
-              onChange={() => setAttending(RSVP_ATTENDING.NO)}
+              onChange={() => setChoice(RSVP_ATTENDING.NO)}
               required
               type="radio"
               value={RSVP_ATTENDING.NO}
@@ -105,7 +87,7 @@ export function RsvpForm({ ink, accent, paper, rsvpSlug }: RsvpFormProps) {
         </div>
       </fieldset>
 
-      {attending === RSVP_ATTENDING.YES ? (
+      {isYes ? (
         <>
           <label className={labelClass} style={{ color: `${ink}99` }}>
             How many of you
@@ -143,12 +125,7 @@ export function RsvpForm({ ink, accent, paper, rsvpSlug }: RsvpFormProps) {
         />
       </label>
 
-      <div aria-hidden="true" style={HONEYPOT_STYLE}>
-        <label>
-          Company
-          <input autoComplete="off" name="company" tabIndex={-1} type="text" />
-        </label>
-      </div>
+      <RsvpHoneypot />
 
       <button
         className="mt-2 rounded-full px-7 py-3 text-[11px] uppercase tracking-[0.2em] disabled:opacity-60"
