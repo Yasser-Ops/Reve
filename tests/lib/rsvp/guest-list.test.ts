@@ -17,10 +17,10 @@ describe('summariseReplies', () => {
   it('counts one guest once across spelling variants and keeps the latest', () => {
     const out = summariseReplies([
       row({ name: 'Maya Haddad', party_size: 2, created_at: '2026-10-01T10:00:00Z' }),
-      row({ name: ' maya  haddad', party_size: 3, created_at: '2026-10-02T10:00:00Z' }),
+      row({ name: ' maya  haddad ', party_size: 3, created_at: '2026-10-02T10:00:00Z' }),
     ]);
     expect(out.guests).toHaveLength(1);
-    expect(out.guests[0]).toMatchObject({ name: ' maya  haddad', partySize: 3, earlierReplies: 1 });
+    expect(out.guests[0]).toMatchObject({ name: 'maya haddad', partySize: 3, earlierReplies: 1 });
     expect(out.replies).toBe(2);
     expect(out.coming).toBe(3);
   });
@@ -55,6 +55,14 @@ describe('summariseReplies', () => {
     ]);
     expect(out.coming).toBe(0);
     expect(out.declined).toBe(1);
+  });
+
+  it('never lets an invalid date beat a valid one', () => {
+    const out = summariseReplies([
+      row({ party_size: 2, created_at: '2026-10-01T10:00:00Z' }),
+      row({ party_size: 9, created_at: 'not a date' }),
+    ]);
+    expect(out.guests[0].partySize).toBe(2);
   });
 
   it('matches names across NFC and NFD forms', () => {

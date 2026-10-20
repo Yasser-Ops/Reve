@@ -4,8 +4,17 @@ import type { GuestReply } from '@/lib/rsvp/guest-list';
 // Excel only reads UTF-8 (Arabic names) when the file opens with a BOM.
 const BOM = '\uFEFF';
 const EOL = '\r\n';
-const HEADER = ['Name', 'Coming', 'Guests', 'Dietary notes', 'Message', 'Replied at'];
-const FORMULA_START = /^[=+\-@]/;
+const COL_NAME = 'Name';
+const COL_COMING = 'Coming';
+const COL_GUESTS = 'Guests';
+const COL_DIETARY = 'Dietary notes';
+const COL_MESSAGE = 'Message';
+const COL_REPLIED_AT = 'Replied at';
+const HEADER = [COL_NAME, COL_COMING, COL_GUESTS, COL_DIETARY, COL_MESSAGE, COL_REPLIED_AT];
+const YES = 'Yes';
+const NO = 'No';
+// OWASP set: a leading tab or carriage return can also start a formula in some spreadsheets.
+const FORMULA_START = /^[=+\-@\t\r]/;
 const NEEDS_QUOTES = /[",\r\n]/;
 
 const timestamp = new Intl.DateTimeFormat('en-CA', {
@@ -20,7 +29,9 @@ const timestamp = new Intl.DateTimeFormat('en-CA', {
 });
 
 function formatRepliedAt(iso: string): string {
-  const parts = Object.fromEntries(timestamp.formatToParts(new Date(iso)).map((p) => [p.type, p.value]));
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const parts = Object.fromEntries(timestamp.formatToParts(date).map((p) => [p.type, p.value]));
   return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
 }
 
@@ -34,7 +45,7 @@ export function toGuestCsv(guests: GuestReply[]): string {
   const lines = guests.map((g) =>
     [
       g.name,
-      g.attending ? 'Yes' : 'No',
+      g.attending ? YES : NO,
       String(g.attending ? g.partySize : 0),
       g.dietaryNotes ?? '',
       g.message ?? '',

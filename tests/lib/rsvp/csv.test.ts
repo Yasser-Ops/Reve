@@ -41,9 +41,17 @@ describe('toGuestCsv', () => {
     expect(csv).toContain('"no nuts, no dairy","Say ""hi""\nsoon"');
   });
 
-  it.each(['=SUM(A1)', '+1', '-2', '@cmd'])('guards a cell starting with %s', (cell) => {
-    const csv = toGuestCsv([guest({ message: cell })]);
-    expect(csv).toContain(`'${cell}`);
+  it.each(['=SUM(A1)', '+1', '-2', '@cmd', '\t=1', '\r=1'])('guards a cell starting with %j', (cell) => {
+    for (const field of ['name', 'dietaryNotes', 'message'] as const) {
+      const csv = toGuestCsv([guest({ [field]: cell })]);
+      // Neutralised cells carry a leading apostrophe, with or without surrounding quotes.
+      expect(csv.includes(`'${cell}`)).toBe(true);
+    }
+  });
+
+  it('writes an empty Replied at for an invalid date', () => {
+    const lines = toGuestCsv([guest({ repliedAt: 'garbage' })]).split('\r\n');
+    expect(lines[1]).toBe('Maya Haddad,Yes,2,,,');
   });
 
   it('keeps Arabic names intact', () => {

@@ -34,7 +34,9 @@ export function summariseReplies(rows: RsvpRow[]): GuestListSummary {
 
   for (const row of rows) {
     const key = normaliseName(row.name);
-    const time = Date.parse(row.created_at);
+    // An unparseable date must never beat a real one.
+    const parsed = Date.parse(row.created_at);
+    const time = Number.isNaN(parsed) ? -Infinity : parsed;
     const seen = byGuest.get(key);
     if (!seen) {
       byGuest.set(key, { row, time, count: 1 });
@@ -49,7 +51,7 @@ export function summariseReplies(rows: RsvpRow[]): GuestListSummary {
 
   const guests: GuestReply[] = [...byGuest.values()]
     .map(({ row, count }) => ({
-      name: row.name,
+      name: row.name.trim().replace(/\s+/g, ' '),
       attending: row.attending,
       partySize: row.party_size,
       dietaryNotes: row.dietary_notes,
