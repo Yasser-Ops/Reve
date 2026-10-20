@@ -49,7 +49,9 @@ export default async function PortalHomePage({
       {orders.length === 0 ? (
         <p className="text-muted-foreground">Your order will appear here once we set it up.</p>
       ) : (
-        orders.map((order) => <OrderPanel guestList={guestLists.get(order.id)} key={order.id} order={order} />)
+        orders.map((order) => (
+          <OrderPanel guestList={guestLists.get(order.id)} key={order.id} order={order} />
+        ))
       )}
     </main>
   );

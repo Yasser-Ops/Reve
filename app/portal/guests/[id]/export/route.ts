@@ -7,6 +7,8 @@ import { entitlementsSchema } from '@/lib/schemas/invitation';
 import { createClient } from '@/lib/supabase/server';
 
 const IdSchema = z.uuid();
+/* The slug is operator-typed and lands in a header: keep the filename to safe characters. */
+const UNSAFE_FILENAME_CHARS = /[^a-z0-9-]/g;
 
 /**
  * The guest list as a spreadsheet. The guard redirects like a page would; the
@@ -29,11 +31,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (error) throw error;
   if (!data || !entitlementsSchema.parse(data.entitlements).rsvp) notFound();
 
+  const filename = `guests-${data.slug.toLowerCase().replace(UNSAFE_FILENAME_CHARS, '-')}.csv`;
   const csv = toGuestCsv((await getGuestList(id.data)).guests);
   return new Response(csv, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="guests-${data.slug}.csv"`,
+      'Content-Disposition': `attachment; filename="${filename}"`,
       'Cache-Control': 'no-store',
     },
   });

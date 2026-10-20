@@ -15,6 +15,7 @@ import { portalRoutes, publicRoutes } from '@/lib/routes';
 import { checklistProgress } from '@/lib/schemas/content/checklist';
 import { SITE_URL } from '@/lib/site';
 
+const NO_REPLIES: GuestListSummary = { guests: [], coming: 0, declined: 0, replies: 0 };
 const CHECKLIST_TITLE = 'What we need from you';
 
 const when = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: STUDIO_TIME_ZONE });
@@ -134,7 +135,7 @@ export function OrderPanel({
               Download CSV
             </a>
           </div>
-          {guestList ? <GuestList summary={guestList} /> : null}
+          <GuestList summary={guestList ?? NO_REPLIES} />
         </section>
       ) : invitation || tier === TIERS.BASIC ? (
         <LockedCard

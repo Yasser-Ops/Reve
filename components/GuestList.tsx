@@ -9,7 +9,12 @@ import {
 import type { GuestListSummary } from '@/lib/rsvp/guest-list';
 
 const EMPTY_MESSAGE = 'No replies yet. They appear here as guests answer.';
-const NO_NOTES = '';
+const NOTES_SEPARATOR = ' · ';
+const YES = 'Yes';
+const NO = 'No';
+const TILE_COMING = 'Coming';
+const TILE_NOT_COMING = 'Not coming';
+const TILE_REPLIES = 'Replies';
 
 /**
  * The replies to one invitation: headcount, then one row per guest. Takes the
@@ -17,9 +22,9 @@ const NO_NOTES = '';
  */
 export function GuestList({ summary }: { summary: GuestListSummary }) {
   const tiles = [
-    { label: 'Coming', value: summary.coming },
-    { label: 'Not coming', value: summary.declined },
-    { label: 'Replies', value: summary.replies },
+    { label: TILE_COMING, value: summary.coming },
+    { label: TILE_NOT_COMING, value: summary.declined },
+    { label: TILE_REPLIES, value: summary.replies },
   ];
 
   return (
@@ -46,13 +51,13 @@ export function GuestList({ summary }: { summary: GuestListSummary }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {summary.guests.map((guest) => (
-              <TableRow key={guest.name}>
+            {summary.guests.map((guest, index) => (
+              <TableRow key={`${index}-${guest.name}`}>
                 <TableCell className="font-medium">{guest.name}</TableCell>
-                <TableCell>{guest.attending ? 'Yes' : 'No'}</TableCell>
+                <TableCell>{guest.attending ? YES : NO}</TableCell>
                 <TableCell>{guest.attending ? guest.partySize : 0}</TableCell>
                 <TableCell className="whitespace-normal">
-                  {[guest.dietaryNotes, guest.message].filter(Boolean).join(' · ') || NO_NOTES}
+                  {[guest.dietaryNotes, guest.message].filter(Boolean).join(NOTES_SEPARATOR)}
                 </TableCell>
               </TableRow>
             ))}

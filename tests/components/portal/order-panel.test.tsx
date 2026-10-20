@@ -130,7 +130,10 @@ describe('OrderPanel guest list', () => {
   it('locks the card on Basic with an upgrade link carrying the reference', () => {
     render(<OrderPanel order={order({
           tier: 'basic',
-          invitation: { ...invitation, entitlements: { rsvp: false, portal: false, gallery: true } },
+          invitation: {
+            ...invitation,
+            entitlements: { rsvp: false, portal: false, gallery: true },
+          },
         })} />);
     const upgrade = screen.getByRole('link', { name: 'Upgrade' });
     expect(decodeURIComponent(upgrade.getAttribute('href') ?? '')).toContain(
@@ -188,6 +191,13 @@ describe('OrderPanel guest list', () => {
     );
     expect(screen.getByRole('link', { name: 'Upgrade' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Download CSV' })).not.toBeInTheDocument();
+  });
+
+  it('shows the empty state when entitled but no list was passed', () => {
+    render(<OrderPanel order={order()} />);
+    expect(
+      screen.getByText('No replies yet. They appear here as guests answer.'),
+    ).toBeInTheDocument();
   });
 
   it('keeps the placeholder while an entitled order has no invitation yet', () => {

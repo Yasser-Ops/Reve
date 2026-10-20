@@ -58,6 +58,17 @@ describe('guest list export', () => {
     expect(state.fake.calls.some((c) => c.table === 'rsvps')).toBe(false);
   });
 
+  it('keeps the filename to safe characters', async () => {
+    state.fake = fakeSupabase({
+      invitations: [{ data: { slug: 'Maya"; x=\r\nOmar', entitlements: { rsvp: true } } }],
+      rsvps: [{ data: [] }],
+    });
+    const response = await call(ID);
+    expect(response.headers.get('Content-Disposition')).toBe(
+      'attachment; filename="guests-maya---x---omar.csv"',
+    );
+  });
+
   it('sends the CSV as an uncached download named for the invitation', async () => {
     const response = await call(ID);
     expect(response.headers.get('Content-Type')).toBe('text/csv; charset=utf-8');
