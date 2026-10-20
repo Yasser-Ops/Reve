@@ -20,10 +20,18 @@ export async function TemplateRenderer({
   content,
   theme,
   entitlements,
+  rsvpSlug,
 }: TemplateRendererProps) {
   const Template = await loadTemplate(templateSlug);
 
   if (!Template) return null;
 
-  return <Template content={content} entitlements={entitlements} theme={theme} />;
+  return (
+    <Template
+      content={content}
+      entitlements={entitlements}
+      rsvpSlug={rsvpSlug}
+      theme={theme}
+    />
+  );
 }

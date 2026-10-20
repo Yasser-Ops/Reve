@@ -9,6 +9,12 @@ import type { Entitlements, Theme } from '@/lib/schemas/invitation';
 export type TemplateProps = {
   theme: Theme;
   entitlements: Entitlements;
+  /**
+   * The published slug replies are sent to. Absent on every surface that is
+   * not the live invitation (previews, the store demo, thumbnails), where the
+   * reply card only explains it is a preview.
+   */
+  rsvpSlug?: string | null;
 };
 
 /** A design's own component, typed against its own content. */

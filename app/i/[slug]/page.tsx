@@ -42,6 +42,7 @@ export default async function InvitationPage({ params }: PageProps) {
       <TemplateRenderer
         content={invitation.content}
         entitlements={invitation.entitlements}
+        rsvpSlug={slug}
         templateSlug={invitation.templateSlug}
         theme={invitation.theme}
       />

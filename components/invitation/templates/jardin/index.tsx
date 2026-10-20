@@ -12,6 +12,7 @@ type JardinProps = {
   content: JardinContent;
   theme: Theme;
   entitlements: Entitlements;
+  rsvpSlug?: string | null;
 };
 
 /*
@@ -61,7 +62,7 @@ const MOSS = '#55613f';
  * registry imports this component, so importing its types back would close a
  * cycle.
  */
-export function Jardin({ content, theme, entitlements }: JardinProps) {
+export function Jardin({ content, theme, entitlements, rsvpSlug = null }: JardinProps) {
   return (
     <main
       className={`${jardinScript.variable} ${jardinBody.variable} relative text-[17px]`}
@@ -142,7 +143,7 @@ export function Jardin({ content, theme, entitlements }: JardinProps) {
       ) : null}
 
       <Section ground={PAPER_DEEP}>
-        <RsvpSection />
+        {entitlements.rsvp ? <RsvpSection rsvpSlug={rsvpSlug} /> : null}
       </Section>
 
       {content.registryMessage ? (
@@ -396,12 +397,10 @@ function JardinGallery({
 }
 
 /**
- * No storage is wired up yet: the form is a small island that holds a submit
- * on the page and says replies are not open. The fields match Lin's so the
- * shape is right once RSVP persistence gets its own design pass and both
- * templates adopt it together.
+ * The reply card. It sends only on the live invitation (`rsvpSlug` set); on
+ * a preview it explains that instead. Switched off by the `rsvp` entitlement.
  */
-function RsvpSection() {
+function RsvpSection({ rsvpSlug }: { rsvpSlug: string | null }) {
   return (
     <div className="mx-auto max-w-xl px-6">
       <div className="text-center">
@@ -414,7 +413,7 @@ function RsvpSection() {
         </p>
       </div>
 
-      <RsvpForm accent={ROSE} ink={INK} paper={PAPER} />
+      <RsvpForm accent={ROSE} ink={INK} paper={PAPER} rsvpSlug={rsvpSlug} />
     </div>
   );
 }

@@ -12,6 +12,7 @@ type LinProps = {
   content: LinContent;
   theme: Theme;
   entitlements: Entitlements;
+  rsvpSlug?: string | null;
 };
 
 const SAGE = '#c7c7ba';
@@ -37,7 +38,7 @@ const GOLD = '#8a6d3a';
  * registry imports this component, so importing its types back would close a
  * cycle.
  */
-export function Lin({ content, theme, entitlements }: LinProps) {
+export function Lin({ content, theme, entitlements, rsvpSlug = null }: LinProps) {
   return (
     <main
       className={`${linScript.variable} ${linBody.variable} relative text-[17px]`}
@@ -98,7 +99,7 @@ export function Lin({ content, theme, entitlements }: LinProps) {
       ) : null}
 
       <Band bg={SAGE_DEEP}>
-        <RsvpSection />
+        {entitlements.rsvp ? <RsvpSection rsvpSlug={rsvpSlug} /> : null}
 
         {content.registryMessage ? (
           <Section className="pt-0 text-center">
@@ -286,12 +287,10 @@ function VenueIllustration() {
 }
 
 /**
- * No storage is wired up yet: the form is a small island that holds a submit
- * on the page and says replies are not open. The fields match what the client
- * asked for so the shape is right once RSVP persistence gets its own design
- * pass.
+ * The reply card. It sends only on the live invitation (`rsvpSlug` set); on
+ * a preview it explains that instead. Switched off by the `rsvp` entitlement.
  */
-function RsvpSection() {
+function RsvpSection({ rsvpSlug }: { rsvpSlug: string | null }) {
   return (
     <Section>
       <div className="text-center">
@@ -301,7 +300,7 @@ function RsvpSection() {
         </p>
       </div>
 
-      <RsvpForm accent={GOLD} ink={INK} paper={CREAM} />
+      <RsvpForm accent={GOLD} ink={INK} paper={CREAM} rsvpSlug={rsvpSlug} />
     </Section>
   );
 }

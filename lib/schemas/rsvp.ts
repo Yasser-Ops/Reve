@@ -9,6 +9,13 @@ export const RSVP_MESSAGES = {
   INVALID: 'Please check your reply and try again.',
 } as const;
 
+/** What a guest reads after pressing send, apart from a refusal above. */
+export const RSVP_COPY = {
+  PREVIEW: 'This is a preview. Replies are sent from the live invitation.',
+  THANKS_YES: 'Thank you, we have your reply.',
+  THANKS_NO: 'Thank you for letting us know.',
+} as const;
+
 export const RSVP_ATTENDING = { YES: 'yes', NO: 'no' } as const;
 
 const SLUG_MAX = 200;
