@@ -376,7 +376,7 @@ deleteClient: read user_id -> admin_delete_client rpc -> media ->
 ```
 /i/[slug] -> template RsvpForm [CLIENT] -> useRsvpSubmit(rsvpSlug)
   null slug (any preview) -> "This is a preview", no call
-  submitRsvp (lib/rsvp/submit.ts, zod; honeypot  -> fake ok)
+  submitRsvp (lib/rsvp/submit.ts, zod; honeypot `company` -> fake ok)
     service role: invitations by SLUG -> published AND entitlements.rsvp
     insert rsvps (trimmed; a decline is party 1; DB checks agree)
   -> "Thank you, we have your reply." | "Thank you for letting us know."
