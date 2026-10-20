@@ -371,6 +371,22 @@ deleteClient: read user_id -> admin_delete_client rpc -> media ->
   skipped or failed -> ?notice=client-deleted-account-left
 ```
 
+**Guest replies**
+
+```
+/i/[slug] -> template RsvpForm [CLIENT] -> useRsvpSubmit(rsvpSlug)
+  null slug (any preview) -> "This is a preview", no call
+  submitRsvp (lib/rsvp/submit.ts, zod; honeypot  -> fake ok)
+    service role: invitations by SLUG -> published AND entitlements.rsvp
+    insert rsvps (trimmed; a decline is party 1; DB checks agree)
+  -> "Thank you, we have your reply." | "Thank you for letting us know."
+portal / admin editor: getGuestList (cookie client, RLS, pages past 1000)
+  -> summariseReplies (latest per normalised name) -> GuestList
+  /portal/guests/[id]/export | /admin/invitations/[id]/export
+    -> toGuestCsv (BOM, CRLF, formula guard) via csvResponse
+LiveRefresh on rsvps refreshes both lists as replies arrive
+```
+
 ---
 
 ## 03 — Data flow and registries
@@ -636,7 +652,8 @@ revoked from `authenticated` (0009).
 | `client_notes`, `order_notes` | admin all ONLY | operator notes (0009). Row RLS cannot hide a column and admins share `authenticated`, so notes left `clients`/`orders` |
 | `invitations` | admin all; client read own | `order_id` unique; `content` is the working draft, `published_content` the approved snapshot guests see |
 | `invitation_reviews` | admin all; client read own; client insert own | `content_snapshot` IS the approval; `on_behalf`; `created_by` has no delete action. Client insert: owns, `created_by = auth.uid()`, `on_behalf = false`, order in `review`, snapshot = content. `note` <= 1000. 0010 trigger sets `created_at = now()` and `id`: "latest" orders by it, so no caller may choose it |
-| `guests`, `rsvps`, `custom_leads` | admin all | |
+| `rsvps` | admin all; couple read own when entitled | `private.can_read_rsvps` (0012): owns the invitation AND `entitlements.rsvp`. Checks: name 1..80, party 1..10, a decline is 1, notes and message <= 500. Written only by the service role. In the Realtime publication |
+| `guests`, `custom_leads` | admin all | `guests` unused: the seam for per-guest tokens |
 | `admin_users` | `admin_users self read` | membership, not a JWT claim, makes an admin |
 | view `published_invitations` | SELECT to anon, authenticated ONLY | runs as its owner; projects `published_content as content` |
 | bucket `invitation-media` | public read; admin select, insert, update, delete | WebP and MP4 only, 50 MB; `<invitation>/<kind>/<name>` |
@@ -708,9 +725,14 @@ No dark mode. An invitation is a fixed artifact, like printed stationery.
   scopes each viewer) and calls `router.refresh()`, debounced, plus on tab
   focus. Mounted on the admin clients list, client page and invitation editor,
   and the portal dashboard and preview.
-- **Guest RSVP forms do not submit yet.** Each template's form is a client
-  island that prevents the reload and says replies open soon; nothing is
-  stored until Phase 4.
+- **Only the live page sends replies.** Templates take an optional
+  `rsvpSlug`; only `app/i/[slug]` passes it. Every preview (store demo,
+  thumbnails, admin and client previews) shows "This is a preview" and never
+  calls the action. The RSVP section renders only when `entitlements.rsvp`.
+- **Replies are written by the service role, addressed by slug.** Anon holds
+  no privilege on `rsvps` or `guests` (0012 revokes Supabase's defaults,
+  TRUNCATE included). Every reply is kept; the guest list counts each
+  guest's latest reply by normalised name.
 - **A helper used inside RLS must be executable by the role the policy runs
   as.** 0003 revoked EXECUTE on `public.is_admin()` to quiet the advisor and
   silently broke every admin policy ("permission denied for function"). Policy
@@ -837,10 +859,14 @@ base from the walk.
 - `/i/[slug]` renders dynamically; SSG via `generateStaticParams` is possible
   once the published set is known at build time.
 - Testimonials are marked placeholders. Rêve is pre-launch.
-- **Portal Phases 4 and 5 are not built:** RSVP and the guest list (Phase 4,
-  write path in `2026-09-05-guest-rsvp-design.md`; the portal shows a
-  placeholder card), private designs and per-client envelopes (Phase 5).
+- **Portal Phase 5 is not built:** private designs and per-client envelopes.
   Payment stays manual (Whish).
+- **RSVP has only a honeypot.** No Turnstile (no Cloudflare keys yet) and no
+  rate limit: a determined submitter can post repeatedly to a live slug.
+  Duplicates do not inflate the headcount (latest per name), but they fill
+  the table.
+- **No email when a guest replies or a client decides.** Comes with the
+  Resend work.
 - **Operator setup still open:** custom SMTP for auth emails (the built-in
   sender allows a few an hour); the Invite and Reset templates linking to
   `/auth/confirm?token_hash=...`; `<site>/auth/confirm**` in Supabase Auth's
