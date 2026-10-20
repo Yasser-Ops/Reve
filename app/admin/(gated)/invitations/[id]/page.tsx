@@ -9,6 +9,7 @@ import { Eyebrow } from '@/components/admin/Eyebrow';
 import { Field } from '@/components/admin/fields';
 import { LIVE_TABLE, LiveRefresh } from '@/components/LiveRefresh';
 import { MediaSection } from '@/components/admin/MediaSection';
+import { GuestsSection } from '@/components/admin/GuestsSection';
 import { ReviewPanel } from '@/components/admin/ReviewPanel';
 import { getTemplateEntry } from '@/components/invitation/registry';
 import { formModel, isRecord, type MediaOptions } from '@/lib/admin/content-form';
@@ -17,6 +18,8 @@ import { getInvitationForEditor } from '@/lib/admin/invitations';
 import { listMedia } from '@/lib/admin/media';
 import { requireAdmin } from '@/lib/auth/guards';
 import { ROUTES, adminRoutes } from '@/lib/routes';
+import { getGuestList } from '@/lib/rsvp/read';
+import { entitlementsSchema } from '@/lib/schemas/invitation';
 import { checklistFor, checklistMessage } from '@/lib/schemas/content/checklist';
 
 export const metadata: Metadata = { title: 'Invitation' };
@@ -46,6 +49,10 @@ export default async function InvitationEditorPage({
   }
 
   const order = invitation.orders;
+  /* Read only when the plan includes replies; the section explains the gap otherwise. */
+  const guestList = entitlementsSchema.parse(invitation.entitlements).rsvp
+    ? await getGuestList(invitation.id)
+    : null;
   const checklist = checklistFor(design.schema);
   const fields = formModel(design.schema);
 
@@ -64,7 +71,7 @@ export default async function InvitationEditorPage({
 
   return (
     <main className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6">
-      <LiveRefresh tables={[LIVE_TABLE.REVIEWS, LIVE_TABLE.ORDERS]} />
+      <LiveRefresh tables={[LIVE_TABLE.REVIEWS, LIVE_TABLE.ORDERS, LIVE_TABLE.RSVPS]} />
       <Breadcrumbs items={crumbs} />
 
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -99,6 +106,8 @@ export default async function InvitationEditorPage({
       <MediaSection files={files} invitationId={invitation.id} />
 
       <ReviewPanel invitation={invitation} />
+
+      <GuestsSection invitationId={invitation.id} summary={guestList} />
     </main>
   );
 }

@@ -22,6 +22,7 @@ export const ROUTES = {
 export const adminRoutes = {
   client: (id: string) => `/admin/clients/${id}`,
   invitation: (id: string) => `/admin/invitations/${id}`,
+  guestsExport: (id: string) => `/admin/invitations/${id}/export`,
   /** The bare draft render, outside the admin surface's styles. */
   preview: (id: string) => `/admin/preview/${id}`,
 } as const;
