@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { CONTACT, whatsappLink } from '@/lib/contact';
 import { EVENTS } from '@/lib/events';
+import { ROUTES } from '@/lib/routes';
 
 const COLUMNS = [
   {
@@ -31,6 +32,8 @@ const COLUMNS = [
       { label: 'How it works', href: '/#how-it-works' },
       { label: 'Questions', href: '/#questions' },
       { label: 'Who we are', href: '/#studio' },
+      { label: 'Client portal', href: ROUTES.PORTAL },
+      { label: 'Terms', href: ROUTES.TERMS },
     ],
   },
 ];

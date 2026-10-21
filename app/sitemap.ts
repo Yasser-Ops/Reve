@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { CATALOGUE_ENTRIES, LISTED_TEMPLATES } from '@/components/invitation/registry';
+import { ROUTES } from '@/lib/routes';
 import { SITE_URL } from '@/lib/site';
 
 /**
@@ -27,6 +28,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly' as const,
       priority: 0.9,
     })),
+    { url: `${SITE_URL}${ROUTES.TERMS}`, lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
   ];
 
   const designRoutes: MetadataRoute.Sitemap = LISTED_TEMPLATES.map((template) => {

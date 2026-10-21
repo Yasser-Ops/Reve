@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useActionState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import type { ActionResult } from '@/lib/admin/action-result';
 import { PASSWORD_RULES } from '@/lib/auth/messages';
 import { acceptInvite } from '@/lib/auth/portal-actions';
+import { ROUTES } from '@/lib/routes';
 
 export function WelcomeForm() {
   const [result, action, pending] = useActionState<ActionResult | null, FormData>(
@@ -58,7 +60,17 @@ export function WelcomeForm() {
           type="checkbox"
         />
         <Label className="font-normal leading-snug" htmlFor="terms">
-          I accept the terms and confirm I am 18 or older.
+          {/* A new tab, so reading the terms does not lose the typed password. */}
+          I accept the{' '}
+          <Link
+            className="underline underline-offset-4"
+            href={ROUTES.TERMS}
+            rel="noreferrer noopener"
+            target="_blank"
+          >
+            terms
+          </Link>{' '}
+          and confirm I am 18 or older.
         </Label>
       </div>
 

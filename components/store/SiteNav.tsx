@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { CONTACT, whatsappLink } from '@/lib/contact';
+import { ROUTES } from '@/lib/routes';
 
 /* The catalogue is two pages and the nav names both. Collection is the formal
    half — weddings and engagements — and Celebrations the lighter one; they are
@@ -18,6 +19,11 @@ const LINKS = [
 /* The nav sits on every page, including the occasion pages, so its message
    names no single occasion. Each landing page's own buttons carry theirs. */
 const START_MESSAGE = "Hello Rêve, I'd like to create an invitation.";
+
+/* Clients who already ordered, apart from the catalogue links: it sits beside
+   the call to action because it is the other way in. /portal sends a signed-out
+   visitor to the login and a signed-in one straight to their dashboard. */
+const PORTAL_LABEL = 'Client portal';
 
 /**
  * Floating pill navigation.
@@ -73,6 +79,13 @@ export function SiteNav() {
         </ul>
 
         <div className="flex items-center justify-end gap-2">
+          <Link
+            className="reve-crisp reve-underline mr-3 hidden text-[13px] text-cocoa transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine md:inline-block"
+            href={ROUTES.PORTAL}
+          >
+            {PORTAL_LABEL}
+          </Link>
+
           <a
             className="reve-crisp rounded-full bg-wine px-4 py-2.5 text-[11px] uppercase tracking-[0.12em] text-bone transition-colors hover:bg-wine-deep focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine sm:px-5 sm:text-[12px] sm:tracking-[0.14em]"
             href={whatsappLink(START_MESSAGE)}
@@ -124,6 +137,14 @@ export function SiteNav() {
           >
             Start yours on WhatsApp
           </a>
+
+          <Link
+            className="reve-crisp mt-2 block rounded-full border border-taupe px-6 py-3.5 text-center text-[12px] uppercase tracking-[0.14em] text-ink hover:bg-sand"
+            href={ROUTES.PORTAL}
+            onClick={() => setMenuOpen(false)}
+          >
+            {PORTAL_LABEL}
+          </Link>
 
           <p className="mt-3 text-center text-[12px] text-cocoa">
             {CONTACT.whatsappNumber}

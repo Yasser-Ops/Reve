@@ -10,6 +10,8 @@ export const ROUTES = {
   PORTAL_RESET: '/portal/reset',
   PORTAL_WELCOME: '/portal/welcome',
   PORTAL_SETTINGS: '/portal/settings',
+  /** Public: every client accepts these on the welcome step. */
+  TERMS: '/terms',
   /** Where invite and reset emails land. Public: it signs the person in. */
   AUTH_CONFIRM: '/auth/confirm',
   /** Fallback for links that carry the session in the URL fragment. */
