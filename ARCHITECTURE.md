@@ -75,8 +75,12 @@ components/
   invitation/                   The product itself.
     registry.tsx                slug -> defineTemplate({schema, load, copy})
     TemplateRenderer.tsx
-    EnvelopeGate.tsx            [CLIENT] fixed inset:0 — IS the guest's screen
-    FrameSequence.tsx           [CLIENT] plays the rendered opening
+    EnvelopeGate.tsx            [CLIENT] fixed inset:0 — IS the guest's screen;
+                                loading ring; EnvelopeReleasedContext provider
+    EnvelopeVideo.tsx           [CLIENT] plays opening.mp4 (stacked alpha, WebGL)
+    FrameSequence.tsx           [CLIENT] fallback: plays the rendered frames
+    HeroVideo.tsx               [CLIENT] hero video; src only once released
+    envelope-context.ts         released = seal tapped (true without a gate)
     envelope.css                Stage, card and seal; the paper is a render
     motifs/                     SHARED VISUALS ONLY. Petals.
     templates/<slug>/           index.tsx + schema.ts (its own content schema)
@@ -132,18 +136,24 @@ scripts/
 supabase/migrations/            append-only; 0005 admin pipeline, 0006 view
                                 seal, 0007 admin_delete_client, 0008 client
                                 RLS, 0009 admin-only notes, 0010 review
-                                server time
+                                server time, 0011 realtime reviews, 0012
+                                RSVP, 0013 auth_email_sends (service only)
+scripts/envelope-video.mjs      frames -> stacked-alpha opening.mp4
 ```
 
 **Client portal and auth links**
 
 ```
-app/auth/confirm/route.ts       GET token_hash -> verifyOtp | code -> exchange
-                                | neither -> /auth/session (the #fragment
-                                survives the 3xx); failure -> login link-expired
-app/auth/session/page.tsx       noindex; SessionFromHash [CLIENT]: reads
-                                #access_token, clears it (replaceState), sets
-                                the session ONCE (useRef: StrictMode), replace
+app/auth/confirm/route.ts       GET token_hash + type (invite|recovery, zod)
+                                -> verifyOtp -> safeNext; anything else (a
+                                code, an old Supabase-template link) or a
+                                failure -> login link-expired
+lib/auth/auth-email.ts          mintAuthLink (admin generateLink -> our
+                                confirmLink); mayEmail / recordEmail throttle
+lib/email/resend.ts             sendEmail: fetch Resend, no-store, from
+                                studio@reveinvitations.com; EmailSendError
+lib/email/templates.ts          inviteEmail, resetEmail: table HTML + text
+app/(store)/terms/page.tsx      static; wording in lib/terms.ts (TERMS_UPDATED_ON)
 app/auth/signout/route.ts       GET ?notice= (zod) -> signOut local -> login
 app/portal/
   layout.tsx                    metadata only (noindex)
@@ -161,7 +171,6 @@ lib/auth/   guards (requireAdmin, requireClientAccount, requireClient),
             portal-actions, recovery, password, password-change, links
 lib/portal/ orders (dashboard read), review-actions, messages
 lib/supabase/admin.ts           service role, server-only
-lib/supabase/mailer.ts          non-persisting implicit-flow client for auth email
 ```
 
 **Client islands are deliberately shallow.** `HomeHero`, `RsvpPanel`,
@@ -191,8 +200,11 @@ WhatsApp link  ->  GET /i/[slug]
     notFound() when unpublished or design unknown
     TemplateRenderer -> loadTemplate  lazy import, memoised, parses again
   EnvelopeGate [CLIENT] fixed inset:0
-    getEnvelope(slug)                lib/envelopes.ts -> frames + seal geometry
-    FrameSequence preloads EVERY frame; seal disabled, hint "One moment"
+    getEnvelope(slug)                lib/envelopes.ts -> frames + video + seal geometry
+    EnvelopeVideo (spec.video) fetches opening.mp4 WHOLE as a blob, progress
+      -> ring; no WebGL or fetch error -> onFailed -> FrameSequence (frames)
+    seal disabled, ring filling, hint "One moment" until onReady
+    HeroVideo inside the card waits for the tap (EnvelopeReleasedContext)
     tap seal
       0 .. openingDurationMs(frames)   the RENDERED opening plays
                                        (flap, paper, wax, exit: all in Blender)
@@ -328,24 +340,28 @@ GET /[event]
 ```
 /admin/clients/[id]  AccountStatus -> inviteClient (lib/admin/invite.ts)
   requireAdmin; hasPaidOrder gate; email read from the ROW, never the form
-  not invited -> admin.auth.admin.inviteUserByEmail(redirectTo
-                 confirmUrl('/portal/welcome'))
+  not invited -> mintAuthLink(invite) (creates the auth user)
               -> clients.user_id via the admin's cookie client
                  .is('user_id', null); 0 rows (lost race) -> delete new user
-  invited     -> createMailClient().resetPasswordForEmail (resend)
-  429 / over_email_send_rate_limit -> "Too many emails just now."
+                 (nothing emailed yet)
+              -> sendEmail(inviteEmail) -> recordEmail; a failed send keeps
+                 the account: client reads invited, operator sends again
+  invited     -> mintAuthLink(recovery, next /portal/welcome) -> same email
+  Resend 429 -> "Too many emails just now."
 ```
 
 **Client accepts, signs in, resets**
 
 ```
-email link -> /auth/confirm (or /auth/session) -> /portal/welcome
+email link -> /auth/confirm -> /portal/welcome
   requireClientAccount (claims + client row, else /auth/signout?notice=not-client)
   acceptInvite: passwordSchema(email) + terms === 'on'
     updatePasswordOrRefuse (same_password counts as set: the retry path)
     admin client stamps terms_accepted_at, keyed on claims sub,
       .is('terms_accepted_at', null)  -> /portal
-/portal/forgot -> requestReset (always ok; mail client) -> /auth/confirm
+/portal/forgot -> requestReset (always ok) -> client row with user_id?
+  -> mayEmail (auth_email_sends: 1/min, 5/hour) -> mintAuthLink(recovery)
+  -> sendEmail(resetEmail) -> recordEmail -> email -> /auth/confirm
   -> /portal/reset: getRecoveryClient = amr `recovery` entry <= 15 min old
      AND a client row -> setNewPassword -> signOut others
      (failure -> /portal?notice=others-kept)
@@ -514,9 +530,17 @@ contract inherits the animation unchanged.
   hit target over the rendered wax. `sealX`/`sealY`/`sealSize` survive because
   they place the couple's INITIALS drawn over it in CSS, which change per
   invitation and cannot be baked into frames every couple shares.
-- **All frames decode before the seal arms** (`FrameSequence`, hint reads "One
-  moment"). A sequence that fetches as it plays stutters in the one moment of
-  the product a guest remembers.
+- **The opening ships as one video** (`opening.mp4`, ~630 KB against 2.4-3.6
+  MB of frames). `pnpm envelope:video <slug>` encodes it from the shipped
+  frames: colour on top (premultiplied over black), alpha as grey below, BT.709,
+  CRF 24, timing from the spec (`tail` included) as exact timestamps. Frames
+  are decoded with sharp first (ffmpeg's WebP decode runs darker than the
+  poster). Re-run it after any re-render. `EnvelopeVideo` recombines the halves
+  in a WebGL shader; frame 1 stays as the poster until the canvas paints.
+- **Nothing plays until it is all here.** The video is fetched whole (the ring
+  shows real progress), the frame fallback decodes every frame. A sequence that
+  fetches as it plays stutters in the one moment of the product a guest
+  remembers.
 - **Reduced motion holds frame 1** and cuts to the invitation. A render is
   indivisible: unlike CSS transforms there is no way to still part of it.
 - **`frames.width/height` size the demo screen.** Frames fill their box with
@@ -697,10 +721,14 @@ No dark mode. An invitation is a fixed artifact, like printed stationery.
   transpiled without the `@/` alias: one `@/lib/site` import passed every test
   and broke `next build` at config load. `tests/next-config.test.ts` pins it;
   URL builders that need `SITE_URL` live in `lib/auth/links.ts`.
-- **Auth emails are sent from a non-persisting implicit-flow client**
-  (`lib/supabase/mailer.ts`). From the SSR cookie client the PKCE verifier
-  lands in the sender's browser and the recipient's code can never be
-  exchanged.
+- **Auth emails are ours, never Supabase's.** The service role mints a token
+  (`generateLink`), the email carries `/auth/confirm?token_hash=`, and the
+  server verifies it. No PKCE verifier is involved, so the email opens on any
+  device. `RESEND_API_KEY` is required by `lib/env.ts`: a deploy without it
+  fails every page that reads the env.
+- **Reset emails are throttled by us** (`auth_email_sends`, 0013: one a
+  minute, five an hour per address; read failure refuses). Supabase's own
+  rate limit no longer applies to emails we send.
 - **A Server Component cannot sign anyone out** (it cannot write cookies).
   Guards redirect to `/auth/signout` instead.
 - **A session may set a password without the current one only when its
@@ -865,23 +893,16 @@ base from the walk.
   distinct fake names do inflate the headcount, and every reply fills the
   table. Each reply also triggers live refreshes, so a burst multiplies
   reads too.
-- **No email when a guest replies or a client decides.** Comes with the
-  Resend work.
-- **Operator setup still open:** custom SMTP for auth emails (the built-in
-  sender allows a few an hour); the Invite and Reset templates linking to
-  `/auth/confirm?token_hash=...`; `<site>/auth/confirm**` in Supabase Auth's
-  redirect allowlist (otherwise invites silently land on the Site URL);
-  Supabase password minimum 8; leaked-password protection. Sign-ups are OFF.
+- **No email when a guest replies or a client decides.** The owner chose no
+  operator alerts for now; `lib/email` is where they would go.
+- **Operator setup still open:** Supabase email OTP expiry (1 hour by default,
+  short for an invite); password minimum 8; leaked-password protection.
+  Sign-ups are OFF. studio@reveinvitations.com has no mailbox: replies bounce.
 - **The portal has not seen a real email end to end.** Confirm once with a
   real invite and a real reset: that the recovery session's JWT `amr` is an
   object entry with a `timestamp` (if Supabase sends the string form, every
   reset is refused), and that the review bar does not cover a design's own
   fixed bottom element.
-- **`/auth/session` allows login CSRF** (a crafted fragment carrying someone
-  else's tokens). It exists only because the default templates send
-  fragments; remove it once the templates use `token_hash`.
-- **There is no terms page.** The welcome checkbox accepts terms it cannot
-  link to.
 - **Deferred Phase 3 minors:** GET `/auth/signout` is cross-site triggerable
   (local sign-out only); the settings page reads the client row twice;
   `ChangePasswordForm` imports admin primitives; a DB outage during sign-in or
