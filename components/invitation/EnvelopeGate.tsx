@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { getEnvelope, openingDurationMs } from '@/lib/envelopes';
 import { EnvelopeReleasedContext } from './envelope-context';
+import { EnvelopeVideo } from './EnvelopeVideo';
 import { FrameSequence } from './FrameSequence';
 import './envelope.css';
 
@@ -89,6 +90,13 @@ export function EnvelopeGate({
   /* Drives the ring around the wax while the frames arrive, so a slow
      connection reads as loading rather than as a seal that does nothing. */
   const [progress, setProgress] = useState(0);
+  /* The video where the device can draw it, the frames where it cannot.
+     A failure only happens while loading, before the seal is live. */
+  const [useFrames, setUseFrames] = useState(!spec.video);
+  const handleVideoFailed = useCallback(() => {
+    setProgress(0);
+    setUseFrames(true);
+  }, []);
 
   /*
    * A rendered opening cannot be partially stilled the way the old CSS
@@ -178,12 +186,23 @@ export function EnvelopeGate({
             browser composites nothing. It sits in front of the card, so the
             card emerges from behind it exactly as it did when this was four
             hinged layers. */}
-        <FrameSequence
-          frames={spec.frames}
-          onProgress={setProgress}
-          onReady={handleReady}
-          playing={state === 'opening' && !reducedMotion}
-        />
+        {spec.video && !useFrames ? (
+          <EnvelopeVideo
+            frames={spec.frames}
+            onFailed={handleVideoFailed}
+            onProgress={setProgress}
+            onReady={handleReady}
+            playing={state === 'opening' && !reducedMotion}
+            src={spec.video}
+          />
+        ) : (
+          <FrameSequence
+            frames={spec.frames}
+            onProgress={setProgress}
+            onReady={handleReady}
+            playing={state === 'opening' && !reducedMotion}
+          />
+        )}
 
         <span className="envelope-pulse" />
 

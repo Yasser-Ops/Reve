@@ -113,6 +113,13 @@ export type EnvelopeSpec = SealGeometry & {
   /** Human name, for the storefront. */
   name: string;
   frames: EnvelopeFrames;
+  /**
+   * The same opening encoded as one stacked-alpha MP4, from these frames by
+   * `pnpm envelope:video <slug>`. The player prefers it (a quarter of the
+   * bytes) and falls back to `frames` where it cannot draw it. Optional, so
+   * a fresh render plays from its frames before it has been encoded.
+   */
+  video?: string;
 };
 
 /*
@@ -138,6 +145,7 @@ const LIN: EnvelopeSpec = {
     width: 800,
     height: 1732,
   },
+  video: '/envelope/lin/opening.mp4',
   sealY: '44.9%',
   sealX: '49.9%',
   sealSize: '30.8%',
@@ -234,6 +242,7 @@ const JARDIN: EnvelopeSpec = {
       fps: 24,
     },
   },
+  video: '/envelope/jardin/opening.mp4',
   sealY: '45.1%',
   sealX: '50.0%',
   sealSize: '30%',
@@ -335,6 +344,7 @@ const DENTELLE: EnvelopeSpec = {
       fps: 24,
     },
   },
+  video: '/envelope/dentelle/opening.mp4',
   sealY: '45.1%',
   sealX: '50.0%',
   sealSize: '30%',

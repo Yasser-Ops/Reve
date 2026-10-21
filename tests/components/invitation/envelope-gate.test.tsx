@@ -89,6 +89,20 @@ describe('EnvelopeGate', () => {
     );
   });
 
+  /* The video needs WebGL to recombine its colour and alpha halves. Where
+     there is none (jsdom here; old or locked-down browsers in the field), the
+     same opening must still play, from the frames. */
+  it('falls back to the frames where the video cannot be drawn', async () => {
+    const { container } = renderGate();
+
+    expect(await screen.findByText('Tap the seal')).toBeInTheDocument();
+    expect(container.querySelector('canvas')).not.toBeInTheDocument();
+    expect(container.querySelector('.envelope-frame')).toHaveAttribute(
+      'src',
+      '/envelope/lin/frames/0001.webp',
+    );
+  });
+
   /* A hero video behind a sealed envelope would compete with the frames for
      the connection, delaying the seal for something the guest cannot see. */
   it('holds the hero video back until the seal is tapped', async () => {
