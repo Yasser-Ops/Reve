@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Lin } from '@/components/invitation/templates/lin';
+import { notFound } from 'next/navigation';
+import { getTemplateEntry } from '@/components/invitation/registry';
 import { FaqList, type FaqItem } from '@/components/store/FaqList';
 import { HeroEnvelope } from '@/components/store/HeroEnvelope';
 import { InvitationDemo } from '@/components/store/InvitationDemo';
@@ -171,7 +172,15 @@ const QUESTIONS: FaqItem[] = [
  * Replace with genuine quotes, with permission, once couples have been served. */
 const TESTIMONIAL_PLACEHOLDERS = 3;
 
-export default function HomePage() {
+export default async function HomePage() {
+  const jardin = getTemplateEntry('jardin');
+  const dentelle = getTemplateEntry('dentelle');
+  if (!jardin || !dentelle) notFound();
+  const [Jardin, Dentelle] = await Promise.all([
+    jardin.load(),
+    dentelle.load(),
+  ]);
+
   return (
     <main className="bg-bone text-ink">
       {/* Hero */}
@@ -349,7 +358,7 @@ export default function HomePage() {
               </p>
               <p className="mt-5 max-w-md text-[15px] leading-relaxed text-cocoa">
                 Your details are yours to change at any time, and the design
-                never changes the price. Lin is available on every tier.
+                never changes the price. Every design is available on every tier.
               </p>
 
               <Link
@@ -362,31 +371,31 @@ export default function HomePage() {
           </Reveal>
 
           <Reveal delay={120}>
-            {/* PLACEHOLDER: Lin stands on both sides of the divider until a
-                second design exists, so the comparison currently reveals the
-                same design twice. Restore a real pair — or drop
-                TemplateCompare for a single thumbnail — once there is one. */}
+            {/* Both sides come from the registry, so each renders through its
+                own schema. Dentelle still borrows Jardin's component until its
+                own artwork lands (see registry.tsx), so the two look alike
+                until then. */}
             <TemplateCompare
               base={
                 <TemplateThumbnail>
-                  <Lin
+                  <Jardin
                     content={SAMPLE_CONTENT}
                     entitlements={SAMPLE_ENTITLEMENTS}
                     theme={SAMPLE_THEME}
                   />
                 </TemplateThumbnail>
               }
-              baseLabel="Lin"
+              baseLabel={jardin.name}
               overlay={
                 <TemplateThumbnail>
-                  <Lin
+                  <Dentelle
                     content={SAMPLE_CONTENT}
                     entitlements={SAMPLE_ENTITLEMENTS}
                     theme={SAMPLE_THEME}
                   />
                 </TemplateThumbnail>
               }
-              overlayLabel="Lin"
+              overlayLabel={dentelle.name}
             />
           </Reveal>
         </div>
