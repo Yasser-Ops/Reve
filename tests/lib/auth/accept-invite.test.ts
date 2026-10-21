@@ -26,7 +26,6 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }));
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: adminFrom }) }));
-vi.mock('@/lib/supabase/mailer', () => ({ createMailClient: () => ({}) }));
 
 import { UNEXPECTED } from '@/lib/admin/action-result';
 import { PASSWORD_MESSAGES, PORTAL_MESSAGES } from '@/lib/auth/messages';

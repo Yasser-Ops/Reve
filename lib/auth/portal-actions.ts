@@ -14,10 +14,11 @@ import {
 import { changePasswordAs, updatePasswordOrRefuse } from '@/lib/auth/password-change';
 import { passwordSchema } from '@/lib/auth/password';
 import { getRecoveryClient } from '@/lib/auth/recovery';
-import { confirmUrl } from '@/lib/auth/links';
+import { mayEmail, mintAuthLink, recordEmail } from '@/lib/auth/auth-email';
+import { sendEmail } from '@/lib/email/resend';
+import { resetEmail } from '@/lib/email/templates';
 import { NOTICE_PARAM, PORTAL_NOTICE, ROUTES } from '@/lib/routes';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createMailClient } from '@/lib/supabase/mailer';
 import { createClient } from '@/lib/supabase/server';
 
 const signInSchema = z.object({
@@ -64,13 +65,19 @@ export async function signInClient(
   redirect(ROUTES.PORTAL);
 }
 
-const emailSchema = z.object({ email: z.email() });
+/* Trimmed and lowered before the format check: a pasted address often
+   carries a trailing space, and the clients table stores it lowercase. */
+const emailSchema = z.object({ email: z.string().trim().toLowerCase().pipe(z.email()) });
 
 /**
  * Always answers ok for a well-formed email, so the form cannot be used to
- * learn which addresses have accounts. Sent through the implicit-flow mail
- * client: a PKCE verifier would be stored in the browser that asked, and the
- * email is often opened on a phone that does not have it.
+ * learn which addresses have accounts, or which were throttled.
+ *
+ * Only a client with an account gets the email: an admin address has no
+ * client row and resets through Supabase, and an unknown address gets
+ * nothing. The token is minted with the service role and verified on our own
+ * /auth/confirm, so no PKCE verifier is involved and the email can be opened
+ * on any device.
  */
 export async function requestReset(
   _previous: ActionResult | null,
@@ -78,15 +85,30 @@ export async function requestReset(
 ): Promise<ActionResult> {
   const parsed = emailSchema.safeParse({ email: formData.get('email') });
   if (!parsed.success) return { ok: false, message: SIGN_IN_MESSAGES.INVALID_INPUT };
+  const { email } = parsed.data;
 
   /* Logged, never shown: the answer must not depend on the account existing. */
   try {
-    const { error } = await createMailClient().auth.resetPasswordForEmail(parsed.data.email, {
-      redirectTo: confirmUrl(ROUTES.PORTAL_RESET),
-    });
-    if (error) console.error('Password reset email failed', error);
+    const admin = createAdminClient();
+    const { data: client, error } = await admin
+      .from('clients')
+      .select('id')
+      .eq('email', email)
+      .not('user_id', 'is', null)
+      .maybeSingle();
+    if (error) throw error;
+    if (!client || !(await mayEmail(admin, email, 'recovery'))) return { ok: true };
+
+    const link = await mintAuthLink(admin, { type: 'recovery', email, next: ROUTES.PORTAL_RESET });
+    if ('error' in link) {
+      console.error('Minting a reset link failed', link.error);
+      return { ok: true };
+    }
+
+    await sendEmail(resetEmail({ to: email, url: link.url }));
+    await recordEmail(admin, email, 'recovery');
   } catch (error) {
-    console.error('Password reset email threw', error);
+    console.error('Password reset email failed', error);
   }
 
   return { ok: true };

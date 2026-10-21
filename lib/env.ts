@@ -4,6 +4,8 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  /** Sends invite and reset emails (lib/email). Server only. */
+  RESEND_API_KEY: z.string().startsWith('re_'),
 });
 
 export type Env = z.infer<typeof envSchema>;

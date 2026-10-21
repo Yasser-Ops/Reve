@@ -5,6 +5,7 @@ const valid = {
   NEXT_PUBLIC_SUPABASE_URL: 'https://abc.supabase.co',
   NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon-key-value',
   SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value',
+  RESEND_API_KEY: 're_test_key',
 };
 
 describe('parseEnv', () => {
@@ -15,6 +16,11 @@ describe('parseEnv', () => {
   it('throws when a required variable is missing', () => {
     const { SUPABASE_SERVICE_ROLE_KEY: _omitted, ...incomplete } = valid;
     expect(() => parseEnv(incomplete)).toThrow(/SUPABASE_SERVICE_ROLE_KEY/);
+  });
+
+  /* A key pasted from the wrong service would fail every send at runtime. */
+  it('throws when the Resend key is not a Resend key', () => {
+    expect(() => parseEnv({ ...valid, RESEND_API_KEY: 'sk_live_abc' })).toThrow(/RESEND_API_KEY/);
   });
 
   it('throws when the Supabase URL is not a URL', () => {

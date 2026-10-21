@@ -7,9 +7,18 @@ const {
   getClaims,
   updateUser,
   maybeSingle,
-  resetPasswordForEmail,
   changePasswordAs,
+  admin,
+  mintAuthLink,
+  mayEmail,
+  recordEmail,
+  sendEmail,
 } = vi.hoisted(() => ({
+  admin: { fake: null as unknown },
+  mintAuthLink: vi.fn(),
+  mayEmail: vi.fn(),
+  recordEmail: vi.fn(),
+  sendEmail: vi.fn(),
   changePasswordAs: vi.fn(),
   redirect: (url: string): never => {
     throw new Error(`REDIRECT ${url}`);
@@ -19,7 +28,6 @@ const {
   getClaims: vi.fn(),
   updateUser: vi.fn(),
   maybeSingle: vi.fn(),
-  resetPasswordForEmail: vi.fn(),
 }));
 vi.mock('next/navigation', () => ({ redirect }));
 vi.mock('@/lib/supabase/server', () => ({
@@ -28,9 +36,9 @@ vi.mock('@/lib/supabase/server', () => ({
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle }) }) }),
   }),
 }));
-vi.mock('@/lib/supabase/mailer', () => ({
-  createMailClient: () => ({ auth: { resetPasswordForEmail } }),
-}));
+vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => admin.fake }));
+vi.mock('@/lib/auth/auth-email', () => ({ mintAuthLink, mayEmail, recordEmail }));
+vi.mock('@/lib/email/resend', () => ({ sendEmail }));
 
 vi.mock('@/lib/auth/password-change', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/auth/password-change')>()),
@@ -46,8 +54,8 @@ import {
   signInClient,
   signOutClient,
 } from '@/lib/auth/portal-actions';
-import { confirmUrl } from '@/lib/auth/links';
 import { ROUTES } from '@/lib/routes';
+import { fakeSupabase } from '../../helpers/fake-supabase';
 
 function form(fields: Record<string, string>) {
   const data = new FormData();
@@ -102,33 +110,73 @@ describe('signInClient lookup failure', () => {
 });
 
 describe('requestReset', () => {
-  it('always answers ok, whatever Supabase says', async () => {
-    resetPasswordForEmail.mockResolvedValue({ data: null, error: new Error('no such user') });
+  const LINK = 'https://reve.test/auth/confirm?token_hash=t&type=recovery&next=%2Fportal%2Freset';
+  /** Whether a client with an account owns the address. */
+  const clientLookup = (found: boolean) => {
+    const fake = fakeSupabase({ clients: [{ data: found ? { id: 'client-1' } : null }] });
+    admin.fake = fake.client;
+    return fake;
+  };
+
+  beforeEach(() => {
+    mayEmail.mockResolvedValue(true);
+    mintAuthLink.mockResolvedValue({ url: LINK, userId: 'user-1' });
+    sendEmail.mockResolvedValue(undefined);
+  });
+
+  it('emails a client our own reset link to the reset page, and logs it', async () => {
+    const fake = clientLookup(true);
+    await expect(requestReset(null, form({ email: ' Maya@Example.com ' }))).resolves.toEqual({
+      ok: true,
+    });
+
+    expect(fake.calls[0].chain).toContainEqual({ method: 'eq', args: ['email', 'maya@example.com'] });
+    expect(mintAuthLink).toHaveBeenCalledWith(admin.fake, {
+      type: 'recovery',
+      email: 'maya@example.com',
+      next: ROUTES.PORTAL_RESET,
+    });
+    expect(sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: 'maya@example.com', subject: 'Reset your Rêve password' }),
+    );
+    expect(sendEmail.mock.calls[0][0].text).toContain(LINK);
+    expect(recordEmail).toHaveBeenCalledWith(admin.fake, 'maya@example.com', 'recovery');
+  });
+
+  /* Same answer either way, so the form cannot reveal who has an account. */
+  it('sends nothing to an address with no client account, and still answers ok', async () => {
+    clientLookup(false);
     await expect(requestReset(null, form({ email: 'ghost@example.com' }))).resolves.toEqual({
       ok: true,
     });
+    expect(mintAuthLink).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
   });
 
-  it('still answers ok when the mail client throws', async () => {
-    resetPasswordForEmail.mockRejectedValue(new Error('network'));
+  it('sends nothing while the address is cooling down, and still answers ok', async () => {
+    clientLookup(true);
+    mayEmail.mockResolvedValue(false);
+    await expect(requestReset(null, form({ email: 'maya@example.com' }))).resolves.toEqual({
+      ok: true,
+    });
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it('still answers ok when sending fails', async () => {
+    clientLookup(true);
+    sendEmail.mockRejectedValue(new Error('network'));
     vi.spyOn(console, 'error').mockImplementation(() => {});
     await expect(requestReset(null, form({ email: 'maya@example.com' }))).resolves.toEqual({
       ok: true,
     });
+    expect(recordEmail).not.toHaveBeenCalled();
   });
 
-  it('sends the link through the implicit-flow client to the reset page', async () => {
-    resetPasswordForEmail.mockResolvedValue({ data: {}, error: null });
-    await requestReset(null, form({ email: 'maya@example.com' }));
-    expect(resetPasswordForEmail).toHaveBeenCalledWith('maya@example.com', {
-      redirectTo: confirmUrl(ROUTES.PORTAL_RESET),
-    });
-  });
-
-  it('a malformed email is reported without calling Supabase', async () => {
+  it('a malformed email is reported without touching the database', async () => {
+    admin.fake = null;
     const result = await requestReset(null, form({ email: 'nope' }));
     expect(result.ok).toBe(false);
-    expect(resetPasswordForEmail).not.toHaveBeenCalled();
+    expect(mintAuthLink).not.toHaveBeenCalled();
   });
 });
 

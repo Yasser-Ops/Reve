@@ -32,6 +32,27 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_email_sends: {
+        Row: {
+          email: string
+          id: number
+          kind: string
+          sent_at: string
+        }
+        Insert: {
+          email: string
+          id?: never
+          kind: string
+          sent_at?: string
+        }
+        Update: {
+          email?: string
+          id?: never
+          kind?: string
+          sent_at?: string
+        }
+        Relationships: []
+      }
       client_notes: {
         Row: {
           body: string
