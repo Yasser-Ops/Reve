@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { CONTACT, whatsappLink } from '@/lib/contact';
 import { ROUTES } from '@/lib/routes';
@@ -25,6 +26,9 @@ const START_MESSAGE = "Hello Rêve, I'd like to create an invitation.";
    visitor to the login and a signed-in one straight to their dashboard. */
 const PORTAL_LABEL = 'Client portal';
 
+/* Routes whose hero runs up under the nav on a dark picture (HomeHero). */
+const DARK_HERO_PATHS = new Set(['/']);
+
 /**
  * Floating pill navigation.
  *
@@ -34,6 +38,13 @@ const PORTAL_LABEL = 'Client portal';
 export function SiteNav() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  /* Light type while the nav floats over a dark hero; the usual ink once it
+     gains its bone surface on scroll, or with the menu open. */
+  const overPicture =
+    DARK_HERO_PATHS.has(usePathname()) && !scrolled && !menuOpen;
+  const linkTone = overPicture
+    ? 'text-bone/85 hover:text-bone focus-visible:outline-bone'
+    : 'text-cocoa hover:text-ink focus-visible:outline-wine';
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -44,22 +55,25 @@ export function SiteNav() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 px-4 pt-4">
+    <header className="sticky top-0 z-40 h-(--reve-nav-h) px-4 pt-4">
       <nav
         aria-label="Main"
         /* CENTRED BY GRID, NOT justify-between. With three flex children the
            link row sat in whatever space the logo and the button left over, so
            "Rêve" being narrow and "START YOURS" being wide pushed it off true
            centre. Equal outer columns make the middle one actually central,
-           whatever those two grow to. */
-        className={`mx-auto grid max-w-5xl grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-full px-5 py-2.5 transition-colors duration-300 ${
+           whatever those two grow to.
+
+           Two columns below md: the link row is hidden there, and a third
+           column left the buttons stranded in the empty middle slot. */
+        className={`mx-auto grid max-w-5xl grid-cols-[1fr_auto] md:grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-full px-5 py-2.5 transition-colors duration-300 ${
           scrolled
             ? 'border border-taupe/40 bg-bone/92 backdrop-blur-md'
             : 'border border-transparent'
         }`}
       >
         <Link
-          className="reve-display text-xl tracking-[0.06em] text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
+          className={`reve-display text-xl tracking-[0.06em] transition-colors ${overPicture ? 'text-bone focus-visible:outline-bone' : 'text-ink focus-visible:outline-wine'} focus-visible:outline-2 focus-visible:outline-offset-4`}
           href="/"
         >
           Rêve
@@ -69,7 +83,7 @@ export function SiteNav() {
           {LINKS.map((link) => (
             <li key={link.href}>
               <Link
-                className="reve-crisp reve-underline text-[13px] text-cocoa transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
+                className={`reve-crisp reve-underline text-[13px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 ${linkTone}`}
                 href={link.href}
               >
                 {link.label}
@@ -80,7 +94,7 @@ export function SiteNav() {
 
         <div className="flex items-center justify-end gap-2">
           <Link
-            className="reve-crisp reve-underline mr-3 hidden text-[13px] text-cocoa transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine md:inline-block"
+            className={`reve-crisp reve-underline mr-3 hidden text-[13px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 md:inline-block ${linkTone}`}
             href={ROUTES.PORTAL}
           >
             {PORTAL_LABEL}
@@ -99,7 +113,7 @@ export function SiteNav() {
             aria-controls="site-menu"
             aria-expanded={menuOpen}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-            className="grid h-10 w-10 place-items-center rounded-full border border-taupe/50 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine md:hidden"
+            className={`grid h-10 w-10 place-items-center rounded-full border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 md:hidden ${overPicture ? 'border-bone/40 text-bone focus-visible:outline-bone' : 'border-taupe/50 text-ink focus-visible:outline-wine'}`}
             onClick={() => setMenuOpen((open) => !open)}
             type="button"
           >

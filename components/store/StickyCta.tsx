@@ -46,7 +46,10 @@ export function StickyCta({
     if (!node || typeof IntersectionObserver === 'undefined') return;
 
     const observer = new IntersectionObserver(
-      ([entry]) => setPastHero(!entry.isIntersecting),
+      /* ABOVE the viewport, not merely off it: a hero taller than the screen
+         starts with its sentinel below the fold, and that is not "past". */
+      ([entry]) =>
+        setPastHero(!entry.isIntersecting && entry.boundingClientRect.top < 0),
       /* Fires once the sentinel is fully gone, so the bar does not flicker in
          and out while a reader nudges the page around the boundary. */
       { threshold: 0 },

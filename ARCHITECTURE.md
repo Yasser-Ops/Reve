@@ -53,19 +53,21 @@ proxy.ts                        Next 16 name for middleware. Matcher = private
 
 components/
   store/                        Marketing surface.
-    SiteNav.tsx                 [CLIENT] scroll state + mobile menu
+    SiteNav.tsx                 [CLIENT] scroll state + mobile menu; light type over
+                                DARK_HERO_PATHS ('/') until scrolled. Height = --reve-nav-h
     SiteFooter.tsx
     Reveal.tsx                  [CLIENT] IntersectionObserver scroll reveal
     PhoneFrame.tsx              Decorative device chrome; children swap freely
-    InvitationDemo.tsx          Looping envelope→invitation sequence (CSS only)
-    invitation-demo.css         One documented timeline drives all 7 layers
-    HeroEnvelope.tsx            Static envelope, above the fold
+    HomeHero.tsx                Full-bleed Jardin dusk painting, pulled up under the
+                                nav by --reve-nav-h; wine-dark shade only behind type.
+                                'phone' slot = LiveInvitationDemo(jardin) + <Jardin>
     TemplateCompare.tsx         [CLIENT] draggable seam between two templates
     TemplateCard.tsx            Collection grid card; shows the composed mockup
     TemplateFrame.tsx           Known-aspect crop of a scrolling invitation
     TemplateThumbnail.tsx       Renders at RENDER_WIDTH, scaled to fit
     LiveInvitationDemo.tsx      [CLIENT] the real gate + invitation, in a phone
-    StickyCta.tsx               [CLIENT]
+    StickyCta.tsx               [CLIENT] shows once the hero sentinel is ABOVE the
+                                viewport (a tall hero starts with it below the fold)
     WhatsappThread.tsx          Illustration of the forwarded link
     RsvpPanel.tsx               Illustration of the guest list
     FaqList.tsx                 [CLIENT] disclosure
@@ -162,7 +164,7 @@ lib/supabase/admin.ts           service role, server-only
 lib/supabase/mailer.ts          non-persisting implicit-flow client for auth email
 ```
 
-**Client islands are deliberately shallow.** `InvitationDemo`, `RsvpPanel`,
+**Client islands are deliberately shallow.** `HomeHero`, `RsvpPanel`,
 and `WhatsappThread` are server components: they are pure CSS and markup, so
 nothing ships to the browser for them. Only genuine interaction
 (`TemplateCompare`, `SiteNav`, `FaqList`, `StickyCta`) crosses the boundary,
@@ -826,10 +828,6 @@ clips it, leaving the scroller draggable sideways over empty space.
 `pnpm optimize:images` (`scripts/optimize-images.mjs`) converts `public/`
 rasters to WebP, capped at 1600px, skipping anything already current. Sources
 are committed alongside their `.webp` so the pipeline stays reproducible.
-`public/envelope/demo/sealed.webp` is the marketing demo's paper: 6.13MB PNG -> 311KB.
-
-Seal geometry (`SEAL_Y`, `SEAL_SIZE` in `InvitationDemo.tsx`) is measured off
-that photograph. Re-shooting the envelope means re-measuring them.
 
 **Painted plates.** A design's artwork is generated externally and dropped into
 `public/invitation/<slug>/`. Two conversion recipes that are not guessable:

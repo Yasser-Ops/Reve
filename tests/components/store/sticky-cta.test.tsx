@@ -9,7 +9,13 @@ import { CLOSING_ATTRIBUTE, StickyCta } from '@/components/store/StickyCta';
  * stub records every observer the component creates and lets a test drive the
  * callbacks, so the rules can be exercised without a real viewport.
  */
-type Trigger = (entries: { target: Element; isIntersecting: boolean }[]) => void;
+type Trigger = (
+  entries: {
+    target: Element;
+    isIntersecting: boolean;
+    boundingClientRect?: { top: number };
+  }[],
+) => void;
 
 const observers: { trigger: Trigger; targets: Element[] }[] = [];
 
@@ -65,7 +71,11 @@ function bar() {
 function scrollPastHero() {
   act(() => {
     observers[0].trigger([
-      { target: observers[0].targets[0], isIntersecting: false },
+      {
+        target: observers[0].targets[0],
+        isIntersecting: false,
+        boundingClientRect: { top: -1 },
+      },
     ]);
   });
 }
@@ -76,6 +86,23 @@ describe('StickyCta', () => {
 
     expect(bar()).toHaveClass('translate-y-full');
     expect(bar()).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  /* A hero taller than the screen starts with its sentinel below the fold:
+     off screen, but not scrolled past. */
+  it('stays hidden while the hero runs below the fold', () => {
+    renderBar();
+    act(() => {
+      observers[0].trigger([
+        {
+          target: observers[0].targets[0],
+          isIntersecting: false,
+          boundingClientRect: { top: 900 },
+        },
+      ]);
+    });
+
+    expect(bar()).toHaveClass('translate-y-full');
   });
 
   it('rises once the hero has scrolled away', () => {

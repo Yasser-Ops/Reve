@@ -32,6 +32,10 @@
      occasion rather than only a wedding. */
   --reve-ink: #1c1c1e;
 
+  /* The floating nav's full height. A hero that runs up under it (HomeHero)
+     pulls itself up by exactly this much. */
+  --reve-nav-h: 4.75rem;
+
   /* Shadows are cast by the ink, so they must be neutral too. Kept as raw
      channels for use inside rgb(… / <alpha>) at varying opacities. */
   --reve-shadow-rgb: 28 28 30;

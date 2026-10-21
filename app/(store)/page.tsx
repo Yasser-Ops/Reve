@@ -3,9 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getTemplateEntry } from '@/components/invitation/registry';
 import { FaqList, type FaqItem } from '@/components/store/FaqList';
-import { HeroEnvelope } from '@/components/store/HeroEnvelope';
-import { InvitationDemo } from '@/components/store/InvitationDemo';
-import { PhoneFrame } from '@/components/store/PhoneFrame';
+import { HomeHero } from '@/components/store/HomeHero';
+import { LiveInvitationDemo } from '@/components/store/LiveInvitationDemo';
 import { Reveal } from '@/components/store/Reveal';
 import { RsvpPanel } from '@/components/store/RsvpPanel';
 import { StickyCta } from '@/components/store/StickyCta';
@@ -14,7 +13,7 @@ import { TemplateThumbnail } from '@/components/store/TemplateThumbnail';
 import { WhatsappThread } from '@/components/store/WhatsappThread';
 import { CONTACT, whatsappLink } from '@/lib/contact';
 import { EVENTS } from '@/lib/events';
-import { DELIVERY, ENTRY_TIER, OFFER_TIERS } from '@/lib/offer';
+import { OFFER_TIERS } from '@/lib/offer';
 import {
   SAMPLE_CONTENT,
   SAMPLE_ENTITLEMENTS,
@@ -42,23 +41,6 @@ const START_MESSAGE = "Hello Rêve, I'd like to create a wedding invitation.";
  * ------------------------------------------------------------------------- */
 
 /*
- * The three things worth knowing before scrolling.
- *
- * "A real person on WhatsApp" used to hold the third slot. It was dropped:
- * answering your own phone is the default for a small business here, so it
- * differentiates nothing, and stating it in the hero plants a fear of bots the
- * visitor had not had. It still earns its place lower down, next to the order
- * button, where a human on the other end is genuine reassurance rather than an
- * opening claim. Delivery takes the slot instead — it is the honest advantage
- * over a bespoke studio, and it is a reason to act rather than bookmark.
- */
-const TRUST_POINTS = [
-  'Designed by hand, never generated',
-  'One invitation, in English and Arabic',
-  DELIVERY.headline,
-];
-
-/*
  * The rest of what an invitation carries.
  *
  * Deliberately excludes the envelope, the RSVP, the guest list, and WhatsApp
@@ -73,21 +55,6 @@ const INCLUDED = [
   { title: 'Venue and map', body: 'Directions in one tap.' },
   { title: 'Schedule', body: 'Ceremony, dinner, and everything after.' },
   { title: 'Works everywhere', body: 'Any phone, any browser, no app.' },
-];
-
-/*
- * The process at a glance, for the hero.
- *
- * Deliberately three rather than the four below: "approve it and share the
- * link" is one moment to a reader deciding whether to start, and a hero strip
- * that lists every step stops being a glance. Titles are written here rather
- * than sliced off STEPS because the two are read at different distances — a
- * hero wants "We design it, you approve", a section wants the fuller account.
- */
-const HERO_STEPS = [
-  'Choose a design',
-  'Send your details',
-  'We design it, you approve',
 ];
 
 const STEPS = [
@@ -183,113 +150,17 @@ export default async function HomePage() {
 
   return (
     <main className="bg-bone text-ink">
-      {/* Hero */}
-      <section className="px-6 pb-20 pt-10 md:pt-16">
-        <div className="mx-auto grid max-w-6xl items-center gap-14 md:grid-cols-[1.05fr_0.95fr] md:gap-20">
-          <div className="text-center md:text-start">
-            <p className="reve-eyebrow text-cocoa">
-              Digital wedding invitations · Lebanon
-            </p>
-
-            <h1 className="reve-display mt-7 text-5xl md:text-6xl lg:text-7xl">
-              The invitation is the first thing they
-              <span
-                className="ms-3 text-wine"
-                style={{ fontFamily: 'var(--font-accent)', fontStyle: 'italic' }}
-              >
-                feel
-              </span>
-            </h1>
-
-            <p className="mx-auto mt-7 max-w-md text-[15px] leading-relaxed text-cocoa md:mx-0">
-              A live page at your own link. Guests tap the seal, the envelope
-              opens, and everything they need is there. You see every reply as
-              it arrives.
-            </p>
-
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-3 md:justify-start">
-              <Link
-                className="reve-crisp rounded-full bg-wine px-8 py-3.5 text-[13px] uppercase tracking-[0.16em] text-bone transition-colors hover:bg-wine-deep focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
-                href="/weddings"
-              >
-                See the collection
-              </Link>
-              <Link
-                className="reve-crisp rounded-full border border-taupe px-8 py-3.5 text-[13px] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-sand focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
-                href="/i/sarah-and-amine"
-              >
-                Open a live example
-              </Link>
-            </div>
-
-            {/* Price in the hero, quoted from the offer rather than typed
-                here, so it cannot drift from the pricing table below. A
-                visitor's first question is what this costs, and making them
-                scroll for it is a cost of its own.
-
-                No rating and no couple count beside it: Rêve is pre-launch and
-                has neither. See the note in lib/offer.ts — this page earns
-                trust through the live demo and a named process instead. */}
-            {/* A PRICE IS A FACT AND A LINK IS AN ACTION. These used to be
-                joined by a "·", which made them read as two peers in a list —
-                the same shape as the trust points further down, so nothing in
-                the stack looked clickable. The price now carries the weight,
-                and the link is set in wine with a standing underline: at rest
-                `reve-underline` is scaled to nothing and only draws on hover,
-                which left this looking like one more line of grey text. */}
-            <p className="mt-5 flex flex-wrap items-baseline justify-center gap-x-2.5 gap-y-1 text-[13px] text-cocoa md:justify-start">
-              <span className="reve-crisp">
-                From{' '}
-                <span className="reve-numeral text-[15px] text-ink">
-                  {ENTRY_TIER.price}
-                </span>
-              </span>
-
-              <Link
-                className="reve-crisp text-wine underline decoration-wine/35 underline-offset-4 transition-colors hover:decoration-wine focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
-                href="/#pricing"
-              >
-                See what is included
-              </Link>
-            </p>
-
-            {/* The process, condensed to its three moves. The full version is
-                the How it works section; this is here so a visitor knows what
-                they are agreeing to before they scroll for it. */}
-            <ol className="mt-11 flex flex-wrap justify-center gap-x-6 gap-y-3 md:justify-start">
-              {HERO_STEPS.map((step, index) => (
-                <li
-                  className="reve-crisp flex items-center gap-2 text-[12px] text-cocoa"
-                  key={step}
-                >
-                  <span
-                    aria-hidden="true"
-                    className="grid h-5 w-5 place-items-center rounded-full border border-taupe/60 text-[10px] text-wine"
-                  >
-                    {index + 1}
-                  </span>
-                  {step}
-                </li>
-              ))}
-            </ol>
-
-            {/* NO ::before BULLET HERE. The dot sits inside the item's content
-                box, so it pushed the text right and this was the one row in the
-                hero whose left edge did not line up with the headline, the
-                buttons and the steps. One point per line, too: three of them
-                wrapped 2 + 1 and left the last stranded on a line of its own. */}
-            <ul className="mt-4 space-y-1.5 text-center md:text-start">
-              {TRUST_POINTS.map((point) => (
-                <li className="reve-crisp text-[12px] text-cocoa" key={point}>
-                  {point}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <HeroEnvelope />
-        </div>
-      </section>
+      <HomeHero
+        phone={
+          <LiveInvitationDemo envelope={jardin.slug} maxWidth={300}>
+            <Jardin
+              content={SAMPLE_CONTENT}
+              entitlements={SAMPLE_ENTITLEMENTS}
+              theme={SAMPLE_THEME}
+            />
+          </LiveInvitationDemo>
+        }
+      />
 
       {/* Mounted here so its sentinel sits at the hero's lower edge: the bar
           appears exactly as the hero's own buttons leave the screen, and never
@@ -299,38 +170,6 @@ export default async function HomePage() {
         label="See the collection"
         message={START_MESSAGE}
       />
-
-      {/* Live demo. For a studio with no reviews yet, the product itself is
-          the strongest argument available. */}
-      <section className="border-y border-taupe/40 bg-ink px-6 py-20 text-bone">
-        <div className="mx-auto grid max-w-5xl items-center gap-14 md:grid-cols-2">
-          <Reveal>
-  <div>
-              <p className="reve-eyebrow text-taupe">See it for yourself</p>
-              <h2 className="reve-display mt-6 text-4xl md:text-5xl">
-                Do not take our word for it
-              </h2>
-              <p className="mt-6 max-w-md text-[15px] leading-relaxed text-sand">
-                What you are watching is the whole thing: the seal tapped, the
-                envelope opening, the invitation scrolled through. That is
-                exactly what lands in your guests&apos; hands, and you can open
-                the real one on your own phone right now.
-              </p>
-
-              <Link
-                className="reve-crisp mt-9 inline-block rounded-full bg-bone px-8 py-3.5 text-[13px] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-sand focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone"
-                href="/i/sarah-and-amine"
-              >
-                Open the live invitation
-              </Link>
-            </div>
-
-          </Reveal>
-          <PhoneFrame>
-            <InvitationDemo />
-          </PhoneFrame>
-        </div>
-      </section>
 
       {/* The design, rendered live from the template itself rather than from a
           screenshot, so this section cannot drift from what a guest receives. */}
