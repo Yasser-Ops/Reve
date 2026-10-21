@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { HeroVideo } from '@/components/invitation/HeroVideo';
 import { Petals } from '@/components/invitation/motifs/Petals';
 import { SCREEN_HEIGHT } from '@/components/invitation/screen';
 import { CountdownDial } from './CountdownDial';
@@ -194,14 +195,7 @@ function HeroSection({ content }: { content: LinContent }) {
       {media ? (
         <div className="absolute inset-0">
           {media.type === 'video' ? (
-            <video
-              autoPlay
-              className="h-full w-full object-cover"
-              loop
-              muted
-              playsInline
-              src={media.src}
-            />
+            <HeroVideo className="h-full w-full object-cover" src={media.src} />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element -- full-bleed hero background, not a content image
             <img alt="" className="h-full w-full object-cover" src={media.src} />

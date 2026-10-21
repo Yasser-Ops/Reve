@@ -44,7 +44,8 @@ export const SAMPLE_CONTENT = sampleContentSchema.parse({
     { time: '9:00 pm', title: 'End of evening' },
   ],
   gallery: [],
-  heroMedia: { type: 'video', src: '/invitation/lin/hero.mp4' },
+  /* No heroMedia: a hero video is a couple's own footage, uploaded per
+     invitation. The sample shows each design's plain ground instead. */
   registryMessage:
     'We are so happy to celebrate this day with you. Your presence means the most to us, however, for those who wish to honor us with a gift, our bank details are below. Thank you for being part of our beautiful journey.',
 });

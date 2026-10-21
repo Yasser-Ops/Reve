@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { getEnvelope, openingDurationMs } from '@/lib/envelopes';
+import { EnvelopeReleasedContext } from './envelope-context';
 import { FrameSequence } from './FrameSequence';
 import './envelope.css';
 
@@ -85,6 +86,9 @@ export function EnvelopeGate({
   /* The seal stays inert until every frame is decoded: see FrameSequence. */
   const [ready, setReady] = useState(false);
   const handleReady = useCallback(() => setReady(true), []);
+  /* Drives the ring around the wax while the frames arrive, so a slow
+     connection reads as loading rather than as a seal that does nothing. */
+  const [progress, setProgress] = useState(0);
 
   /*
    * A rendered opening cannot be partially stilled the way the old CSS
@@ -143,9 +147,10 @@ export function EnvelopeGate({
    * once open they carry no position, no background and no transform, and the
    * paper is simply not rendered. See `[data-state='open']` in envelope.css.
    */
-  return (
+  const gate = (
     <div
       className="envelope-gate"
+      data-ready={ready}
       data-state={state}
       style={
         {
@@ -175,11 +180,27 @@ export function EnvelopeGate({
             hinged layers. */}
         <FrameSequence
           frames={spec.frames}
+          onProgress={setProgress}
           onReady={handleReady}
           playing={state === 'opening' && !reducedMotion}
         />
 
         <span className="envelope-pulse" />
+
+        {/* A thin ring drawn round the wax, filling as the frames arrive. It
+            fades once the seal is live, and the pulse takes over. */}
+        <svg aria-hidden className="envelope-progress" viewBox="0 0 100 100">
+          <circle className="envelope-progress-track" cx="50" cy="50" r="48" />
+          <circle
+            className="envelope-progress-fill"
+            cx="50"
+            cy="50"
+            pathLength={1}
+            r="48"
+            strokeDasharray="1"
+            strokeDashoffset={1 - progress}
+          />
+        </svg>
 
         {/* The wax is PART OF THE RENDER, monogram included, so this button
             draws nothing at all: it is a transparent hit target sized and
@@ -215,5 +236,11 @@ export function EnvelopeGate({
       </div>
       )}
     </div>
+  );
+
+  return (
+    <EnvelopeReleasedContext.Provider value={state !== 'sealed'}>
+      {gate}
+    </EnvelopeReleasedContext.Provider>
   );
 }

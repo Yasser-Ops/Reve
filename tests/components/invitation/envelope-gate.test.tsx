@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { EnvelopeGate } from '@/components/invitation/EnvelopeGate';
+import { HeroVideo } from '@/components/invitation/HeroVideo';
 
 function renderGate(props: { contained?: boolean } = {}) {
   return render(
@@ -86,6 +87,29 @@ describe('EnvelopeGate', () => {
       'src',
       '/envelope/lin/frames/0001.webp',
     );
+  });
+
+  /* A hero video behind a sealed envelope would compete with the frames for
+     the connection, delaying the seal for something the guest cannot see. */
+  it('holds the hero video back until the seal is tapped', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <EnvelopeGate>
+        <HeroVideo src="/hero.mp4" />
+      </EnvelopeGate>,
+    );
+
+    expect(container.querySelector('video')).not.toHaveAttribute('src');
+
+    await user.click(await screen.findByRole('button', { name: /open/i }));
+
+    expect(container.querySelector('video')).toHaveAttribute('src', '/hero.mp4');
+  });
+
+  it('loads a hero video at once where there is no envelope', () => {
+    const { container } = render(<HeroVideo src="/hero.mp4" />);
+
+    expect(container.querySelector('video')).toHaveAttribute('src', '/hero.mp4');
   });
 
   it('locks the page behind a full-screen envelope', async () => {

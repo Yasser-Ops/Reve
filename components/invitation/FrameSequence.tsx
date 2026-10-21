@@ -16,6 +16,8 @@ type FrameSequenceProps = {
   onFinished?: () => void;
   /** Fired once every frame is decoded and playback can run without stalling. */
   onReady?: () => void;
+  /** Fired as frames arrive, with the share loaded so far (0 to 1). */
+  onProgress?: (loaded: number) => void;
 };
 
 /**
@@ -41,6 +43,7 @@ export function FrameSequence({
   playing,
   onFinished,
   onReady,
+  onProgress,
 }: FrameSequenceProps) {
   const [index, setIndex] = useState(1);
   const finished = useRef(false);
@@ -49,16 +52,23 @@ export function FrameSequence({
      down mid-preload does not call back into a dead component. */
   useEffect(() => {
     let cancelled = false;
+    const sources = frameSources(frames);
+    let loaded = 0;
 
     Promise.all(
-      frameSources(frames).map(
+      sources.map(
         (src) =>
           new Promise<void>((resolve) => {
             const img = new Image();
+            const done = () => {
+              loaded += 1;
+              if (!cancelled) onProgress?.(loaded / sources.length);
+              resolve();
+            };
             /* Resolve on error too: one missing frame should show a gap in the
                animation, never hang the seal forever. */
-            img.onload = () => resolve();
-            img.onerror = () => resolve();
+            img.onload = done;
+            img.onerror = done;
             img.src = src;
           }),
       ),
@@ -69,7 +79,7 @@ export function FrameSequence({
     return () => {
       cancelled = true;
     };
-  }, [frames, onReady]);
+  }, [frames, onReady, onProgress]);
 
   useEffect(() => {
     if (!playing || finished.current) return;

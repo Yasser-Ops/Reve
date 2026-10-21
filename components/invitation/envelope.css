@@ -403,8 +403,46 @@
   }
 }
 
-.envelope-gate[data-state='opening'] .envelope-pulse {
+.envelope-gate[data-state='opening'] .envelope-pulse,
+.envelope-gate[data-ready='false'] .envelope-pulse {
   animation: none;
+  opacity: 0;
+}
+
+/*
+ * The loading ring.
+ *
+ * Drawn just outside the wax while the frames arrive, in the pulse's own
+ * colour, so loading and the invitation to tap read as one gesture: the ring
+ * closes, fades, and the pulse begins. The fill eases between updates so a
+ * burst of frames sweeps rather than jumps.
+ */
+.envelope-progress {
+  position: absolute;
+  inset-block-start: var(--envelope-seal-y, 78.9%);
+  inset-inline-start: var(--envelope-seal-x, 53.5%);
+  inline-size: calc(var(--envelope-seal-size, 17%) * 1.22);
+  aspect-ratio: 1;
+  z-index: 7;
+  translate: -50% -50%;
+  rotate: -90deg;
+  pointer-events: none;
+  fill: none;
+  stroke-width: 1.6;
+  transition: opacity 600ms ease;
+}
+
+.envelope-progress-track {
+  stroke: rgb(154 138 116 / 0.18);
+}
+
+.envelope-progress-fill {
+  stroke: rgb(154 138 116 / 0.85);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 300ms ease-out;
+}
+
+.envelope-gate[data-ready='true'] .envelope-progress {
   opacity: 0;
 }
 
