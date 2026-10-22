@@ -1,5 +1,5 @@
 import type { NextConfig } from 'next';
-import { PRIVATE_ROUTE_PATTERNS } from './lib/routes';
+import { GUEST_ROUTE_PATTERNS, PRIVATE_ROUTE_PATTERNS } from './lib/routes';
 
 /*
  * Design media in public/ is served with max-age=0 by default, so a returning
@@ -24,6 +24,12 @@ const nextConfig: NextConfig = {
       ...PRIVATE_ROUTE_PATTERNS.map((source) => ({
         source,
         headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      })),
+      /* A couple's invitation is followed (the Rêve credit links home) but
+         never indexed: their names and venue are not a search result. */
+      ...GUEST_ROUTE_PATTERNS.map((source) => ({
+        source,
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex' }],
       })),
       ...DESIGN_MEDIA_PATTERNS.map((source) => ({
         source,

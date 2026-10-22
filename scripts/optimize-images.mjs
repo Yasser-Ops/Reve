@@ -14,7 +14,7 @@
  */
 import { readdir, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { extname, join, resolve } from 'node:path';
+import { basename, extname, join, resolve } from 'node:path';
 import sharp from 'sharp';
 
 const PUBLIC_DIR = resolve(import.meta.dirname, '..', 'public');
@@ -22,6 +22,12 @@ const ROOT = process.argv[2] ? resolve(process.argv[2]) : PUBLIC_DIR;
 const MAX_WIDTH = 1600;
 const QUALITY = 82;
 const SOURCES = new Set(['.png', '.jpg', '.jpeg']);
+/**
+ * JPEGs that are meant to stay JPEGs: link previews (og.jpg, read by crawlers
+ * that do not all take WebP) and the mockup base (ads.jpg, read by
+ * compose-mockup). A .webp beside either is never referenced.
+ */
+const KEEP_AS_IS = new Set(['og.jpg', 'ads.jpg']);
 
 async function* walk(dir) {
   for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -35,7 +41,7 @@ let converted = 0;
 let skipped = 0;
 
 for await (const source of walk(ROOT)) {
-  if (!SOURCES.has(extname(source).toLowerCase())) continue;
+  if (!SOURCES.has(extname(source).toLowerCase()) || KEEP_AS_IS.has(basename(source))) continue;
 
   const target = source.replace(/\.[^.]+$/, '.webp');
 

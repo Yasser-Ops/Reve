@@ -33,6 +33,10 @@ app/
   i/[slug]/page.tsx             The live invitation. NO storefront chrome:
   i/[slug]/error.tsx            a guest must never see Rêve's nav over the
   i/[slug]/not-found.tsx        couple's page. error.tsx calls retry().
+                                noindex (meta + X-Robots-Tag via GUEST_ROUTE_PATTERNS);
+                                link preview = the design's sealed envelope.
+
+  llms.txt/route.ts             Static. lib/llms.ts: tiers, pages, FAQS, contact.
 
   admin/                        PRIVATE. proxy.ts refreshes the session here;
     layout.tsx                  metadata only (noindex). NO surface here.
@@ -639,6 +643,30 @@ the home page maps `OFFER_TIERS` rather than carrying its own array.
 `DELIVERY` carries `excludesTier: CUSTOM` — a design made from scratch cannot
 honour a 48-hour turnaround.
 
+### Search and link previews — `lib/metadata.ts`, `lib/json-ld.ts`
+
+Every page's preview comes from `socialMetadata()`: a page's `openGraph`
+REPLACES its layout's, so one set by hand silently dropped the image. Images
+are set in config, not the `opengraph-image` file convention, because a root
+file would outrank a design page's own.
+
+| Page | Preview image (`pnpm og:images`) |
+|---|---|
+| default, home, catalogues, terms | `public/og.jpg` (monogram + Jardin card) |
+| `/weddings/[slug]` | `public/collection/<slug>/og.jpg` |
+| `/i/[slug]` | `public/envelope/<slug>/og.jpg`: envelope only, never the card (it carries the sample names) |
+
+JPEG on purpose; `optimize:images` skips `og.jpg`. Re-run `og:images`
+after a new card or envelope render; `tests/lib/seo.test.ts` fails if a
+listed design or envelope has none.
+
+JSON-LD renders through `<JsonLd>` (escapes `<`). Home carries Organization
+(`/#organization`, sameAs Instagram, WhatsApp contact point), WebSite and
+FAQPage from `lib/faq.ts` `FAQS`, the one list the accordion, markup and
+`/llms.txt` share. Service and CreativeWork reference the organisation by
+`@id`; Service carries an AggregateOffer from `OFFER_TIERS[].amount`
+(`price` is derived from it).
+
 ### Template registry — `components/invitation/registry.ts`
 
 Carries the schema, a lazy `load` and the catalogue copy, so the storefront
@@ -881,9 +909,8 @@ across the headline, names and message bands. Jardin's current plate: 9.3:1,
 10.4:1, 10.2:1, with under 3.5% of any band below 4.5:1. A plate whose centre
 goes dark has no fallback.
 
-Snag: `optimize:images` walks ALL of `public/` and so converts `ads.jpg`, the
-mockup base, into an `ads.webp` nothing references. Delete it or exclude the
-base from the walk.
+`optimize:images` skips `KEEP_AS_IS` (`og.jpg`, `ads.jpg`): JPEGs that must
+stay JPEGs.
 
 ---
 

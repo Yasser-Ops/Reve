@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { trackWhatsapp } from '@/lib/analytics';
 import { CONTACT, whatsappLink } from '@/lib/contact';
+import { socialMetadata } from '@/lib/metadata';
 import { ROUTES } from '@/lib/routes';
 import { TERMS_SECTIONS, TERMS_UPDATED_ON } from '@/lib/terms';
 
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: ROUTES.TERMS },
-  openGraph: { title: `${TITLE} · Rêve`, description: DESCRIPTION, type: 'website' },
+  ...socialMetadata({ title: `${TITLE} · Rêve`, description: DESCRIPTION }),
 };
 
 const UPDATED_LABEL = new Intl.DateTimeFormat('en-GB', {

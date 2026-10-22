@@ -4,6 +4,7 @@ import { EnvelopeGate } from '@/components/invitation/EnvelopeGate';
 import { ReveCredit } from '@/components/invitation/ReveCredit';
 import { TemplateRenderer } from '@/components/invitation/TemplateRenderer';
 import { getPublishedInvitation } from '@/lib/invitations/get-published';
+import { envelopeOgImage, socialMetadata } from '@/lib/metadata';
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -13,13 +14,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const invitation = await getPublishedInvitation(slug);
 
-  if (!invitation) return { title: 'Invitation' };
+  /* A couple's names, date and venue are theirs to share, not a search
+     result: the page is for the people who were sent the link. Also sent as
+     a header from next.config.ts, for crawlers that never parse the page. */
+  const robots = { index: false, follow: true };
+
+  if (!invitation) return { title: 'Invitation', robots };
 
   const { coupleFirstName, couplePartnerName } = invitation.content;
+  const title = `${coupleFirstName} & ${couplePartnerName}`;
+  const description = `You are invited to celebrate with ${coupleFirstName} and ${couplePartnerName}.`;
 
   return {
-    title: `${coupleFirstName} & ${couplePartnerName}`,
-    description: `You are invited to celebrate with ${coupleFirstName} and ${couplePartnerName}.`,
+    title,
+    description,
+    robots,
+    /* The preview a guest sees in WhatsApp before tapping: the design's
+       sealed envelope, the same one the link opens on. */
+    ...socialMetadata({
+      title,
+      description,
+      image: envelopeOgImage(invitation.templateSlug),
+      alt: 'A sealed invitation envelope',
+    }),
   };
 }
 

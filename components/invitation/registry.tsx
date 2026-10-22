@@ -44,6 +44,13 @@ export const OCCASIONS = {
 
 export type Occasion = (typeof OCCASIONS)[keyof typeof OCCASIONS];
 
+/** The occasion as a searcher types it, in "a digital ___ invitation". */
+export const OCCASION_NOUN: Record<Occasion, string> = {
+  [OCCASIONS.WEDDING]: 'wedding',
+  [OCCASIONS.ENGAGEMENT]: 'engagement',
+  [OCCASIONS.CELEBRATION]: 'celebration',
+};
+
 /** Where a design may appear. */
 export const VISIBILITY = {
   /** On a shelf, in the sitemap, with a product page. */

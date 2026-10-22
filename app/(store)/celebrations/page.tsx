@@ -4,6 +4,7 @@ import {
   getCatalogue,
 } from '@/components/invitation/registry';
 import { CataloguePage } from '@/components/store/CataloguePage';
+import { socialMetadata } from '@/lib/metadata';
 
 /* Both halves of the catalogue render from one component; everything that
    differs between them lives in the registry. */
@@ -13,11 +14,7 @@ export const metadata: Metadata = {
   title: ENTRY.metaTitle,
   description: ENTRY.metaDescription,
   alternates: { canonical: ENTRY.href },
-  openGraph: {
-    title: `${ENTRY.metaTitle} · Rêve`,
-    description: ENTRY.metaDescription,
-    type: 'website',
-  },
+  ...socialMetadata({ title: `${ENTRY.metaTitle} · Rêve`, description: ENTRY.metaDescription }),
 };
 
 const START_MESSAGE =

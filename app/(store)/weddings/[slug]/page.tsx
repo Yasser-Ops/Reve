@@ -5,9 +5,11 @@ import {
   backToCatalogue,
   getDesignPageEntry,
   LISTED_TEMPLATES,
+  OCCASION_NOUN,
   TEMPLATE_SLUGS,
   VISIBILITY,
 } from '@/components/invitation/registry';
+import { JsonLd } from '@/components/JsonLd';
 import { LiveInvitationDemo } from '@/components/store/LiveInvitationDemo';
 import { OfferTabs } from '@/components/store/OfferTabs';
 import { Reveal } from '@/components/store/Reveal';
@@ -15,6 +17,7 @@ import { TemplateFrame } from '@/components/store/TemplateFrame';
 import { trackWhatsapp } from '@/lib/analytics';
 import { whatsappLink } from '@/lib/contact';
 import { designJsonLd } from '@/lib/json-ld';
+import { designOgImage, socialMetadata } from '@/lib/metadata';
 import { DELIVERY, ENTRY_TIER, OFFER_TIERS } from '@/lib/offer';
 import {
   SAMPLE_CONTENT,
@@ -41,18 +44,25 @@ export async function generateMetadata({
 
   if (!entry) return {};
 
+  /* The name alone ("Lin · Rêve") tells a searcher nothing, so the title
+     says what the design is, and the description leads with the short
+     summary and the price before the story gets truncated. The preview card
+     keeps the full story: it has the room. */
+  const title = `${entry.name}, a digital ${OCCASION_NOUN[entry.occasion]} invitation`;
+
   return {
-    title: entry.name,
-    description: entry.story,
+    title,
+    description: `${entry.summary} From ${ENTRY_TIER.price}, ${DELIVERY.headline.toLowerCase()}.`,
     alternates: { canonical: `/weddings/${slug}` },
     /* A draft opens by URL for review and must not be indexed before it
        carries its own artwork. */
     ...(entry.visibility === VISIBILITY.DRAFT ? { robots: { index: false, follow: false } } : {}),
-    openGraph: {
-      title: `${entry.name} · Rêve`,
+    ...socialMetadata({
+      title: `${title} · Rêve`,
       description: entry.story,
-      type: 'website',
-    },
+      image: designOgImage(entry.slug),
+      alt: `${entry.name}: the sealed envelope, and the invitation it opens into`,
+    }),
   };
 }
 
@@ -88,6 +98,7 @@ export default async function DesignPage({
     name: entry.name,
     story: entry.story,
     href: `/weddings/${entry.slug}`,
+    image: designOgImage(entry.slug),
   });
   const back = backToCatalogue(entry.occasion);
 
@@ -99,11 +110,7 @@ export default async function DesignPage({
 
   return (
     <main className="bg-bone text-ink">
-      {/* Structured data built by lib/json-ld.ts, never user input. */}
-      <script
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        type="application/ld+json"
-      />
+      <JsonLd data={jsonLd} />
 
       <section className="px-6 pb-14 pt-10 md:pt-14">
         <div className="mx-auto max-w-3xl">

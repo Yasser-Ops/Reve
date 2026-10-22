@@ -45,6 +45,12 @@ export const portalRoutes = {
  */
 export const PRIVATE_ROUTE_PATTERNS = ['/admin/:path*', '/portal/:path*'] as const;
 
+/**
+ * A couple's live invitation: public to whoever holds the link, never to a
+ * search engine. next.config.ts sends these noindex.
+ */
+export const GUEST_ROUTE_PATTERNS = ['/i/:path*'] as const;
+
 /** How the client's draft preview is framed, carried in `?view=`. */
 export const VIEW_PARAM = 'view';
 

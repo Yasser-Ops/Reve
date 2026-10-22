@@ -1,11 +1,7 @@
 'use client';
 
 import { useId, useRef, useState } from 'react';
-
-export type FaqItem = {
-  question: string;
-  answer: string;
-};
+import type { FaqItem } from '@/lib/faq';
 
 /**
  * Accordion built from a button and a panel.
@@ -73,7 +69,7 @@ function Disclosure({ item }: { item: FaqItem }) {
   );
 }
 
-export function FaqList({ items }: { items: FaqItem[] }) {
+export function FaqList({ items }: { items: readonly FaqItem[] }) {
   return (
     <div className="divide-y divide-taupe/40 border-y border-taupe/40">
       {items.map((item) => (

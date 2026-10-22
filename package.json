@@ -13,7 +13,8 @@
     "e2e": "playwright test",
     "optimize:images": "node scripts/optimize-images.mjs",
     "mockup:compose": "node scripts/compose-mockup.mjs",
-    "envelope:video": "node scripts/envelope-video.mjs"
+    "envelope:video": "node scripts/envelope-video.mjs",
+    "og:images": "node scripts/og-images.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

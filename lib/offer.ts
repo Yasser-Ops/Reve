@@ -17,6 +17,9 @@ import { TIERS, type Tier } from '@/lib/constants';
 export type OfferTier = {
   tier: Tier;
   name: string;
+  /** In CURRENCY, whole units. */
+  amount: number;
+  /** As the page shows it, derived from `amount` so the two cannot disagree. */
   price: string;
   summary: string;
   includes: readonly string[];
@@ -32,11 +35,14 @@ export type OfferTier = {
   badge?: string;
 };
 
-export const OFFER_TIERS: readonly OfferTier[] = [
+/** Every price is in US dollars, as quoted on WhatsApp and paid by Whish. */
+export const CURRENCY = 'USD';
+
+const TIER_SPECS: readonly Omit<OfferTier, 'price'>[] = [
   {
     tier: TIERS.BASIC,
     name: 'Basic',
-    price: '$50',
+    amount: 50,
     summary:
       'A live invitation page at your own link, sent to guests however you like.',
     includes: [
@@ -52,7 +58,7 @@ export const OFFER_TIERS: readonly OfferTier[] = [
   {
     tier: TIERS.MANAGED,
     name: 'Managed',
-    price: '$100',
+    amount: 100,
     summary:
       'You will not have to chase anyone for a number. Guests tap yes or no on the invitation, and you watch the headcount build.',
     includes: [
@@ -69,7 +75,7 @@ export const OFFER_TIERS: readonly OfferTier[] = [
   {
     tier: TIERS.CUSTOM,
     name: 'Custom',
-    price: '$200',
+    amount: 200,
     summary:
       'A design drawn for you from scratch, in your own colours and lettering.',
     includes: [
@@ -83,6 +89,11 @@ export const OFFER_TIERS: readonly OfferTier[] = [
     featured: false,
   },
 ];
+
+export const OFFER_TIERS: readonly OfferTier[] = TIER_SPECS.map((tier) => ({
+  ...tier,
+  price: `$${tier.amount}`,
+}));
 
 /**
  * What ordering a design actually involves.

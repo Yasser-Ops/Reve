@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getTemplateEntry } from '@/components/invitation/registry';
-import { FaqList, type FaqItem } from '@/components/store/FaqList';
+import { JsonLd } from '@/components/JsonLd';
+import { FaqList } from '@/components/store/FaqList';
 import { HomeHero } from '@/components/store/HomeHero';
 import { LiveInvitationDemo } from '@/components/store/LiveInvitationDemo';
 import { Reveal } from '@/components/store/Reveal';
@@ -14,6 +15,9 @@ import { WhatsappThread } from '@/components/store/WhatsappThread';
 import { trackWhatsapp } from '@/lib/analytics';
 import { CONTACT, whatsappLink } from '@/lib/contact';
 import { EVENTS } from '@/lib/events';
+import { FAQS } from '@/lib/faq';
+import { faqJsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/json-ld';
+import { socialMetadata } from '@/lib/metadata';
 import { OFFER_TIERS } from '@/lib/offer';
 import { PUBLIC_HOST, invitationPath } from '@/lib/site';
 import {
@@ -22,13 +26,17 @@ import {
   SAMPLE_THEME,
 } from '@/lib/sample-invitation';
 
+const TITLE = 'Rêve — Digital wedding invitations in Lebanon';
+const DESCRIPTION =
+  'A live invitation page with your own link, RSVP collection, and a guest list. Designed by hand in English and Arabic for weddings and engagements, delivered on WhatsApp.';
+
 export const metadata: Metadata = {
   // Absolute, so the root layout's "%s · Rêve" template does not append the
   // brand name to a title that already carries it.
-  title: { absolute: 'Rêve — Digital wedding invitations in Lebanon' },
-  description:
-    'A live invitation page with your own link, RSVP collection, and a guest list. Designed by hand in English and Arabic for weddings and engagements, delivered on WhatsApp.',
+  title: { absolute: TITLE },
+  description: DESCRIPTION,
   alternates: { canonical: '/' },
+  ...socialMetadata({ title: TITLE, description: DESCRIPTION }),
 };
 
 const START_MESSAGE = "Hello Rêve, I'd like to create a wedding invitation.";
@@ -81,64 +89,6 @@ const STEPS = [
   },
 ];
 
-const QUESTIONS: FaqItem[] = [
-  {
-    question: 'How long does it take?',
-    answer:
-      'Two days for a design from the collection. The artwork is already drawn, so there is no design phase to wait through — we set your details into it and send you the link. A Custom design is drawn from scratch and takes longer; we agree the timing with you before you pay. If your date is close, tell us on WhatsApp and we will say honestly whether we can meet it.',
-  },
-  {
-    question: 'How do I pay?',
-    answer:
-      'Through Whish. You send us your details, we confirm the design and the price, and you transfer. We start once the payment lands. There is no card form on this site.',
-  },
-  {
-    question: 'Can I change something after it is live?',
-    answer:
-      'Yes. Send us the change on WhatsApp and we will update the page. The link stays the same, so anything you have already shared keeps working.',
-  },
-  {
-    question: 'Do you only do weddings?',
-    answer:
-      'Weddings and engagements are most of what we do, and what the collection is designed around. We also take birthdays and anniversaries, in a lighter register that suits the evening. If you are planning something else, ask, and we will tell you honestly whether we are the right studio for it.',
-  },
-  {
-    question: 'Do you design in Arabic?',
-    answer:
-      'Yes. We work in English and Arabic, including bilingual invitations where the wording appears in both. Arabic calligraphy is available on the Custom tier.',
-  },
-  {
-    question: 'What do you need from me?',
-    answer:
-      'Both names, the date and time, the venue with its address, and any photographs you want included. Anything else — a schedule, a dress code, directions — is welcome but optional.',
-  },
-  {
-    question: 'How do guests reply?',
-    answer:
-      'On the Managed and Custom tiers there is an RSVP form inside the invitation. Guests fill it in on the page, and you see every reply in a private dashboard we send you.',
-  },
-  {
-    question: 'How long does the page stay online?',
-    answer:
-      'Through your wedding and well past it. We keep invitations online as a keepsake, and we will tell you before anything changes.',
-  },
-  {
-    question: 'Do guests need an app or an account?',
-    answer:
-      'No. They tap the link, the envelope opens, and the invitation is there. It works on any phone with a browser.',
-  },
-  {
-    question: 'Can I see one before I buy?',
-    answer:
-      'Yes, and you should. There is a live example on this page — open it on your phone, tap the seal, and see exactly what your guests would receive.',
-  },
-  {
-    question: 'What if I do not like the design?',
-    answer:
-      'We revise it. You see the invitation before it goes anywhere, and we keep working on it until it is right. Nothing is shared with your guests until you approve it.',
-  },
-];
-
 /* Placeholder testimonials. Rêve has not delivered invitations yet, so these
  * are clearly marked as examples rather than presented as real reviews.
  * Replace with genuine quotes, with permission, once couples have been served. */
@@ -155,6 +105,11 @@ export default async function HomePage() {
 
   return (
     <main className="bg-bone text-ink">
+      {/* Who Rêve is, the site, and the questions below. The organisation is
+          described in full here only; every other page points at its @id. */}
+      <JsonLd data={organizationJsonLd()} />
+      <JsonLd data={websiteJsonLd()} />
+      <JsonLd data={faqJsonLd(FAQS)} />
       <HomeHero
         phone={
           <LiveInvitationDemo envelope={jardin.slug} maxWidth={300}>
@@ -586,7 +541,7 @@ export default async function HomePage() {
             </p>
           </div>
 
-          <FaqList items={QUESTIONS} />
+          <FaqList items={FAQS} />
         </div>
       </section>
 
