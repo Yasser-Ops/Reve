@@ -397,33 +397,7 @@ export type Database = {
       }
     }
     Views: {
-      published_invitations: {
-        Row: {
-          content: Json | null
-          entitlements: Json | null
-          published_at: string | null
-          slug: string | null
-          template_slug: string | null
-          theme: Json | null
-        }
-        Insert: {
-          content?: Json | null
-          entitlements?: Json | null
-          published_at?: string | null
-          slug?: string | null
-          template_slug?: string | null
-          theme?: Json | null
-        }
-        Update: {
-          content?: Json | null
-          entitlements?: Json | null
-          published_at?: string | null
-          slug?: string | null
-          template_slug?: string | null
-          theme?: Json | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       admin_delete_client: {

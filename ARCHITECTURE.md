@@ -689,7 +689,6 @@ revoked from `authenticated` (0009).
 | `guests`, `custom_leads` | admin all | `guests` unused: the seam for per-guest tokens |
 | `admin_users` | `admin_users self read` | membership, not a JWT claim, makes an admin |
 | fn `get_published_invitation(text)` | EXECUTE to anon, authenticated ONLY | security definer (0014): the one published row for an exact slug, `published_content as content`; no slug, no rows, so the public key cannot list invitations |
-| view `published_invitations` | SELECT to anon, authenticated ONLY | LEGACY, listable: no longer read by the app; drop once 0014 code is live |
 | bucket `invitation-media` | public read; admin select, insert, update, delete | WebP and MP4 only, 50 MB; `<invitation>/<kind>/<name>` |
 | fn `admin_delete_client(uuid, text) -> uuid[]` | EXECUTE to authenticated only | security INVOKER (admin RLS applies) + explicit `is_admin()`; locks the client row; raises `RV001` (name), `RV002` (published); deletes invitations (reviews, guests, rsvps cascade), orders, client; returns the invitation ids for storage cleanup |
 
