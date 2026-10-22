@@ -430,6 +430,17 @@ export type Database = {
         Args: { p_client_id: string; p_confirm_name: string }
         Returns: string[]
       }
+      get_published_invitation: {
+        Args: { p_slug: string }
+        Returns: {
+          content: Json
+          entitlements: Json
+          published_at: string
+          slug: string
+          template_slug: string
+          theme: Json
+        }[]
+      }
     }
     Enums: {
       invitation_status: "draft" | "published" | "archived"

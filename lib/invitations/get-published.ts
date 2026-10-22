@@ -26,8 +26,10 @@ export type PublishedInvitation = {
 };
 
 /**
- * Reads through the published_invitations view, which exposes only published
- * rows and omits the manage token entirely. Stored JSON is validated on the
+ * Reads through public.get_published_invitation (0014), which returns the one
+ * published row for this slug and nothing without it: a public key can open an
+ * invitation it holds the link to, never list them. The manage token is never
+ * among its columns. Stored JSON is validated on the
  * way out, content against its design's OWN schema: bad content should crash
  * loudly here rather than render a broken invitation.
  */
@@ -35,7 +37,7 @@ export async function getPublishedInvitation(
   slug: string,
 ): Promise<PublishedInvitation | null> {
   const rows = await restGet<PublishedInvitationRow>(
-    `published_invitations?slug=eq.${encodeURIComponent(slug)}&select=*&limit=1`,
+    `rpc/get_published_invitation?p_slug=${encodeURIComponent(slug)}`,
   );
 
   const row = rows.at(0);

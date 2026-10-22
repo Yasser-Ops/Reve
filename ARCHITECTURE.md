@@ -201,7 +201,7 @@ WhatsApp link  ->  GET /i/[slug]
   page.tsx (server)
     getPublishedInvitation(slug)      lib/invitations/get-published.ts
       restGet()                       raw fetch, anon key, no supabase-js
-      -> published_invitations view   SELECT-only; serves published_content
+      -> rpc get_published_invitation one row by slug; serves published_content
       design = getTemplateEntry(template_slug)   null -> 404
       design.schema.parse(content)     the DESIGN's schema, loud on mismatch
     notFound() when unpublished or design unknown
@@ -688,7 +688,8 @@ revoked from `authenticated` (0009).
 | `rsvps` | admin all; couple read own when entitled | `private.can_read_rsvps` (0012): owns the invitation AND `entitlements.rsvp`. Checks: name 1..80, party 1..10, a decline is 1, notes and message <= 500. Written only by the service role. In the Realtime publication |
 | `guests`, `custom_leads` | admin all | `guests` unused: the seam for per-guest tokens |
 | `admin_users` | `admin_users self read` | membership, not a JWT claim, makes an admin |
-| view `published_invitations` | SELECT to anon, authenticated ONLY | runs as its owner; projects `published_content as content` |
+| fn `get_published_invitation(text)` | EXECUTE to anon, authenticated ONLY | security definer (0014): the one published row for an exact slug, `published_content as content`; no slug, no rows, so the public key cannot list invitations |
+| view `published_invitations` | SELECT to anon, authenticated ONLY | LEGACY, listable: no longer read by the app; drop once 0014 code is live |
 | bucket `invitation-media` | public read; admin select, insert, update, delete | WebP and MP4 only, 50 MB; `<invitation>/<kind>/<name>` |
 | fn `admin_delete_client(uuid, text) -> uuid[]` | EXECUTE to authenticated only | security INVOKER (admin RLS applies) + explicit `is_admin()`; locks the client row; raises `RV001` (name), `RV002` (published); deletes invitations (reviews, guests, rsvps cascade), orders, client; returns the invitation ids for storage cleanup |
 

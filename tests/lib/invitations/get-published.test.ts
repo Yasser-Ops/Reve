@@ -52,13 +52,13 @@ describe('getPublishedInvitation', () => {
     expect(result?.entitlements.rsvp).toBe(true);
   });
 
-  it('reads from the published_invitations view with no-store caching', async () => {
+  it('reads one row by slug through the RPC, with no-store caching', async () => {
     const spy = mockFetchOnce([row]);
     await getPublishedInvitation('sarah-and-amine');
 
     const [url, init] = spy.mock.calls[0];
-    expect(String(url)).toContain('/rest/v1/published_invitations');
-    expect(String(url)).toContain('slug=eq.sarah-and-amine');
+    expect(String(url)).toContain('/rest/v1/rpc/get_published_invitation');
+    expect(String(url)).toContain('p_slug=sarah-and-amine');
     expect(init.cache).toBe('no-store');
   });
 
