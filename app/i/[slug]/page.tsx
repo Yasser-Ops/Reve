@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { EnvelopeGate } from '@/components/invitation/EnvelopeGate';
+import { ReveCredit } from '@/components/invitation/ReveCredit';
 import { TemplateRenderer } from '@/components/invitation/TemplateRenderer';
 import { getPublishedInvitation } from '@/lib/invitations/get-published';
 
@@ -46,6 +47,7 @@ export default async function InvitationPage({ params }: PageProps) {
         templateSlug={invitation.templateSlug}
         theme={invitation.theme}
       />
+      <ReveCredit slug={slug} />
     </EnvelopeGate>
   );
 }
