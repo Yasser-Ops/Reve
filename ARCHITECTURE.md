@@ -74,6 +74,8 @@ components/
 
   invitation/                   The product itself.
     registry.tsx                slug -> defineTemplate({schema, load, copy})
+    ReveCredit.tsx              Footer credit on /i/[slug] only; link tagged
+                                utm_source=invitation, utm_medium=credit, utm_campaign=<slug>
     TemplateRenderer.tsx
     EnvelopeGate.tsx            [CLIENT] fixed inset:0 — IS the guest's screen;
                                 loading ring; EnvelopeReleasedContext provider
