@@ -1,27 +1,26 @@
 import { expect, test } from '@playwright/test';
-
-const SLUG = 'sarah-and-amine';
+import { LIVE_EXAMPLE_PATH } from '@/lib/site';
 
 // Each test starts as a guest who has never opened this invitation.
 test.beforeEach(async ({ page }) => {
-  await page.goto(`/i/${SLUG}`);
+  await page.goto(LIVE_EXAMPLE_PATH);
   await page.evaluate(() => window.localStorage.clear());
 });
 
 test('a guest opens the envelope and sees the invitation', async ({ page }) => {
-  await page.goto(`/i/${SLUG}`);
+  await page.goto(LIVE_EXAMPLE_PATH);
 
   const seal = page.getByRole('button', { name: /open your invitation/i });
   await expect(seal).toBeVisible();
 
   await seal.click();
 
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Sarah');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Malik');
   await expect(seal).toBeHidden();
 });
 
 test('a returning guest skips the envelope', async ({ page }) => {
-  await page.goto(`/i/${SLUG}`);
+  await page.goto(LIVE_EXAMPLE_PATH);
   await page.getByRole('button', { name: /open your invitation/i }).click();
   await expect(
     page.getByRole('button', { name: /open your invitation/i }),
@@ -29,14 +28,14 @@ test('a returning guest skips the envelope', async ({ page }) => {
 
   await page.reload();
 
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Sarah');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Malik');
   await expect(
     page.getByRole('button', { name: /open your invitation/i }),
   ).toHaveCount(0);
 });
 
 test('the invitation renders its content', async ({ page }) => {
-  await page.goto(`/i/${SLUG}`);
+  await page.goto(LIVE_EXAMPLE_PATH);
 
   await expect(page.getByRole('heading', { name: /Villa Rosa/ })).toBeVisible();
   await expect(page.getByText('12 Rue des Fleurs, Algiers')).toBeVisible();
@@ -44,7 +43,7 @@ test('the invitation renders its content', async ({ page }) => {
 });
 
 test('the manage token never reaches the browser', async ({ page }) => {
-  await page.goto(`/i/${SLUG}`);
+  await page.goto(LIVE_EXAMPLE_PATH);
 
   const html = await page.content();
   expect(html).not.toContain('sentinel');

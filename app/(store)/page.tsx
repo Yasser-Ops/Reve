@@ -11,9 +11,11 @@ import { StickyCta } from '@/components/store/StickyCta';
 import { TemplateCompare } from '@/components/store/TemplateCompare';
 import { TemplateThumbnail } from '@/components/store/TemplateThumbnail';
 import { WhatsappThread } from '@/components/store/WhatsappThread';
+import { trackWhatsapp } from '@/lib/analytics';
 import { CONTACT, whatsappLink } from '@/lib/contact';
 import { EVENTS } from '@/lib/events';
 import { OFFER_TIERS } from '@/lib/offer';
+import { PUBLIC_HOST, invitationPath } from '@/lib/site';
 import {
   SAMPLE_CONTENT,
   SAMPLE_ENTITLEMENTS,
@@ -49,7 +51,10 @@ const START_MESSAGE = "Hello Rêve, I'd like to create a wedding invitation.";
  * If a feature earns a demonstration, it comes out of this list.
  */
 const INCLUDED = [
-  { title: 'Your own link', body: 'reve.lb/your-names, yours alone.' },
+  {
+    title: 'Your own link',
+    body: `${PUBLIC_HOST}${invitationPath('your-names')}, yours alone.`,
+  },
   { title: 'Countdown', body: 'Counts down to the hour of the ceremony.' },
   { title: 'Photo gallery', body: 'Your photographs, full width.' },
   { title: 'Venue and map', body: 'Directions in one tap.' },
@@ -547,6 +552,7 @@ export default async function HomePage() {
                     `Hello Rêve, I'm interested in the ${tier.name} invitation (${tier.price}).`,
                   )}
                   rel="noreferrer noopener"
+                  {...trackWhatsapp('pricing', tier.name)}
                   target="_blank"
                 >
                   {tier.cta}
@@ -600,6 +606,7 @@ export default async function HomePage() {
             className="reve-crisp mt-10 inline-block rounded-full bg-wine px-9 py-4 text-[13px] uppercase tracking-[0.16em] text-bone transition-colors hover:bg-wine-deep focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone"
             href={whatsappLink(START_MESSAGE)}
             rel="noreferrer noopener"
+            {...trackWhatsapp('closing')}
             target="_blank"
           >
             Message us on WhatsApp

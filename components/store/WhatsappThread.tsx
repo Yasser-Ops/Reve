@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { SAMPLE_CONTENT } from '@/lib/sample-invitation';
+import { LIVE_EXAMPLE_PATH, PUBLIC_HOST } from '@/lib/site';
 
 /**
  * The invitation as it arrives: a link in a WhatsApp thread.
@@ -25,7 +26,11 @@ const OUTGOING = '#d9fdd3';
 const THREAD_BG = '#e6ded7';
 const META = '#667781';
 
-const LINK = 'reve.lb/sarah-and-amine';
+/* Jardin's sealed envelope, the one the home page's hero opens, so the preview
+   a guest sees in the chat is the envelope they then tap. */
+const ENVELOPE = { src: '/envelope/jardin/envelope.webp', width: 800, height: 1732 };
+
+const LINK = `${PUBLIC_HOST}${LIVE_EXAMPLE_PATH}`;
 
 function Tick() {
   return (
@@ -145,13 +150,13 @@ export function WhatsappThread() {
                 <Image
                   alt=""
                   className="absolute left-1/2 top-1/2 h-auto max-w-none"
-                  height={2752}
-                  src="/envelope/demo/sealed.webp"
+                  height={ENVELOPE.height}
+                  src={ENVELOPE.src}
                   style={{
                     width: 'calc(100% / 1.91)',
                     transform: 'translate(-50%, -50%) rotate(-90deg) scale(1.91)',
                   }}
-                  width={1536}
+                  width={ENVELOPE.width}
                 />
               </div>
 

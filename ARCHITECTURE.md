@@ -19,6 +19,10 @@ app/
   (store)/                      Route group. Storefront chrome.
     layout.tsx                  SiteNav + SiteFooter wrapper; loads the traffic
                                 tracker (lib/analytics.ts). Storefront only, never /i/[slug].
+                                Clicks: data-track attrs from lib/analytics (trackWhatsapp/
+                                trackCta/trackSeal), read by the tracker; no client code.
+                                WhatsappRef [CLIENT]: appends "(ref: <utm_campaign>)" to
+                                wa.me messages for visitors arriving from an invitation credit.
     page.tsx                    Home. Wedding-led; the wedding page IS "/".
     collection/page.tsx         Every template, rendered live.
     collection/error.tsx

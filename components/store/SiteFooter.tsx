@@ -1,7 +1,9 @@
 import Link from 'next/link';
+import { trackWhatsapp } from '@/lib/analytics';
 import { CONTACT, whatsappLink } from '@/lib/contact';
 import { EVENTS } from '@/lib/events';
 import { ROUTES } from '@/lib/routes';
+import { LIVE_EXAMPLE_PATH } from '@/lib/site';
 
 const COLUMNS = [
   {
@@ -11,7 +13,7 @@ const COLUMNS = [
       /* Custom is a tier on the pricing table, not a page of its own, so it
          is reached through pricing rather than listed separately. */
       { label: 'Pricing', href: '/#pricing' },
-      { label: 'See a live example', href: '/i/sarah-and-amine' },
+      { label: 'See a live example', href: LIVE_EXAMPLE_PATH },
     ],
   },
   {
@@ -57,6 +59,7 @@ export function SiteFooter() {
               className="reve-crisp mt-6 inline-block rounded-full bg-wine px-6 py-3 text-[12px] uppercase tracking-[0.14em] text-bone transition-colors hover:bg-wine-deep focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine"
               href={whatsappLink('Hello Rêve, I have a question about your invitations.')}
               rel="noreferrer noopener"
+              {...trackWhatsapp('footer')}
               target="_blank"
             >
               Message us

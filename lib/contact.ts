@@ -19,8 +19,11 @@ export const CONTACT = {
  * Passing the order reference here is what makes the handoff feel deliberate
  * rather than dumping the customer into an empty chat.
  */
+/** WhatsApp's click-to-chat host. Every message link starts with it. */
+export const WHATSAPP_HOST = 'wa.me';
+
 export function whatsappLink(message: string): string {
-  return `https://wa.me/${CONTACT.whatsappE164}?text=${encodeURIComponent(message)}`;
+  return `https://${WHATSAPP_HOST}/${CONTACT.whatsappE164}?text=${encodeURIComponent(message)}`;
 }
 
 /** Clients are in Lebanon unless their number says otherwise. */

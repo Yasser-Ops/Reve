@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { trackWhatsapp } from '@/lib/analytics';
 import { whatsappLink } from '@/lib/contact';
 
 /**
@@ -110,6 +111,7 @@ export function StickyCta({
             className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-taupe/60 text-wine transition-colors hover:bg-sand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine"
             href={whatsappLink(message)}
             rel="noreferrer noopener"
+            {...trackWhatsapp('sticky')}
             target="_blank"
           >
             <WhatsappMark />

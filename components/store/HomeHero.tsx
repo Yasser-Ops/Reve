@@ -1,7 +1,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { trackCta } from '@/lib/analytics';
 import { DELIVERY, ENTRY_TIER } from '@/lib/offer';
+import { LIVE_EXAMPLE_PATH } from '@/lib/site';
 
 /* Jardin's own dusk scene, so the painting behind the phone is the world the
    invitation inside it is drawn in. */
@@ -83,12 +85,14 @@ export function HomeHero({ phone }: { phone: ReactNode }) {
             <Link
               className="reve-crisp rounded-full bg-bone px-8 py-3.5 text-[13px] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-sand focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone"
               href="/weddings"
+              {...trackCta('hero', 'collection')}
             >
               See the collection
             </Link>
             <Link
               className="reve-crisp text-[14px] text-bone underline decoration-bone/40 underline-offset-[6px] transition-colors hover:decoration-bone focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone"
-              href="/i/sarah-and-amine"
+              href={LIVE_EXAMPLE_PATH}
+              {...trackCta('hero', 'live_example')}
             >
               Open a live example
             </Link>

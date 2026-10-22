@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { trackWhatsapp } from '@/lib/analytics';
 import { CONTACT, whatsappLink } from '@/lib/contact';
 import { ROUTES } from '@/lib/routes';
 import { TERMS_SECTIONS, TERMS_UPDATED_ON } from '@/lib/terms';
@@ -64,6 +65,7 @@ export default function TermsPage() {
             <a
               className="text-ink underline underline-offset-4 hover:text-wine"
               href={whatsappLink('Hello Rêve, I have a question about your terms.')}
+              {...trackWhatsapp('terms')}
               rel="noreferrer noopener"
               target="_blank"
             >

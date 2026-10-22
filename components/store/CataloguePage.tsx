@@ -6,6 +6,7 @@ import {
 import { Reveal } from '@/components/store/Reveal';
 import { TemplateCard } from '@/components/store/TemplateCard';
 import { TemplatePlaceholder } from '@/components/store/TemplatePlaceholder';
+import { trackWhatsapp } from '@/lib/analytics';
 import { whatsappLink } from '@/lib/contact';
 import { catalogueJsonLd } from '@/lib/json-ld';
 
@@ -164,6 +165,7 @@ export function CataloguePage({
               className={`reve-crisp rounded-full px-9 py-4 text-[13px] uppercase tracking-[0.16em] text-bone transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone ${accent.button}`}
               href={whatsappLink(startMessage)}
               rel="noreferrer noopener"
+              {...trackWhatsapp('catalogue')}
               target="_blank"
             >
               Message us on WhatsApp

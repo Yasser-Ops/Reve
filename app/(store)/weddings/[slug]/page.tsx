@@ -12,6 +12,7 @@ import { LiveInvitationDemo } from '@/components/store/LiveInvitationDemo';
 import { OfferTabs } from '@/components/store/OfferTabs';
 import { Reveal } from '@/components/store/Reveal';
 import { TemplateFrame } from '@/components/store/TemplateFrame';
+import { trackWhatsapp } from '@/lib/analytics';
 import { whatsappLink } from '@/lib/contact';
 import { designJsonLd } from '@/lib/json-ld';
 import { DELIVERY, ENTRY_TIER, OFFER_TIERS } from '@/lib/offer';
@@ -193,6 +194,7 @@ export default async function DesignPage({
                 className="reve-crisp inline-block rounded-full bg-wine px-8 py-3.5 text-[11px] uppercase tracking-[0.16em] text-bone transition-opacity hover:opacity-90"
                 href={orderLink}
                 rel="noreferrer noopener"
+                {...trackWhatsapp('design', entry.slug)}
                 target="_blank"
               >
                 Order {entry.name} · from {ENTRY_TIER.price}
@@ -290,6 +292,7 @@ export default async function DesignPage({
               className="reve-crisp inline-block rounded-full bg-wine px-8 py-3.5 text-[11px] uppercase tracking-[0.16em] text-bone transition-opacity hover:opacity-90"
               href={orderLink}
               rel="noreferrer noopener"
+              {...trackWhatsapp('design', entry.slug)}
               target="_blank"
             >
               Order {entry.name}

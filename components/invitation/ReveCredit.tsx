@@ -6,11 +6,14 @@
 const CREDIT_SOURCE = 'invitation';
 const CREDIT_MEDIUM = 'credit';
 
+/** The query parameter that carries the referring wedding's slug. */
+export const CREDIT_CAMPAIGN_PARAM = 'utm_campaign';
+
 export function creditHref(slug: string) {
   const query = new URLSearchParams({
     utm_source: CREDIT_SOURCE,
     utm_medium: CREDIT_MEDIUM,
-    utm_campaign: slug,
+    [CREDIT_CAMPAIGN_PARAM]: slug,
   });
   return `/?${query.toString()}`;
 }

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { TRACKER_ASSET_ID, TRACKER_SRC } from '@/lib/analytics';
 import { SiteFooter } from '@/components/store/SiteFooter';
 import { SiteNav } from '@/components/store/SiteNav';
+import { WhatsappRef } from '@/components/store/WhatsappRef';
 
 /**
  * Storefront chrome.
@@ -15,6 +16,7 @@ export default function StoreLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-full flex-col">
       <Script data-asset={TRACKER_ASSET_ID} src={TRACKER_SRC} />
+      <WhatsappRef />
       <SiteNav />
       <div className="flex-1">{children}</div>
       <SiteFooter />

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { trackWhatsapp } from '@/lib/analytics';
 import { CONTACT, whatsappLink } from '@/lib/contact';
 import { ROUTES } from '@/lib/routes';
 
@@ -104,6 +105,7 @@ export function SiteNav() {
             className="reve-crisp rounded-full bg-wine px-4 py-2.5 text-[11px] uppercase tracking-[0.12em] text-bone transition-colors hover:bg-wine-deep focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine sm:px-5 sm:text-[12px] sm:tracking-[0.14em]"
             href={whatsappLink(START_MESSAGE)}
             rel="noreferrer noopener"
+            {...trackWhatsapp('nav')}
             target="_blank"
           >
             Start yours
@@ -147,6 +149,7 @@ export function SiteNav() {
             className="reve-crisp mt-3 block rounded-full bg-wine px-6 py-3.5 text-center text-[12px] uppercase tracking-[0.14em] text-bone"
             href={whatsappLink(START_MESSAGE)}
             rel="noreferrer noopener"
+            {...trackWhatsapp('nav_menu')}
             target="_blank"
           >
             Start yours on WhatsApp

@@ -7,6 +7,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
+import { trackSeal } from '@/lib/analytics';
 import { getEnvelope, openingDurationMs } from '@/lib/envelopes';
 import { EnvelopeReleasedContext } from './envelope-context';
 import { EnvelopeVideo } from './EnvelopeVideo';
@@ -239,6 +240,7 @@ export function EnvelopeGate({
           disabled={!ready}
           onClick={() => setState('opening')}
           type="button"
+          {...(contained ? trackSeal() : {})}
         />
 
         <p className="envelope-hint">{ready ? 'Tap the seal' : 'One moment'}</p>
