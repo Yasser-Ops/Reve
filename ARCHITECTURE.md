@@ -17,7 +17,8 @@ app/
   globals.css                   STOREFRONT tokens only (see 04).
 
   (store)/                      Route group. Storefront chrome.
-    layout.tsx                  SiteNav + SiteFooter wrapper.
+    layout.tsx                  SiteNav + SiteFooter wrapper; loads the traffic
+                                tracker (lib/analytics.ts). Storefront only, never /i/[slug].
     page.tsx                    Home. Wedding-led; the wedding page IS "/".
     collection/page.tsx         Every template, rendered live.
     collection/error.tsx
