@@ -34,11 +34,11 @@ describe('/portal dashboard', () => {
     expect(screen.queryByText(PASSWORD_MESSAGES.CHANGED_OTHERS_KEPT)).not.toBeInTheDocument();
   });
 
-  it('refreshes live on order moves and review decisions', async () => {
+  it('refreshes live on saves, order moves, review decisions and replies', async () => {
     render(await page());
     expect(screen.getByTestId('live-refresh')).toHaveAttribute(
       'data-live',
-      'invitation_reviews,orders,rsvps',
+      'invitation_reviews,invitations,orders,rsvps',
     );
   });
 });

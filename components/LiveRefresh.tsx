@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 export const LIVE_TABLE = {
+  INVITATIONS: 'invitations',
   REVIEWS: 'invitation_reviews',
   ORDERS: 'orders',
   RSVPS: 'rsvps',
@@ -20,8 +21,8 @@ const EVENT_DEBOUNCE_MS = 500;
 const FOCUS_THROTTLE_MS = 5000;
 
 /**
- * Refreshes the page's server data when a client decision or an order move
- * lands, and when the tab comes back into view. Renders nothing.
+ * Refreshes the page's server data when an invitation is saved, a client
+ * decision or an order move lands, and when the tab comes back into view. Renders nothing.
  *
  * Shared by admin and the portal. RLS decides which rows' changes reach the
  * browser, so a client only ever hears about their own invitation and order.

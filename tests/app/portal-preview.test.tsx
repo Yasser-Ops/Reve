@@ -32,6 +32,10 @@ vi.mock('@/components/store/LiveInvitationDemo', () => ({
   ),
 }));
 vi.mock('@/lib/supabase/server', () => ({ createClient }));
+vi.mock('@/lib/schemas/content/placeholders', () => ({
+  fillPlaceholders: (_schema: unknown, content: { renderable?: boolean; complete?: boolean }) =>
+    content.complete || content.renderable ? { content, placeholders: [] } : null,
+}));
 /* Realtime is not under test here: the stand-in records what it watches. */
 vi.mock('@/components/LiveRefresh', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/components/LiveRefresh')>()),
@@ -70,7 +74,10 @@ vi.mock('@/components/invitation/registry', () => ({
   getTemplateEntry: (slug: string) =>
     slug === 'lin'
       ? {
+          /* `complete` decides approval; `renderable` whether placeholders
+             can fill the rest. */
           schema: {
+            shape: {},
             safeParse: (value: unknown) => ({
               success: (value as { complete?: boolean }).complete === true,
             }),
@@ -124,14 +131,6 @@ describe('/portal/preview/[id]', () => {
     state.fake = fakeSupabase();
     await expect(PortalPreviewPage(params('nope'))).rejects.toThrow('NOT_FOUND');
   });
-
-  it.each(['pending_payment', 'paid', 'brief', 'concept', 'in_design', 'cancelled'])(
-    'is not found while the order is %s',
-    async (status) => {
-      state.fake = fakeSupabase({ invitations: [invitationRow(status)] });
-      await expect(PortalPreviewPage(params(INV))).rejects.toThrow('NOT_FOUND');
-    },
-  );
 
   it('is not found when RLS hides the order', async () => {
     state.fake = fakeSupabase({
@@ -212,12 +211,36 @@ describe('/portal/preview/[id]', () => {
     expect(screen.queryByRole('form', { name: 'Your review' })).not.toBeInTheDocument();
   });
 
-  it('refreshes live on order moves and review decisions', async () => {
+  it.each(['paid', 'brief', 'concept', 'in_design'])(
+    'shows the work in progress while %s, without the review bar',
+    async (status) => {
+      state.fake = fakeSupabase({ invitations: [invitationRow(status)] });
+      render(await PortalPreviewPage(params(INV)));
+
+      expect(screen.getByText('the design')).toBeInTheDocument();
+      expect(screen.queryByRole('form', { name: 'Your review' })).not.toBeInTheDocument();
+    },
+  );
+
+  it('is not found once the order is cancelled', async () => {
+    state.fake = fakeSupabase({ invitations: [invitationRow('cancelled')] });
+    await expect(PortalPreviewPage(params(INV))).rejects.toThrow('NOT_FOUND');
+  });
+
+  it('offers no approval for a draft shown with placeholders', async () => {
+    state.fake = fakeSupabase({ invitations: [invitationRow('review', { renderable: true })] });
+    render(await PortalPreviewPage(params(INV, 'phone')));
+
+    expect(screen.getByTestId('phone')).toHaveTextContent('the design');
+    expect(screen.queryByRole('form', { name: 'Your review' })).not.toBeInTheDocument();
+  });
+
+  it('refreshes live on saves, order moves and review decisions', async () => {
     state.fake = fakeSupabase({ invitations: [invitationRow('review')] });
     render(await PortalPreviewPage(params(INV)));
     expect(screen.getByTestId('live-refresh')).toHaveAttribute(
       'data-live',
-      'invitation_reviews,orders',
+      'invitation_reviews,invitations,orders',
     );
   });
 

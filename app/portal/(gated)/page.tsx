@@ -36,8 +36,10 @@ export default async function PortalHomePage({
 
   return (
     <main className="mx-auto grid max-w-4xl gap-6 px-4 py-10 sm:px-6">
-      {/* A stage move, a publish or a new reply shows without a reload. */}
-      <LiveRefresh tables={[LIVE_TABLE.ORDERS, LIVE_TABLE.REVIEWS, LIVE_TABLE.RSVPS]} />
+      {/* A save, a stage move, a publish or a new reply shows without a reload. */}
+      <LiveRefresh
+        tables={[LIVE_TABLE.INVITATIONS, LIVE_TABLE.ORDERS, LIVE_TABLE.REVIEWS, LIVE_TABLE.RSVPS]}
+      />
       <h1 className="font-heading text-2xl">Welcome, {client.fullName}</h1>
 
       {othersKept ? (

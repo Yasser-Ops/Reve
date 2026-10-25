@@ -9,17 +9,14 @@ import { PreviewViews } from '@/components/portal/PreviewViews';
 import { REVIEW_BAR_SPACE, ReviewForm } from '@/components/portal/ReviewForm';
 import { requireClient } from '@/lib/auth/guards';
 import { contentFingerprint, sameContent } from '@/lib/invitations/publish-guard';
-import { ORDER_STATUS, type OrderStatus } from '@/lib/orders/status';
+import { ORDER_STATUS } from '@/lib/orders/status';
 import { REVIEW_MESSAGES } from '@/lib/portal/messages';
 import { parsePreviewView } from '@/lib/portal/preview-view';
+import { fillPlaceholders } from '@/lib/schemas/content/placeholders';
 import { VIEW_PARAM } from '@/lib/routes';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata = { robots: { index: false, follow: false } };
-
-/* Before review the draft is still being set; the client sees it here only
-   once it is theirs to approve, or live. */
-const VIEWABLE: ReadonlySet<OrderStatus> = new Set([ORDER_STATUS.REVIEW, ORDER_STATUS.DELIVERED]);
 
 /**
  * The client's draft, rendered as a guest will see it. Outside the (gated)
@@ -30,8 +27,12 @@ const VIEWABLE: ReadonlySet<OrderStatus> = new Set([ORDER_STATUS.REVIEW, ORDER_S
  * is of the exact content this page rendered: a client can only approve what
  * they were shown.
  *
- * A complete draft can be framed in the phone or full screen (`?view=`); the
- * review bar sits over either, unchanged.
+ * Open from the moment the invitation exists, so the client watches it take
+ * shape: every save in the editor re-renders this page, empty core fields
+ * drawn as placeholders. Approval waits for review and a complete draft.
+ *
+ * A renderable draft can be framed in the phone or full screen (`?view=`);
+ * the review bar sits over either, unchanged.
  */
 export default async function PortalPreviewPage({
   params,
@@ -54,13 +55,19 @@ export default async function PortalPreviewPage({
     .maybeSingle();
   if (error) throw error;
   const design = invitation ? getTemplateEntry(invitation.template_slug) : undefined;
-  if (!invitation || !design || !invitation.orders || !VIEWABLE.has(invitation.orders.status)) {
+  if (
+    !invitation ||
+    !design ||
+    !invitation.orders ||
+    invitation.orders.status === ORDER_STATUS.CANCELLED
+  ) {
     notFound();
   }
 
-  /* An incomplete draft shows a message, not the design: nothing to approve,
-     and nothing to put in a phone. */
+  /* Placeholders make a draft renderable; only real content makes it
+     approvable. A draft nothing can stand in for shows a message, not a phone. */
   const complete = design.schema.safeParse(invitation.content).success;
+  const renderable = fillPlaceholders(design.schema, invitation.content) !== null;
   const reviewing = invitation.orders.status === ORDER_STATUS.REVIEW && complete;
   const requested = parsePreviewView((await searchParams)[VIEW_PARAM]);
   /* Only a first-paint guess; the client corrects it from the real viewport. */
@@ -88,13 +95,13 @@ export default async function PortalPreviewPage({
     />
   );
 
-  /* LiveRefresh re-renders this page in place when the order moves or a
-     decision lands, so a publish shows without a reload. The review bar keeps
+  /* LiveRefresh re-renders this page in place when the operator saves, the
+     order moves or a decision lands, so every edit shows without a reload. The review bar keeps
      its state across the refresh, an unsent note included. */
   return (
     <>
-      <LiveRefresh tables={[LIVE_TABLE.ORDERS, LIVE_TABLE.REVIEWS]} />
-      {complete ? (
+      <LiveRefresh tables={[LIVE_TABLE.INVITATIONS, LIVE_TABLE.ORDERS, LIVE_TABLE.REVIEWS]} />
+      {renderable ? (
         <PreviewViews
           requested={requested}
           templateSlug={invitation.template_slug}

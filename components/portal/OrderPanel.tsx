@@ -18,12 +18,14 @@ import { SITE_URL } from '@/lib/site';
 const NO_REPLIES: GuestListSummary = { guests: [], coming: 0, declined: 0, replies: 0 };
 const NO_REPLIES_NOTE = 'Replies are not included in this invitation.';
 const CHECKLIST_TITLE = 'What we need from you';
+const IN_PROGRESS_LIVE = 'We are working on it. Your invitation updates here as we go.';
 
 const when = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: STUDIO_TIME_ZONE });
 
 /**
  * One order, told by its stage. Server-rendered: only the live link is
- * interactive. Approving happens on the preview, next to the design it
+ * interactive. Once the invitation exists the client can open it at any
+ * stage and watch the work in progress. Approving happens on the preview, next to the design it
  * approves; here the client only reads their last decision. The guest list is
  * gated on the invitation's entitlements, what was bought, not on the tier.
  */
@@ -102,7 +104,19 @@ export function OrderPanel({
       status === ORDER_STATUS.BRIEF ||
       status === ORDER_STATUS.CONCEPT ||
       status === ORDER_STATUS.IN_DESIGN ? (
-        <p className="text-muted-foreground">We are working on it.</p>
+        invitation ? (
+          <div className="grid gap-3">
+            <p className="text-muted-foreground">{IN_PROGRESS_LIVE}</p>
+            <Link
+              className={buttonVariants({ className: 'justify-self-start' })}
+              href={portalRoutes.preview(invitation.id)}
+            >
+              See your invitation
+            </Link>
+          </div>
+        ) : (
+          <p className="text-muted-foreground">We are working on it.</p>
+        )
       ) : null}
 
       {checklist ? (

@@ -32,10 +32,22 @@ describe('OrderPanel by stage', () => {
     ['brief', 'Gathering your brief'],
     ['concept', 'Drawing your concept'],
     ['in_design', 'We are setting your invitation'],
-  ] as const)('says we are working on it while %s', (status, label) => {
+  ] as const)('links to the work in progress while %s', (status, label) => {
     render(<OrderPanel order={order({ status, tier: 'custom' })} />);
     expect(screen.getByText(label)).toBeInTheDocument();
+    expect(
+      screen.getByText('We are working on it. Your invitation updates here as we go.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'See your invitation' })).toHaveAttribute(
+      'href',
+      portalRoutes.preview('inv-1'),
+    );
+  });
+
+  it('says we are working on it, with no link, before there is an invitation', () => {
+    render(<OrderPanel order={order({ status: 'paid', invitation: null })} />);
     expect(screen.getByText('We are working on it.')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'See your invitation' })).not.toBeInTheDocument();
   });
 
   it('links to the preview while in review, with no approval buttons here', () => {
