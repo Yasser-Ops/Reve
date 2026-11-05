@@ -3,7 +3,7 @@
  *
  * Only transform and opacity are animated, so the whole fall stays on the
  * compositor and never triggers layout — the same constraint envelope.css
- * works under, and the reason fourteen petals cost nothing on a phone.
+ * works under, and the reason two dozen petals cost nothing on a phone.
  *
  * The layer is fixed, not per-section: petals that reset at every band
  * boundary read as a loop, and a fixed layer keeps the count constant however
@@ -37,7 +37,11 @@
   background-repeat: no-repeat;
   background-position: center;
   opacity: 0;
-  will-change: transform, opacity;
+  /* The sprites have pale, see-through centres. At low opacity a small round
+     one read as a soap bubble; near-solid with a soft shadow it reads as a
+     petal lying on the air. The shadow is static, so it is rasterised once. */
+  filter: drop-shadow(0 2px 2px rgb(60 50 35 / 0.18));
+  will-change: transform, opacity, rotate;
   /* Negative delays on the component start the loop mid-flight, so petals are
      already scattered down the screen on first paint rather than all entering
      from the top together. */
@@ -46,7 +50,9 @@
      the length of the page instead of a drift. */
   animation:
     lin-petal-fall var(--lin-petal-duration) linear var(--lin-petal-delay) infinite,
-    lin-petal-sway 7s ease-in-out var(--lin-petal-delay) infinite alternate;
+    lin-petal-sway 7s ease-in-out var(--lin-petal-delay) infinite alternate,
+    lin-petal-tumble var(--lin-petal-flip) ease-in-out var(--lin-petal-delay) infinite
+      alternate;
 }
 
 /*
@@ -60,10 +66,10 @@
     opacity: 0;
   }
   4% {
-    opacity: 0.55;
+    opacity: 0.9;
   }
   94% {
-    opacity: 0.55;
+    opacity: 0.9;
   }
   100% {
     transform: translate3d(0, var(--lin-petal-fall, 100vh), 0)
@@ -81,6 +87,20 @@
   }
   to {
     margin-left: var(--lin-petal-sway);
+  }
+}
+
+/* A tumble about the vertical axis, on the individual `rotate` property so it
+   composes with the fall's transform instead of replacing it. Only the y axis
+   is safe here: `rotate` applies after the fall's translation, and a y-axis
+   turn leaves the vertical offset untouched where an x-axis one would swing
+   the petal across the page. Stopping short of edge-on keeps it visible. */
+@keyframes lin-petal-tumble {
+  from {
+    rotate: y -20deg;
+  }
+  to {
+    rotate: y 70deg;
   }
 }
 

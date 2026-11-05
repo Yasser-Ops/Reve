@@ -19,9 +19,12 @@ type RsvpFormProps = {
  * envelope, so the submit is intercepted. On the live page it sends the reply;
  * anywhere else (`rsvpSlug` null) it only says it is a preview. The palette
  * comes in as props because the template owns it.
+ *
+ * No party size or dietary field: Lin asks only who, whether, and a note. The
+ * schema reads an absent party size as one and absent dietary needs as none.
  */
 export function RsvpForm({ ink, accent, paper, rsvpSlug }: RsvpFormProps) {
-  const { state, message, onSubmit, setChoice, isYes } = useRsvpSubmit(rsvpSlug);
+  const { state, message, onSubmit } = useRsvpSubmit(rsvpSlug);
 
   if (state === RSVP_STATE.SENT) {
     return (
@@ -67,7 +70,6 @@ export function RsvpForm({ ink, accent, paper, rsvpSlug }: RsvpFormProps) {
           <label className="flex items-center gap-2">
             <input
               name="attending"
-              onChange={() => setChoice(RSVP_ATTENDING.YES)}
               required
               type="radio"
               value={RSVP_ATTENDING.YES}
@@ -77,7 +79,6 @@ export function RsvpForm({ ink, accent, paper, rsvpSlug }: RsvpFormProps) {
           <label className="flex items-center gap-2">
             <input
               name="attending"
-              onChange={() => setChoice(RSVP_ATTENDING.NO)}
               required
               type="radio"
               value={RSVP_ATTENDING.NO}
@@ -86,33 +87,6 @@ export function RsvpForm({ ink, accent, paper, rsvpSlug }: RsvpFormProps) {
           </label>
         </div>
       </fieldset>
-
-      {isYes ? (
-        <>
-          <label className={labelClass} style={{ color: `${ink}b3` }}>
-            How many of you
-            <input
-              className={fieldClass}
-              defaultValue={1}
-              max={RSVP_LIMITS.PARTY_MAX}
-              min={1}
-              name="partySize"
-              style={fieldStyle}
-              type="number"
-            />
-          </label>
-          <label className={labelClass} style={{ color: `${ink}b3` }}>
-            Dietary needs
-            <input
-              className={fieldClass}
-              maxLength={RSVP_LIMITS.NOTE_MAX}
-              name="dietaryNotes"
-              style={fieldStyle}
-              type="text"
-            />
-          </label>
-        </>
-      ) : null}
 
       <label className={labelClass} style={{ color: `${ink}b3` }}>
         A note for the couple

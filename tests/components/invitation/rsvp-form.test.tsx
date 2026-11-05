@@ -110,19 +110,6 @@ describe.each([
     expect(screen.getByLabelText('Yes')).toBeChecked();
   });
 
-  it('shows party size and dietary notes only for Yes', async () => {
-    const user = userEvent.setup();
-    renderForm(SLUG);
-    expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
-
-    await user.click(screen.getByLabelText('Yes'));
-    expect(screen.getByRole('spinbutton')).toHaveAttribute('max', String(RSVP_LIMITS.PARTY_MAX));
-    expect(screen.getByLabelText('Dietary needs')).toBeInTheDocument();
-
-    await user.click(screen.getByLabelText('No'));
-    expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
-  });
-
   it('maps a rejected action to the failed message and keeps the form', async () => {
     offline.on = true;
     const user = userEvent.setup();
@@ -224,5 +211,32 @@ describe.each([
     expect(screen.queryByRole('heading', { name: heading })).not.toBeInTheDocument();
     /* The reply section is the only one that goes: no coloured band stays. */
     expect(off.container.querySelectorAll('section')).toHaveLength(sectionsOn - 1);
+  });
+});
+
+describe('Yes-only fields', () => {
+  it('Jardin shows party size and dietary notes only for Yes', async () => {
+    const user = userEvent.setup();
+    render(
+      <JardinRsvpForm accent="#8a6d3a" ink="#3a2f22" paper="#f5f0e6" rsvpSlug={SLUG} />,
+    );
+    expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
+
+    await user.click(screen.getByLabelText('Yes'));
+    expect(screen.getByRole('spinbutton')).toHaveAttribute('max', String(RSVP_LIMITS.PARTY_MAX));
+    expect(screen.getByLabelText('Dietary needs')).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText('No'));
+    expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
+  });
+
+  /* Lin asks only who, whether, and a note: the schema fills the rest. */
+  it('Lin asks for neither party size nor dietary needs', async () => {
+    const user = userEvent.setup();
+    render(<LinRsvpForm accent="#8a6d3a" ink="#3a2f22" paper="#f5f0e6" rsvpSlug={SLUG} />);
+
+    await user.click(screen.getByLabelText('Yes'));
+    expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Dietary needs')).not.toBeInTheDocument();
   });
 });
