@@ -8,6 +8,7 @@ export type FormField =
   | (Base & { kind: 'text' | 'textarea' | 'datetime' | 'url' })
   | (Base & { kind: 'choice'; options: string[] })
   | (Base & { kind: 'media'; media: MediaKind })
+  | (Base & { kind: 'heroMedia' })
   | (Base & { kind: 'group'; fields: FormField[] })
   | (Base & { kind: 'list'; item: FormField[] });
 
@@ -37,6 +38,7 @@ function describe(key: string, path: string, schema: z.ZodType): FormField {
 
   const base: Base = { key, label: meta.label, required: !schema.safeParse(undefined).success };
 
+  if (meta.heroUpload) return { ...base, kind: 'heroMedia' };
   if (meta.media) return { ...base, kind: 'media', media: meta.media };
   if (inner instanceof z.ZodISODateTime) return { ...base, kind: 'datetime' };
   if (inner instanceof z.ZodURL) return { ...base, kind: 'url' };

@@ -17,6 +17,8 @@ declare module 'zod' {
     multiline?: boolean;
     /** The field holds an uploaded file of this kind; the editor offers the uploads. */
     media?: MediaKind;
+    /** The field is the opening photo or video; the editor shows one upload box for it. */
+    heroUpload?: boolean;
   }
 }
 

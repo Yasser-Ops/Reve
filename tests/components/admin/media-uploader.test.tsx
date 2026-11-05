@@ -8,7 +8,14 @@ const { createUploadUrl, uploadToSignedUrl } = vi.hoisted(() => ({
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock('@/lib/admin/media-actions', () => ({ createUploadUrl }));
 vi.mock('@/lib/supabase/client', () => ({
-  createClient: () => ({ storage: { from: () => ({ uploadToSignedUrl }) } }),
+  createClient: () => ({
+    storage: {
+      from: () => ({
+        uploadToSignedUrl,
+        getPublicUrl: () => ({ data: { publicUrl: 'https://cdn/p' } }),
+      }),
+    },
+  }),
 }));
 
 import { MediaUploader } from '@/components/admin/MediaUploader';
@@ -28,9 +35,9 @@ beforeEach(() => {
 describe('MediaUploader', () => {
   it('skips a dropped file of the wrong type and says so', () => {
     render(<MediaUploader invitationId="inv-1" />);
-    drop([webp('one.webp'), new File(['x'], 'two.png', { type: 'image/png' })]);
+    drop([webp('one.webp'), new File(['x'], 'two.mp4', { type: 'video/mp4' })]);
 
-    expect(screen.getByText('two.png: skipped, use WebP or MP4.')).toBeInTheDocument();
+    expect(screen.getByText('two.mp4: skipped, use WebP.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Upload 1' })).toBeEnabled();
   });
 

@@ -13,7 +13,7 @@ const galleryItemSchema = z.object({
 
 const heroMediaSchema = z.object({
   type: z.enum(['image', 'video']).meta({ label: 'Type' }),
-  src: z.string().min(1).meta({ label: 'File', media: 'hero' }),
+  src: z.string().min(1).meta({ label: 'File' }),
 });
 
 export type ScheduleItem = z.infer<typeof scheduleItemSchema>;
@@ -45,6 +45,7 @@ export const BLOCKS = {
   heroMedia: heroMediaSchema.optional().meta({
     label: 'Opening photo or video',
     ask: 'A photo or short video for the opening screen, sent as a document',
+    heroUpload: true,
   }),
   registryMessage: z.string().optional().meta({
     label: 'Gifts note',

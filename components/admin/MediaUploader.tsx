@@ -5,20 +5,22 @@ import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { NativeSelect } from '@/components/ui/native-select';
-import { createUploadUrl } from '@/lib/admin/media-actions';
-import { MEDIA_BUCKET, MEDIA_KINDS, type MediaKind } from '@/lib/admin/media-paths';
-import { createClient } from '@/lib/supabase/client';
+import { MEDIA_KINDS, type MediaKind } from '@/lib/admin/media-paths';
+import { uploadMedia } from '@/lib/admin/upload-media';
 import { cn } from '@/lib/utils';
 
 /* What the picker accepts. A drop bypasses `accept`, so drops are filtered
    against the same list; the server checks each kind again. */
-const ACCEPTED_TYPES = ['image/webp', 'video/mp4'] as const;
+const ACCEPTED_TYPES = ['image/webp'] as const;
+
+/* The opening photo or video has its own upload box in the content form. */
+const KINDS = [MEDIA_KINDS.PHOTOS, MEDIA_KINDS.ENVELOPE] as const;
 
 function isAccepted(file: File): boolean {
   return ACCEPTED_TYPES.some((type) => type === file.type);
 }
 
-/** Files go browser to Storage, one signed URL each, never through a server action. */
+/** Gallery photos and envelope frames, many at once. */
 export function MediaUploader({ invitationId }: { invitationId: string }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -43,7 +45,7 @@ export function MediaUploader({ invitationId }: { invitationId: string }) {
   function choose(chosen: File[]) {
     const skipped = chosen.filter((file) => !isAccepted(file));
     setFiles(chosen.filter(isAccepted));
-    setLog(skipped.map((file) => `${file.name}: skipped, use WebP or MP4.`));
+    setLog(skipped.map((file) => `${file.name}: skipped, use WebP.`));
   }
 
   async function upload() {
@@ -52,27 +54,10 @@ export function MediaUploader({ invitationId }: { invitationId: string }) {
     const note = (line: string) => setLog((current) => [...current, line]);
 
     try {
-      const bucket = createClient().storage.from(MEDIA_BUCKET);
+      /* One file failing never stops the rest: uploadMedia never throws. */
       for (const file of files) {
-        /* One file failing, even by throwing, never stops the rest. */
-        try {
-          const signed = await createUploadUrl({
-            invitationId,
-            kind,
-            fileName: file.name,
-            contentType: file.type,
-          });
-          if (!signed.ok) {
-            note(signed.message);
-            continue;
-          }
-          const { error } = await bucket.uploadToSignedUrl(signed.path, signed.token, file, {
-            contentType: file.type,
-          });
-          note(error ? `${file.name}: upload failed.` : `${file.name}: uploaded.`);
-        } catch {
-          note(`${file.name}: upload failed.`);
-        }
+        const result = await uploadMedia(invitationId, kind, file);
+        note(result.ok ? `${file.name}: uploaded.` : result.message);
       }
     } finally {
       setFiles([]);
@@ -88,11 +73,10 @@ export function MediaUploader({ invitationId }: { invitationId: string }) {
       <NativeSelect
         aria-label="What these files are"
         className="justify-self-start"
-        onChange={(event) => setKind(z.enum(MEDIA_KINDS).parse(event.target.value))}
+        onChange={(event) => setKind(z.enum(KINDS).parse(event.target.value))}
         value={kind}
       >
         <option value={MEDIA_KINDS.PHOTOS}>Gallery photos</option>
-        <option value={MEDIA_KINDS.HERO}>Opening photo or video</option>
         <option value={MEDIA_KINDS.ENVELOPE}>Envelope frames</option>
       </NativeSelect>
       <label
@@ -122,7 +106,7 @@ export function MediaUploader({ invitationId }: { invitationId: string }) {
         />
         <span className="font-heading text-[18px]">Drop files here</span>
         <span className="text-muted-foreground">
-          or click to choose. WebP for photos, MP4 for the opening video.
+          or click to choose. WebP only. The opening photo or video has its own box above.
         </span>
         {files.length ? (
           <span className="mt-2 text-[12px]">{files.map((file) => file.name).join(', ')}</span>

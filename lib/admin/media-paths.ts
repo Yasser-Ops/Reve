@@ -14,6 +14,12 @@ const ACCEPTS: Record<MediaKind, readonly string[]> = {
   envelope: ['image/webp'],
 };
 
+/** Mirrors the bucket's file_size_limit (migration 0005). */
+export const MEDIA_MAX_BYTES = 50 * 1024 * 1024;
+
+/** Past this an opening video loads slowly for a guest on mobile data. */
+export const HERO_HEAVY_BYTES = 15 * 1024 * 1024;
+
 export function acceptsType(kind: MediaKind, contentType: string): boolean {
   return ACCEPTS[kind].includes(contentType);
 }

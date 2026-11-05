@@ -22,7 +22,7 @@ describe('formModel', () => {
     expect(byKey.message).toMatchObject({ kind: 'textarea', required: false });
     expect(byKey.venue).toMatchObject({ kind: 'group', required: true });
     expect(byKey.schedule).toMatchObject({ kind: 'list', required: false });
-    expect(byKey.heroMedia).toMatchObject({ kind: 'group', required: false });
+    expect(byKey.heroMedia).toMatchObject({ kind: 'heroMedia', required: false });
   });
 
   it('reads nested fields: the map link is a url, gallery photos pick from uploads', () => {

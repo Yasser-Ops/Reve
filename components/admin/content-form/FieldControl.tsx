@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
+import { HeroMediaField } from './HeroMediaField';
 import {
   emptyValue,
   isRecord,
@@ -24,6 +25,8 @@ type FieldControlProps = {
   path: string;
   issues: ReadonlyMap<string, string>;
   media: MediaOptions;
+  /** Where the opening field uploads to. */
+  invitationId: string;
 };
 
 const asString = (value: unknown) => (typeof value === 'string' ? value : '');
@@ -40,6 +43,7 @@ function Fields({
   path,
   issues,
   media,
+  invitationId,
 }: Omit<FieldControlProps, 'field'> & { fields: readonly FormField[] }) {
   const record = asRecord(value);
   return (
@@ -47,6 +51,7 @@ function Fields({
       {fields.map((child) => (
         <FieldControl
           field={child}
+          invitationId={invitationId}
           issues={issues}
           key={child.key}
           media={media}
@@ -60,7 +65,15 @@ function Fields({
 }
 
 /** One content field. Groups and lists render their own fields through this again. */
-export function FieldControl({ field, value, onChange, path, issues, media }: FieldControlProps) {
+export function FieldControl({
+  field,
+  value,
+  onChange,
+  path,
+  issues,
+  media,
+  invitationId,
+}: FieldControlProps) {
   const id = useId();
   const issue = issues.get(path);
   const label = (
@@ -96,6 +109,16 @@ export function FieldControl({ field, value, onChange, path, issues, media }: Fi
           ) : null}
           <Issue message={issue} />
         </div>
+      );
+    case 'heroMedia':
+      return (
+        <HeroMediaField
+          invitationId={invitationId}
+          issue={issue}
+          label={field.label}
+          onChange={onChange}
+          value={value}
+        />
       );
     case 'textarea':
       return (
@@ -161,6 +184,7 @@ export function FieldControl({ field, value, onChange, path, issues, media }: Fi
           <legend className="px-1 font-medium">{field.label}</legend>
           <Fields
             fields={field.fields}
+            invitationId={invitationId}
             issues={issues}
             media={media}
             onChange={onChange}
@@ -232,6 +256,7 @@ export function FieldControl({ field, value, onChange, path, issues, media }: Fi
               </div>
               <Fields
                 fields={field.item}
+                invitationId={invitationId}
                 issues={issues}
                 media={media}
                 onChange={(next) =>

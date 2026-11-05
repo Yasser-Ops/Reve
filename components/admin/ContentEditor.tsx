@@ -101,6 +101,7 @@ export function ContentEditor({
             {fields.map((field) => (
               <FieldControl
                 field={field}
+                invitationId={invitationId}
                 issues={issues}
                 key={field.key}
                 media={media}

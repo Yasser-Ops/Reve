@@ -107,8 +107,10 @@ components/
                                 dialogs], StageStepper,
                                 DeleteClientDialog [CLIENT], ContentEditor
                                 [CLIENT], content-form/FieldControl [CLIENT,
-                                recursive], CopyChecklist [CLIENT],
-                                MediaUploader [CLIENT, drop zone],
+                                recursive], content-form/HeroMediaField
+                                [CLIENT, opening upload + preview],
+                                CopyChecklist [CLIENT],
+                                MediaUploader [CLIENT, photos + envelope],
                                 MediaSection, ReviewPanel,
                                 fields.tsx (ids from useId)
   ui/                           shadcn base-nova, via `shadcn add` ONLY
@@ -127,7 +129,8 @@ lib/
                                 invitations, media + removeInvitationMedia),
                                 summary (views, due/overdue), content-form
                                 (formModel, pruneContent, date helpers),
-                                names (namesMatch), 'use server' actions
+                                names (namesMatch), upload-media (the one
+                                browser -> Storage upload), 'use server' actions
                                 (client-, order-, invitation-, media-
                                 actions); ActionResult
   auth/                         guards (requireAdmin), actions, messages,
@@ -273,8 +276,13 @@ client page -> OrderCard -> OrderLive [CLIENT]: primary = nextMove(tier,
                                -> issues by path (shown on the field), or
                                content stored PARSED
   iframe /admin/preview/[id]   reloads after each save (bare, no surface)
-  MediaUploader -> createUploadUrl (signed, per file) -> browser
+  MediaUploader -> uploadMedia per file -> createUploadUrl (signed) ->
                    uploadToSignedUrl -> invitation-media/<id>/<kind>/<name>
+  HeroMediaField  pick/drop -> type + size check (MEDIA_MAX_BYTES refuses,
+                   HERO_HEAVY_BYTES warns) -> uploadMedia(hero, name + unique
+                   suffix, so a replacement is never served from cache) ->
+                   getPublicUrl -> heroMedia { type from MIME, src: URL } ->
+                   Save content. Replaced files stay in Storage.
   moveOrder(review)            refused unless content satisfies its design
   approveOnBehalf(note)        invitation_reviews: snapshot = current content
   ReviewPanel                  publishReadiness (the action's own check)
@@ -473,7 +481,8 @@ schema lacks, or a schema missing the core, fails typecheck.
   WhatsApp list the editor copies.
 - **Every field, nested ones included, carries `.meta({ label })`** for the
   admin form; `multiline: true` makes a text box, `media: <kind>` makes the
-  field offer that kind's uploads. `formModel` throws on a missing label or a
+  field offer that kind's uploads, `heroUpload: true` (on `heroMedia`) draws
+  the one-box opening upload. A src is always a full URL, never a path. `formModel` throws on a missing label or a
   zod type it cannot draw, so a new design cannot silently lose a field.
 - **Block keys are permanent.** Stored rows are keyed by them. Add optional
   fields; never rename.
