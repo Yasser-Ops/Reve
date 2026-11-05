@@ -19,7 +19,7 @@ describe('formModel', () => {
 
     expect(byKey.coupleFirstName).toMatchObject({ kind: 'text', label: 'First name', required: true });
     expect(byKey.eventDate).toMatchObject({ kind: 'datetime', required: true });
-    expect(byKey.message).toMatchObject({ kind: 'textarea', required: false });
+    expect(byKey.registryMessage).toMatchObject({ kind: 'textarea', required: false });
     expect(byKey.venue).toMatchObject({ kind: 'group', required: true });
     expect(byKey.schedule).toMatchObject({ kind: 'list', required: false });
     expect(byKey.heroMedia).toMatchObject({ kind: 'heroMedia', required: false });

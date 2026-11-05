@@ -18,11 +18,12 @@ vi.mock('next/font/google', () => {
   });
 
   return {
-    Caveat: face,
     Cormorant_Garamond: face,
     EB_Garamond: face,
     Geist: face,
+    Hurricane: face,
     Marcellus: face,
+    Mrs_Saint_Delafield: face,
     Pinyon_Script: face,
   };
 });

@@ -164,10 +164,10 @@ const REGISTRY = {
     slug: 'lin',
     name: 'Lin',
     summary:
-      'Your film behind your names, then sage and cream bands carrying the evening, with petals falling the length of the page.',
+      'Your film washed pale behind your names, then paper and mist bands joined by torn edges, with petals resting on the seams and falling the length of the page.',
     story:
-      'Your own film plays behind your names, and the invitation settles into sage and cream: a countdown, the venue drawn by hand, and the evening laid out as a timeline you follow as you scroll. White petals fall the whole way down.',
-    character: ['Film behind the names', 'Drawn illustration', 'Falling petals'],
+      'Your own film plays softly behind your names in a signed script, and the invitation turns into torn sheets of paper white and mist: a countdown, the venue drawn by hand, and the evening laid out as a timeline of little sketches. White petals gather along the edges and fall the whole way down.',
+    character: ['Film behind the names', 'Torn-paper bands', 'Falling petals'],
     occasion: OCCASIONS.WEDDING,
     preview: '/collection/lin/card.webp',
     visibility: VISIBILITY.LISTED,

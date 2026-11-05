@@ -191,8 +191,11 @@ describe.each([
       />,
     );
 
-  it('shows the reply card when the rsvp entitlement is on', () => {
+  it('shows the reply card when the rsvp entitlement is on', async () => {
     renderDesign(true);
+    /* Lin folds the card behind its RSVP pill; Jardin shows it outright. */
+    const pill = screen.queryByRole('button', { name: 'RSVP' });
+    if (pill) await userEvent.setup().click(pill);
     expect(screen.getByRole('form', { name: 'Reply' })).toBeInTheDocument();
   });
 

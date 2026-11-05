@@ -1,96 +1,54 @@
-'use client';
-
 import Image from 'next/image';
-import { useEffect, useRef } from 'react';
 import type { ScheduleItem } from '@/lib/schemas/content/blocks';
-
-const INK = '#3a2f22';
-const GOLD = '#8a6d3a';
+import { LIN } from './palette';
 
 /**
- * Two-column zigzag timeline: illustration and text swap sides by row index,
- * strung on a center line whose dot tracks how far the visitor has scrolled
- * through the section — the interactive read of the reference's fixed mock.
+ * Two-column zigzag timeline, as in the approved mock: illustration and text
+ * swap sides by row, strung on a thin centre line with a small diamond
+ * ornament level with each row.
  *
- * A client component, unlike the rest of Lin, because the scroll listener
- * requires it. Icons cycle through a small placeholder set by index rather
- * than mapping to specific event names, since `schedule` is arbitrary content
- * and cannot be assumed to contain an arch/couple/table/rings/dancers in that
- * order — see the Lin asset list for the real hand-drawn icons this stands in
- * for.
+ * A Server Component: the mock's line is still, so the scroll-tracking dot the
+ * earlier version drew (and the listener it needed) is gone.
+ *
+ * Icons are picked by keyword from the event title, since `schedule` is
+ * arbitrary content and cannot be assumed to list an arch, couple, table,
+ * dancers and rings in that order.
  */
 export function EveningTimeline({ items }: { items: readonly ScheduleItem[] }) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const dotRef = useRef<HTMLDivElement>(null);
-
-  /*
-   * The dot is positioned by writing to the DOM directly rather than by
-   * holding progress in state. A setState per scroll event queues a React
-   * render for every frame of a scroll, and the dot visibly trails the
-   * pointer; moving it here keeps it locked to the scroll position.
-   */
-  useEffect(() => {
-    const track = trackRef.current;
-    const dot = dotRef.current;
-    if (!track || !dot) return;
-
-    let frame = 0;
-
-    const place = () => {
-      frame = 0;
-      const rect = track.getBoundingClientRect();
-      if (rect.height === 0) return;
-      const traveled = window.innerHeight / 2 - rect.top;
-      const progress = Math.min(1, Math.max(0, traveled / rect.height));
-      dot.style.transform = `translate(-50%, -50%) translateY(${progress * rect.height}px)`;
-    };
-
-    /* Coalesce to one write per frame: scroll fires far more often than the
-       screen repaints, and the extra reads would only thrash layout. */
-    const onScroll = () => {
-      if (frame === 0) frame = window.requestAnimationFrame(place);
-    };
-
-    place();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      if (frame !== 0) window.cancelAnimationFrame(frame);
-    };
-  }, []);
-
   return (
     <div className="relative mx-auto w-full max-w-2xl px-6">
       <div
         aria-hidden
-        className="absolute top-0 left-1/2 w-px -translate-x-1/2"
-        ref={trackRef}
-        style={{ backgroundColor: `${INK}33`, height: '100%' }}
-      >
-        {/* No transition: the dot tracks the scroll position exactly, and any
-            easing here reads as lag rather than as smoothing. Positioned by
-            transform in the effect above. */}
-        <div
-          className="absolute top-0 left-1/2 h-4 w-4 rounded-full"
-          ref={dotRef}
-          style={{
-            backgroundColor: GOLD,
-            transform: 'translate(-50%, -50%)',
-            /* Explicit: a project-wide `transition: all` otherwise eases every
-               transform write, which reads as the dot trailing the scroll. */
-            transition: 'none',
-          }}
-        />
-      </div>
+        className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2"
+        style={{ backgroundColor: `${LIN.GOLD}80` }}
+      />
 
-      <ul className="relative space-y-16">
+      <ul className="relative space-y-14">
         {items.map((item, index) => (
           <TimelineRow index={index} item={item} key={`${item.time}-${item.title}`} />
         ))}
       </ul>
     </div>
+  );
+}
+
+/* The mock's small ornament on the line: a four-point star in a ring. */
+function Ornament() {
+  return (
+    <svg
+      aria-hidden
+      className="absolute top-1/2 left-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2"
+      viewBox="0 0 20 20"
+    >
+      <circle cx="10" cy="10" fill={LIN.PAPER} r="7" />
+      <path
+        d="M10 2 L11.4 8.6 L18 10 L11.4 11.4 L10 18 L8.6 11.4 L2 10 L8.6 8.6 Z"
+        fill="none"
+        stroke={LIN.GOLD}
+        strokeWidth="0.9"
+      />
+      <circle cx="10" cy="10" fill={LIN.GOLD} r="1.2" />
+    </svg>
   );
 }
 
@@ -104,15 +62,21 @@ function TimelineRow({ item, index }: { item: ScheduleItem; index: number }) {
   );
 
   const text = (
-    <div className={illustrationLeft ? 'text-left' : 'text-right'}>
-      <p className="text-xl" style={{ fontFamily: 'var(--font-lin-script)', color: GOLD }}>
+    <div className="text-center">
+      <p
+        className="text-[30px] leading-none"
+        style={{ fontFamily: 'var(--font-lin-script)', color: LIN.GOLD }}
+      >
         {item.time}
       </p>
-      <p className="mt-1 text-[13px] uppercase tracking-[0.14em]" style={{ color: INK }}>
+      <p
+        className="mx-auto mt-2 max-w-[11rem] text-[11px] leading-snug uppercase tracking-[0.14em]"
+        style={{ color: LIN.LABEL }}
+      >
         {item.title}
       </p>
       {item.description ? (
-        <p className="mt-1 text-[12px]" style={{ color: `${INK}b3` }}>
+        <p className="mt-1 text-[13px]" style={{ color: LIN.INK }}>
           {item.description}
         </p>
       ) : null}
@@ -120,9 +84,10 @@ function TimelineRow({ item, index }: { item: ScheduleItem; index: number }) {
   );
 
   return (
-    <li className="grid grid-cols-2 items-center gap-6">
+    <li className="relative grid grid-cols-2 items-center gap-10">
       {illustrationLeft ? illustration : text}
       {illustrationLeft ? text : illustration}
+      <Ornament />
     </li>
   );
 }

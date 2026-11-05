@@ -29,10 +29,10 @@ describe('fillPlaceholders', () => {
   it('keeps what is already saved and fills only the rest', () => {
     const draft = fillPlaceholders(linContentSchema, {
       coupleFirstName: 'Maya',
-      message: 'Join us',
+      headline: 'Join us',
     });
     expect(draft?.content.coupleFirstName).toBe('Maya');
-    expect(draft?.content.message).toBe('Join us');
+    expect(draft?.content.headline).toBe('Join us');
     expect(draft?.content.couplePartnerName).toBe(CORE_PLACEHOLDERS.couplePartnerName);
     expect(draft?.placeholders).not.toContain('First name');
   });

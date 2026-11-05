@@ -5,11 +5,11 @@ import { Pinyon_Script, EB_Garamond } from 'next/font/google';
  * reason Lin's are: a template is art-directed individually, and a face every
  * route loads is a face every design ends up negotiating with.
  *
- * Where Lin's Caveat reads as a hand-lettered note, Jardin wants the names to
- * read as if painted into the scene behind them — closer to the copperplate
- * flourish on an engraved invitation than to handwriting. Pinyon Script is a
- * genuine formal engraving hand, not a stand-in for a commercial face the way
- * Caveat stands in for Lin's Notera.
+ * Where Lin's brushed signature scripts read as a hand-signed card, Jardin
+ * wants the names to read as if painted into the scene behind them — closer
+ * to the copperplate flourish on an engraved invitation than to handwriting.
+ * Pinyon Script is a genuine formal engraving hand, not a stand-in for a
+ * commercial face the way Lin's are.
  */
 export const jardinScript = Pinyon_Script({
   subsets: ['latin'],

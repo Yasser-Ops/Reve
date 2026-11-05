@@ -95,6 +95,12 @@ components/
     envelope.css                Stage, card and seal; the paper is a render
     motifs/                     SHARED VISUALS ONLY. Petals.
     templates/<slug>/           index.tsx + schema.ts (its own content schema)
+    templates/lin/              palette.ts (LIN tokens, from the approved Canva
+                                mock), fonts (Hurricane, Mrs Saint Delafield,
+                                Cormorant), TornEdge (seeded SVG tear per band),
+                                PetalSpray (static, own sprites), EveningTimeline
+                                (server, diamond ornaments), CountdownDial
+                                [CLIENT], RsvpReveal [CLIENT, RSVP pill -> RsvpForm]
 
   admin/                        Private surface. AppSurface (data-surface),
                                 ActionForm [CLIENT, the shared form island;
@@ -194,8 +200,10 @@ nothing ships to the browser for them. Only genuine interaction
 plus the two halves of the ceremony: `EnvelopeGate` and `FrameSequence`.
 
 A template is a SERVER component. `Lin` renders on the server; only its
-`CountdownDial` and `Petals` are islands, so a design's typography and layout
-cost the browser nothing.
+`CountdownDial`, `RsvpReveal` and `Petals` are islands, so a design's typography and layout
+cost the browser nothing. Lin's bands are listed then coloured by position
+(paper, mist, ...), so an absent section never leaves two same-coloured bands
+meeting at a tear; each band tears its own top edge over the band above.
 
 ---
 
