@@ -39,6 +39,24 @@ describe('getRecoveryClient', () => {
     });
   });
 
+  it('accepts the otp entry Supabase stamps when verifying a token_hash', async () => {
+    withAmr([{ method: 'otp', timestamp: nowSeconds - 60 }]);
+    await expect(getRecoveryClient(supabase)).resolves.toEqual({
+      userId: 'user-1',
+      email: 'maya@example.com',
+    });
+  });
+
+  it('refuses a recent password sign-in', async () => {
+    withAmr([{ method: 'password', timestamp: nowSeconds - 60 }]);
+    await expect(getRecoveryClient(supabase)).resolves.toBeNull();
+  });
+
+  it('refuses an otp older than the window', async () => {
+    withAmr([{ method: 'otp', timestamp: nowSeconds - RECOVERY_WINDOW_SECONDS - 1 }]);
+    await expect(getRecoveryClient(supabase)).resolves.toBeNull();
+  });
+
   it('refuses a recovery older than the window', async () => {
     withAmr([{ method: 'recovery', timestamp: nowSeconds - RECOVERY_WINDOW_SECONDS - 1 }]);
     await expect(getRecoveryClient(supabase)).resolves.toBeNull();

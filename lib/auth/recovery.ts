@@ -6,14 +6,22 @@ import type { Database } from '@/lib/supabase/database.types';
 /** How long after following the link a session may still set a password without the current one. */
 export const RECOVERY_WINDOW_SECONDS = 15 * 60;
 
+/*
+ * The `amr` methods that prove the session came from an emailed link.
+ * Verifying a token_hash (what /auth/confirm does) is stamped `otp`, not
+ * `recovery`, whatever the link's type. Either way it took a one-time token
+ * from the inbox, which is the same proof the reset link is.
+ */
+const EMAILED_LINK_METHODS: ReadonlySet<string> = new Set(['recovery', 'otp']);
+
 /**
  * The client who arrived through a password-recovery link, or null.
  *
  * Setting a password without knowing the current one is only safe for a
- * session that came from the emailed link, so the JWT must carry a
- * `recovery` entry in `amr` (Supabase's documented marker for it). A session
- * from a password sign-in, an admin's included (they share this origin's
- * cookies), is refused. Admins have no client row and reset through Supabase.
+ * session that came from the emailed link, so the JWT must carry an `amr`
+ * entry from a one-time token (see EMAILED_LINK_METHODS). A session from a
+ * password sign-in, an admin's included (they share this origin's cookies),
+ * is refused. Admins have no client row and reset through Supabase.
  *
  * The entry stays on the session for its whole life, refreshes included, so
  * it only counts while it is recent: a session that used a link last month is
@@ -31,7 +39,7 @@ export async function getRecoveryClient(
   const recent = claims.amr?.some(
     (entry) =>
       typeof entry !== 'string' &&
-      entry.method === 'recovery' &&
+      EMAILED_LINK_METHODS.has(entry.method) &&
       typeof entry.timestamp === 'number' &&
       entry.timestamp >= since,
   );
