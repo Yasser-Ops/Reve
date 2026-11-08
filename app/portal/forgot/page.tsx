@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: 'Forgot password' };
 
 export default function PortalForgotPage() {
   return (
-    <PortalCard subtitle="Choose a new password">
+    <PortalCard subtitle="We will email you a reset link">
       <ForgotForm />
     </PortalCard>
   );
